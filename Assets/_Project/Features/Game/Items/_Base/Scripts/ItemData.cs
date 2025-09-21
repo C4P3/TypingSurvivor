@@ -1,0 +1,10 @@
+public class ItemData : ScriptableObject
+{
+    public string itemName;
+    public Sprite icon;
+    public TileBase itemTile;
+
+    // Enumの代わりに効果クラスへの参照を持つ
+    [SerializeReference] // これでインスペクターから設定可能に
+    public IItemEffect Effect; 
+}
