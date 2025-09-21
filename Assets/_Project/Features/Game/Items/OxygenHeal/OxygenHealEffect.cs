@@ -1,3 +1,6 @@
+using UnityEngine;
+using Unity.Services.Matchmaker.Models;
+
 [CreateAssetMenu(fileName = "OxygenHealEffect", menuName = "Items/Effects/OxygenHeal")]
 public class OxygenHealEffect : ScriptableObject, IItemEffect
 {
