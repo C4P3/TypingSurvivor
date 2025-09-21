@@ -57,8 +57,7 @@ public class NetworkManagerUI : MonoBehaviour
                 new MatchmakingPlayerData
                 {
                     skill = 100
-                }
-            )
+                })
         };
 
         var ticketResponse = await MatchmakerService.Instance.CreateTicketAsync(players, options);
@@ -106,7 +105,6 @@ public class NetworkManagerUI : MonoBehaviour
                         Debug.Log($"Ticket timed out. Error:{multiplayAssignment.Message}");
                         break;
                     default:
-                        Debug.Log(multiplayAssignment.Status);
                         throw new InvalidOperationException();
                 }
             }
@@ -115,15 +113,13 @@ public class NetworkManagerUI : MonoBehaviour
 
         clientButton.interactable = !isFound;
     }
-
     private void TicketAssigned(MultiplayAssignment multiplayAssignment)
     {
-        Debug.Log($"Ticket assigned: {multiplayAssignment.Ip}:{multiplayAssignment.Port}");
-        NetworkManager.Singleton.GetComponent<UnityTransport>()
-        .SetConnectionData(
+        Debug.Log($"Ticket assigned:{multiplayAssignment.Ip}:{multiplayAssignment.Port}");
+        NetworkManager.Singleton.GetComponent<UnityTransport>().
+        SetConnectionData(
             multiplayAssignment.Ip,
-            (ushort)multiplayAssignment.Port
-        );
+            (ushort)multiplayAssignment.Port);
 
         NetworkManager.Singleton.StartClient();
     }
