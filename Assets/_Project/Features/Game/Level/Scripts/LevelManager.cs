@@ -304,31 +304,26 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
     private void UnloadChunk(Vector2Int chunkPos)
     {
-        var tilesToUnload = new List<TileData>();
-        foreach (var tile in _activeBlockTiles)
+        UnloadTilesFromNetworkList(_activeBlockTiles, chunkPos);
+        UnloadTilesFromNetworkList(_activeItemTiles, chunkPos);
+    }
+    
+    // NetworkList<TileData> からタイルをアンロードする共通メソッド
+    private void UnloadTilesFromNetworkList(NetworkList<TileData> tileList, Vector2Int chunkPos)
+    {
+        for (int i = tileList.Count - 1; i >= 0; i--)
         {
-            if (WorldToChunkPos(tile.Position) == chunkPos)
+            if (WorldToChunkPos(tileList[i].Position) == chunkPos)
             {
-                tilesToUnload.Add(tile);
+                tileList.RemoveAt(i);
             }
         }
-        foreach (var tile in tilesToUnload) _activeBlockTiles.Remove(tile);
-
-        tilesToUnload = new List<TileData>();
-        foreach (var tile in _activeItemTiles)
-        {
-            if (WorldToChunkPos(tile.Position) == chunkPos)
-            {
-                tilesToUnload.Add(tile);
-            }
-        }
-        foreach (var tile in tilesToUnload) _activeItemTiles.Remove(tile);
     }
 
     #endregion
 
     #region Connection Handling
-    
+
     private void HandleClientConnected(ulong clientId)
     {
         // プレイヤーの初期チャンク位置を登録する (PlayerObjectのスポーンを待つのが理想)
