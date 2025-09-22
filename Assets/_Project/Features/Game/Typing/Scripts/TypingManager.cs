@@ -1,3 +1,4 @@
+using System;
 using GameControlsInput;
 using UnityEngine.InputSystem;
 
@@ -10,6 +11,8 @@ public struct TypingText
 
 public class TypingManager
 {
+    public static event Action OnTypingEnded;
+    
     void OnEnable()
     {
         // テキスト入力イベントを購読
