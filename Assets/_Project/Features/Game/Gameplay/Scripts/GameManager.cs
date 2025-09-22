@@ -8,8 +8,7 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
     public NetworkVariable<float> GameTimer { get; } = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<float> OxygenLevel { get; } = new(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    // プレイヤーごとのデータはNetworkListで管理
-    public NetworkList<PlayerData> PlayerDatas { get; } = new();
+    public NetworkList<PlayerData> PlayerDatas { get; } = new();　// プレイヤーごとのデータはNetworkListで管理
 
     // --- Readerインターフェースの実装 ---
     public float CurrentOxygen => OxygenLevel.Value;
