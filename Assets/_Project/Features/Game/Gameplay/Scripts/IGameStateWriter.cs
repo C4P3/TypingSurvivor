@@ -5,5 +5,6 @@ public interface IGameStateWriter
 {
     void AddOxygen(float amount);
     void AddScore(ulong clientId, int amount);
-    void SetGameOver();
+    void SetPlayerGameOver(ulong clientId);
+
 }

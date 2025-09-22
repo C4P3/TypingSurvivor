@@ -12,7 +12,6 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
 
     // --- Readerインターフェースの実装 ---
     public float CurrentOxygen => OxygenLevel.Value;
-    public int CurrentScore => 0;
     public event Action<float> OnOxygenChanged;
     public event Action<int> OnScoreChanged;
 
@@ -39,8 +38,22 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
         _hudManager.Initialize(this, _playerStatusSystem);
     }
 
+    // --- Readerインターフェースの実装
+    public int GetPlayerScore(ulong clientId)
+    {
+        foreach (PlayerData playerdata in PlayerDatas)
+        {
+            if (playerdata.ClientId == clientId)
+            {
+                return playerdata.Score;
+            }
+        }
+        // 見つからなかった場合
+        return 0;
+    }
+
     // --- Writerインターフェースの実装 ---
-     public void AddOxygen(float amount)
+    public void AddOxygen(float amount)
     {
         if (!IsServer) return;
         OxygenLevel.Value = Mathf.Clamp(OxygenLevel.Value + amount, 0, 100);
@@ -60,7 +73,10 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
             }
         }
     }
-    public void SetGameOver() { }
+    public void SetPlayerGameOver(ulong clientId)
+    {
+        
+    }
     
     private void SubscribeServerEvents()
     {

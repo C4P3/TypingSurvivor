@@ -4,7 +4,7 @@
 public interface IGameStateReader
 {
     float CurrentOxygen { get; }
-    int CurrentScore { get; }
+    int GetPlayerScore(ulong clientId);
     event System.Action<float> OnOxygenChanged;
     event System.Action<int> OnScoreChanged;
 }
