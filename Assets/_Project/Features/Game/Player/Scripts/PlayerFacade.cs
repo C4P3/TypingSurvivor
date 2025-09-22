@@ -1,9 +1,17 @@
+using System;
 using Unity.Netcode;
 using UnityEngine;
 
 // FacadeはNetworkBehaviourを継承し、ネットワーク通信の起点となる
 public class PlayerFacade : NetworkBehaviour
 {
+    #region Events
+    // TODO: OnPlayerMoved_ServerのInvokeを設定
+    public static event Action<ulong, Vector3> OnPlayerMoved_Server;
+    public static event Action<ulong, Vector3> OnPlayerSpawned_Server;
+    public static event Action<ulong> OnPlayerDespawned_Server;
+    #endregion
+
     // --- 参照 ---
     [Header("コンポーネント参照")]
     [SerializeField] private PlayerInput _input;
@@ -31,6 +39,7 @@ public class PlayerFacade : NetworkBehaviour
             // 自分が操作プレイヤーなら、入力コンポーネントを有効化
             _input.enabled = true;
             _input.OnInteractIntent += HandleInteractIntent;
+            OnPlayerSpawned_Server?.Invoke(OwnerClientId, this.gameObject.transform.position);
         }
     }
 
@@ -46,6 +55,7 @@ public class PlayerFacade : NetworkBehaviour
         {
             _input.enabled = false;
             _input.OnInteractIntent -= HandleInteractIntent;
+            OnPlayerDespawned_Server?.Invoke(OwnerClientId);
         }
     }
 
@@ -89,13 +99,5 @@ public class PlayerFacade : NetworkBehaviour
     }
 
     #endregion
-}
-
-// プレイヤーの状態を定義するenum（仮）
-public enum PlayerState
-{
-    Roaming,
-    Moving,
-    Typing
 }
 

@@ -8,8 +8,4 @@ public class PlayerStatusSystem : IPlayerStatusSystemWriter, IPlayerStatusSystem
     {
         return 0;
     }
-    public float GetStatValue(PlayerStat stat)
-    {
-        return 0;
-    }
 }

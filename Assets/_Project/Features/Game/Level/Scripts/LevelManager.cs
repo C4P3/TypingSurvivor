@@ -11,6 +11,11 @@ using UnityEngine.Tilemaps;
 /// </summary>
 public class LevelManager : NetworkBehaviour, ILevelService
 {
+    #region Events
+    public event Action<ulong, Vector3Int> OnBlockDestroyed_Server;
+    #endregion
+
+    #region Serialized Fields (Inspector)
     [Header("References")]
     [SerializeField] private Tilemap _blockTilemap;
     [SerializeField] private Tilemap _itemTilemap;
@@ -18,12 +23,10 @@ public class LevelManager : NetworkBehaviour, ILevelService
     [Header("Dependencies")]
     [Tooltip("DIなどで注入されるマップ生成アルゴリズム")]
     [SerializeField] private ScriptableObject _mapGeneratorSO;
-    private IMapGenerator _mapGenerator;
 
     [Header("Tile Database")]
     [Tooltip("TileID (ListのIndex) と TileBase を紐付けるためのリスト")]
     [SerializeField] private List<TileBase> _tileIdMap;
-    private Dictionary<TileBase, int> _tileToBaseIdMap;
 
     [Header("Map Settings")]
     [SerializeField] private long _mapSeed;
@@ -33,6 +36,12 @@ public class LevelManager : NetworkBehaviour, ILevelService
     [SerializeField] private int _chunkSize = 16;
     [Tooltip("プレイヤーの周囲何チャンク分を同期対象にするか")]
     [SerializeField] private int _generationRadiusInChunks = 2;
+    #endregion
+
+    #region Private Fields
+    private IMapGenerator _mapGenerator;
+    private Dictionary<TileBase, int> _tileToBaseIdMap;
+
 
     // --- Server-Side Data ---
     private Dictionary<Vector2Int, List<TileData>> _entireBlockMapData_Server;
@@ -43,7 +52,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
     // --- Synced Data ---
     private readonly NetworkList<TileData> _activeBlockTiles = new();
     private readonly NetworkList<TileData> _activeItemTiles = new();
-
+    #endregion
 
     #region Unity Lifecycle & Netcode Callbacks
 
@@ -74,10 +83,9 @@ public class LevelManager : NetworkBehaviour, ILevelService
             GenerateAndChunkMap();
 
             // プレイヤーのスポーン/デスポーンイベントを購読する
-            // ★TODO: このイベントはPlayerFacade側で定義・発行する必要があります
-            // PlayerFacade.OnPlayerSpawned_Server += HandlePlayerSpawned;
-            // PlayerFacade.OnPlayerDespawned_Server += HandlePlayerDespawned;
-            // PlayerFacade.OnPlayerMoved_Server += HandlePlayerMoved;
+            PlayerFacade.OnPlayerSpawned_Server += HandlePlayerSpawned;
+            PlayerFacade.OnPlayerDespawned_Server += HandlePlayerDespawned;
+            PlayerFacade.OnPlayerMoved_Server += HandlePlayerMoved;
 
             // 既に接続しているクライアントを処理
             foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
@@ -104,10 +112,9 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
         if (IsServer)
         {
-            // ★TODO: PlayerFacadeのイベント購読解除
-            // PlayerFacade.OnPlayerSpawned_Server -= HandlePlayerSpawned;
-            // PlayerFacade.OnPlayerDespawned_Server -= HandlePlayerDespawned;
-            // PlayerFacade.OnPlayerMoved_Server -= HandlePlayerMoved;
+            PlayerFacade.OnPlayerSpawned_Server -= HandlePlayerSpawned;
+            PlayerFacade.OnPlayerDespawned_Server -= HandlePlayerDespawned;
+            PlayerFacade.OnPlayerMoved_Server -= HandlePlayerMoved;
         }
     }
     #endregion
@@ -155,8 +162,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
                 break;
             }
         }
-        
-        // ILevelService.OnBlockDestroyed_Server.Invoke(clientId, gridPosition);
+        OnBlockDestroyed_Server?.Invoke(clientId, gridPosition);
     }
 
     public void RemoveItem(ulong clientId, Vector3Int gridPosition)
@@ -331,7 +337,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
         UpdateActiveChunks();
     }
     
-    // TODO: PlayerFacadeがスポーンした時に呼び出されるメソッド
+    // PlayerFacadeがスポーンした時に呼び出されるメソッド
     private void HandlePlayerSpawned(ulong clientId, Vector3 spawnPosition)
     {
         _playerChunkPositions_Server[clientId] = WorldToChunkPos(spawnPosition);

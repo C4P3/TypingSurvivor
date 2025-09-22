@@ -1,6 +1,7 @@
 using UnityEngine;
+using Unity.Netcode;
 
-public class InGameHUDManager : MonoBehaviour
+public class InGameHUDManager : NetworkBehaviour
 {
     // 子オブジェクトなどから参照を設定するUI部品
     [SerializeField] private OxygenView _oxygenView;
@@ -48,7 +49,7 @@ public class InGameHUDManager : MonoBehaviour
     // イベントを受け取ったら、担当のUI部品に更新を指示する
     private void OnOxygenChanged(float newOxygenValue)
     {
-        _oxygenView.UpdateView(newOxygenValue, _playerStatusReader.GetStatValue(PlayerStat.MaxOxygen));
+        _oxygenView.UpdateView(newOxygenValue, _playerStatusReader.GetStatValue(OwnerClientId, PlayerStat.MaxOxygen));
     }
 
     private void OnScoreChanged(int newScoreValue)

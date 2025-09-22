@@ -13,9 +13,9 @@ public class ItemExecutionContext
     // DIで注入される各種サービスへの参照
     public IGameStateWriter GameStateWriter { get; }
     public ILevelService LevelService { get; }
-    public IPlayerStatusSystem PlayerStatusSystem { get; } // プレイヤーの永続ステータスを管理する新しいシステム
+    public IPlayerStatusSystemWriter PlayerStatusSystem { get; } // プレイヤーの永続ステータスを管理する新しいシステム
     
-    public ItemExecutionContext(ulong userId, Vector3Int itemPosition, IGameStateWriter gameStateWriter, ILevelService levelService, IPlayerStatusSystem playerStatusSystem)
+    public ItemExecutionContext(ulong userId, Vector3Int itemPosition, IGameStateWriter gameStateWriter, ILevelService levelService, IPlayerStatusSystemWriter playerStatusSystem)
     {
         // ...コンストラクタ...
     }

@@ -1,7 +1,5 @@
 
 public interface IPlayerStatusSystemReader
 {
-    float GetStatValue(PlayerStat stat);
-
-    public float GetStatValue(ulong userId, PlayerStat stat);
+    float GetStatValue(ulong userId, PlayerStat stat);
 }

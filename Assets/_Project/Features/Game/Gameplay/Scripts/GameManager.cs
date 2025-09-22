@@ -18,6 +18,7 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
     // private IGameModeStrategy _gameMode;
 
     // GameManagerが他のシステムの参照も知っている
+    private ILevelService _levelService;
     private IPlayerStatusSystemReader _playerStatusSystem;
     private InGameHUDManager _hudManager;
 
@@ -81,7 +82,7 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
     private void SubscribeServerEvents()
     {
         if (!IsServer) return;
-        ILevelService.OnBlockDestroyed_Server += HandleBlockDestroyed;
+        _levelService.OnBlockDestroyed_Server += HandleBlockDestroyed;
     }
 
     private void HandleBlockDestroyed(ulong clientId, Vector3Int position)
