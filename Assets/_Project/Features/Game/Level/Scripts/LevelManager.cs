@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -18,11 +19,15 @@ public class LevelManager : NetworkBehaviour, ILevelService
     [SerializeField] private List<TileBase> _tileIdMap;
     private Dictionary<TileBase, int> _tileToBaseIdMap;
 
+    private IMapGenerator _mapGenerator; // DIで注入
+
 
     // 同期されるタイルマップのデータ。
     // フィールド宣言時に readonly と new() を使って初期化するのがモダンな作法。
     private readonly NetworkList<TileData> _blockTiles = new();
     private readonly NetworkList<TileData> _itemTiles = new();
+
+    public event Action<ulong, Vector3Int> OnBlockDestroyed_Server; // どのプレイヤーが、どの座標を破壊したか
 
 
     #region Unity Lifecycle & Netcode Callbacks
@@ -61,7 +66,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
     #region ILevelService (Server-side Logic)
 
-    public void DestroyBlock(Vector3Int gridPosition)
+    public void DestroyBlock(Vector3Int gridPosition, ulong clientId)
     {
         if (!IsServer) return; // このメソッドはサーバーでのみ実行可能
 
@@ -71,12 +76,15 @@ public class LevelManager : NetworkBehaviour, ILevelService
             if (_blockTiles[i].Position == gridPosition)
             {
                 _blockTiles.RemoveAt(i);
-                
+
                 // TODO: ここでアイテムをドロップするロジックなどを追加
-                
+
                 break;
             }
         }
+        
+        // 処理が終わったら、イベントを発行して事実を報告する
+        OnBlockDestroyed_Server?.Invoke(clientId, gridPosition);
     }
 
     public void RemoveItem(Vector3Int gridPosition)
@@ -96,7 +104,11 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
         // TODO: ここにパーリンノイズなどを使ったマップ生成ロジックを実装
         // 生成したタイルを _blockTiles.Add(newTileData) のようにリストに追加していく
-        Debug.Log("Map generation started on the server.");
+        // マップ生成は専門家にお願いするだけ
+        var (generatedBlocks, generatedItems) = _mapGenerator.Generate(mapSeed);
+
+        // 受け取った結果をNetworkListに流し込んで同期する
+        foreach (var tile in generatedBlocks) _blockTiles.Add(tile);
     }
 
     #endregion
