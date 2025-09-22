@@ -1,3 +1,5 @@
+using UnityEngine;
+
 /// <summary>
 /// レベルの状態を変更するためのサービスインターフェース。
 /// </summary>

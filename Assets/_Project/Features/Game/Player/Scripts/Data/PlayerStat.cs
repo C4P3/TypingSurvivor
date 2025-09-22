@@ -1,0 +1,1 @@
+public enum PlayerStat { MoveSpeed, MaxOxygen, RadarRange }
