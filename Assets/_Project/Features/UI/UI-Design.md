@@ -31,25 +31,26 @@ UIシステムの設計は\*\*「UIは“愚かな”ビューであるべき」
 
 ゲームの状態が変更され、UIの表示が更新されるまでの流れは以下のようになります。
 
+```mermaid
 sequenceDiagram  
-    participant S\_Logic as ゲームロジック (Server)  
+    participant S_Logic as ゲームロジック (Server)  
     participant NV as NetworkVariable (Sync)  
-    participant C\_Reader as Reader I/F (Client)  
-    participant C\_Manager as 画面Manager (Client)  
-    participant C\_View as UIコンポーネント (Client)
+    participant C_Reader as Reader I/F (Client)  
+    participant C_Manager as 画面Manager (Client)  
+    participant C_View as UIコンポーネント (Client)
 
-    S\_Logic-\>\>S\_Logic: 状態を変更  
-    note right of S\_Logic: GameManagerが\<br\>OxygenLevel.Valueを更新  
+    S_Logic->>S_Logic: 状態を変更  
+    note right of S_Logic: GameManagerが<br>OxygenLevel.Valueを更新  
       
-    NV--\>\>C\_Reader: OnValueChanged イベント発火  
-    note left of C\_Reader: クライアントのGameManagerが検知  
+    NV-->>C_Reader: OnValueChanged イベント発火  
+    note left of C_Reader: クライアントのGameManagerが検知  
       
-    C\_Reader-\>\>C\_Manager: OnOxygenChanged イベント発行  
-    note left of C\_Manager: InGameHUDManagerがイベントを購読  
+    C_Reader->>C_Manager: OnOxygenChanged イベント発行  
+    note left of C_Manager: InGameHUDManagerがイベントを購読  
       
-    C\_Manager-\>\>C\_View: UpdateView(newValue)  
-    note right of C\_View: OxygenViewが表示を更新
-
+    C_Manager->>C_View: UpdateView(newValue)  
+    note right of C_View: OxygenViewが表示を更新
+```
 この一方向のデータフローにより、UIのロジックは非常にシンプルかつ予測可能になり、デバッグや仕様変更が容易になります。
 
 **関連ドキュメント:**
