@@ -1,6 +1,9 @@
-using Unity.Services.Matchmaker.Models;
-
+// --- 2. 新しいアイテム効果インターフェース ---
+/// <summary>
+/// 全てのアイテム効果が実装するインターフェース。
+/// </summary>
 public interface IItemEffect
 {
-    void Execute(Player user); // 効果を実行する
+    // 効果を実行する。引数はItemExecutionContextのみ。
+    void Execute(ItemExecutionContext context);
 }

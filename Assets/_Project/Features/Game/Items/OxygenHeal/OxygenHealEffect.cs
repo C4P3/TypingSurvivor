@@ -1,14 +1,16 @@
 using UnityEngine;
-using Unity.Services.Matchmaker.Models;
 
-[CreateAssetMenu(fileName = "OxygenHealEffect", menuName = "Items/Effects/OxygenHeal")]
+/// <summary>
+/// 酸素を回復させる即時効果
+/// </summary>
+[CreateAssetMenu(menuName = "Items/Effects/OxygenHealEffect")]
 public class OxygenHealEffect : ScriptableObject, IItemEffect
 {
     [SerializeField] private float _amount;
 
-    public void Execute(Player user)
+    public void Execute(ItemExecutionContext context)
     {
-        // GameManagerなどを経由して酸素を回復させる
-        // GameManager.Instance.RecoverOxygen(_amount); 
+        // 必要なサービスは全てコンテキストから取得できる
+        context.GameStateWriter.AddOxygen(_amount);
     }
 }

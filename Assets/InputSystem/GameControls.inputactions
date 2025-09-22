@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "name": "InputSystem_Actions",
+    "name": "GameControls",
     "maps": [
         {
             "name": "Player",
@@ -987,6 +987,137 @@
                     "processors": "",
                     "groups": "XR",
                     "action": "TrackedDeviceOrientation",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "Gameplay",
+            "id": "ab101955-c9b5-42e0-a3b9-4d5744b2d29f",
+            "actions": [
+                {
+                    "name": "Move",
+                    "type": "Value",
+                    "id": "10a4289d-27ed-4883-9b50-393b3142d7c3",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Interact",
+                    "type": "Button",
+                    "id": "ddbf0be8-0c1d-4fbc-8156-758b5738cfdb",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "KeyBoardKey4",
+                    "id": "1b37b4b5-da57-43e2-8221-9f70999677e1",
+                    "path": "2DVector",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Move",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "up",
+                    "id": "d2264477-fad7-467e-9bab-25a44e3ee789",
+                    "path": "<Keyboard>/w",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "down",
+                    "id": "e8bc69f2-289e-4ef6-91a5-76dc3e827ca1",
+                    "path": "<Keyboard>/s",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "left",
+                    "id": "c63008aa-d037-4b9c-baca-2b517aa574a7",
+                    "path": "<Keyboard>/a",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "right",
+                    "id": "f131e97f-c66e-4262-9db1-b4e933dd23b0",
+                    "path": "<Keyboard>/d",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "7547773f-c9d6-4cd2-81b3-2b2da944af6e",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Interact",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "Typing",
+            "id": "3a496e9a-66df-4dd4-a340-94bad98ea574",
+            "actions": [
+                {
+                    "name": "Cancel",
+                    "type": "Button",
+                    "id": "47285209-2f26-4db8-953b-c5febdb5efdc",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "be2cf665-7e9d-43c2-8ac5-d984c2a13765",
+                    "path": "<Keyboard>/enter",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Cancel",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "78583d4f-d8a5-4bf4-b755-cd432b8c0b69",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Cancel",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

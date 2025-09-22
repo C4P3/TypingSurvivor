@@ -1,0 +1,6 @@
+[
+  { "hiragana": "か", "romaji": ["ka", "ca"] },
+  { "hiragana": "し", "romaji": ["shi", "si", "ci"] },
+  { "hiragana": "きゃ", "romaji": ["kya", "kixya"] },
+  { "hiragana": "っ", "patterns": { "k": "kk", "s": "ss" } }
+]

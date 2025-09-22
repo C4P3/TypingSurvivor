@@ -1,16 +1,16 @@
 using UnityEngine;
 using Unity.Netcode;
-using InputSystem;
+using GameControlsInput;
 using UnityEngine.InputSystem;
 
 public class PlayerMovement : NetworkBehaviour
 {
-    private InputSystem_Actions _gameInputs;
+    private GameControls _gameInputs;
     private Vector2 direction = new Vector2(0, 0);
 
     private void Awake()
     {
-        _gameInputs = new InputSystem_Actions();
+        _gameInputs = new GameControls();
 
         _gameInputs.Player.Move.started += OnMove;
         _gameInputs.Player.Move.performed += OnMove;
