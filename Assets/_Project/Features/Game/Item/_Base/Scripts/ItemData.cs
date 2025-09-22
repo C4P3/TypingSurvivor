@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -9,5 +10,5 @@ public class ItemData : ScriptableObject
 
     // Enumの代わりに効果クラスへの参照を持つ
     [SerializeReference] // これでインスペクターから設定可能に
-    public IItemEffect Effect;
+    public List<IItemEffect> Effects;
 }

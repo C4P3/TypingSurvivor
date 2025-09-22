@@ -1,6 +1,5 @@
 using UnityEngine;
 
-// --- 1. 効果の実行に必要な情報をまとめたコンテキスト ---
 /// <summary>
 /// アイテム効果を実行するために必要な全ての情報を持つコンテキストオブジェクト。
 /// ItemServiceがこのオブジェクトを構築し、IItemEffectに渡す。
@@ -14,9 +13,19 @@ public class ItemExecutionContext
     public IGameStateWriter GameStateWriter { get; }
     public ILevelService LevelService { get; }
     public IPlayerStatusSystemWriter PlayerStatusSystem { get; } // プレイヤーの永続ステータスを管理する新しいシステム
-    
-    public ItemExecutionContext(ulong userId, Vector3Int itemPosition, IGameStateWriter gameStateWriter, ILevelService levelService, IPlayerStatusSystemWriter playerStatusSystem)
+
+    public ItemExecutionContext(
+        ulong userId,
+        Vector3Int itemPosition,
+        IGameStateWriter gameStateWriter,
+        ILevelService levelService,
+        IPlayerStatusSystemWriter playerStatusSystem
+    )
     {
-        // ...コンストラクタ...
+        this.UserId = userId;
+        this.ItemPosition = itemPosition;
+        this.GameStateWriter = gameStateWriter;
+        this.LevelService = levelService;
+        this.PlayerStatusSystem = playerStatusSystem;
     }
 }
