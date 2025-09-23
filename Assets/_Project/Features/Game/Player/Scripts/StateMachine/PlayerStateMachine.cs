@@ -1,6 +1,7 @@
 using System;
+using UnityEngine;
 
-public class PlayerStateMachine
+public class PlayerStateMachine:MonoBehaviour
 {
     private PlayerState currentState;
     private IPlayerState[] states;

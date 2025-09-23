@@ -4,6 +4,7 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using TypingSurvivor.Features.Game.Player;
 
 /// <summary>
 /// Level (タイルマップ) の状態を管理し、変更ロジックを実行するクラス。

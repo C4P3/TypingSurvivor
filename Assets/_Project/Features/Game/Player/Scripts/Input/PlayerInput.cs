@@ -1,17 +1,99 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using GameControlsInput;
 
-public class PlayerInput : MonoBehaviour
+namespace TypingSurvivor.Features.Game.Player.Input
 {
-    public event Action OnInteractIntent;
-
-    void Update()
+    public class PlayerInput : MonoBehaviour
     {
-        // このコンポーネントが有効な時だけUpdateが呼ばれるので、
-        // 自分がローカルプレイヤーかどうかを気にする必要がない。
-        if (Input.GetKeyDown(KeyCode.LeftShift))
+        // Gameplay Actions
+        public event Action<Vector2> OnMoveIntent;
+        public event Action OnInteractIntent;
+
+        // Typing Actions
+        public event Action OnCancelTypingIntent;
+
+        private GameControls _gameControls;
+
+        private void Awake()
+        {
+            _gameControls = new GameControls();
+        }
+
+        private void OnEnable()
+        {
+            // Subscribe to events regardless of which map is active
+            SubscribeGameplayEvents();
+            SubscribeTypingEvents();
+
+            // Enable a default map
+            EnableGameplayInput();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeGameplayEvents();
+            UnsubscribeTypingEvents();
+            
+            _gameControls.Player.Disable();
+            _gameControls.Typing.Disable();
+        }
+
+        public void EnableGameplayInput()
+        {
+            _gameControls.Typing.Disable();
+            _gameControls.Player.Enable();
+        }
+
+        public void EnableTypingInput()
+        {
+            _gameControls.Player.Disable();
+            _gameControls.Typing.Enable();
+        }
+
+        private void SubscribeGameplayEvents()
+        {
+            _gameControls.Player.Move.performed += HandleMovePerformed;
+            _gameControls.Player.Move.canceled += HandleMoveCanceled;
+            _gameControls.Player.Interact.performed += HandleInteractPerformed;
+        }
+
+        private void UnsubscribeGameplayEvents()
+        {
+            _gameControls.Player.Move.performed -= HandleMovePerformed;
+            _gameControls.Player.Move.canceled -= HandleMoveCanceled;
+            _gameControls.Player.Interact.performed -= HandleInteractPerformed;
+        }
+        
+        private void SubscribeTypingEvents()
+        {
+            _gameControls.Typing.Cancel.performed += HandleCancelTypingPerformed;
+        }
+
+        private void UnsubscribeTypingEvents()
+        {
+            _gameControls.Typing.Cancel.performed -= HandleCancelTypingPerformed;
+        }
+
+        private void HandleMovePerformed(InputAction.CallbackContext context)
+        {
+            OnMoveIntent?.Invoke(context.ReadValue<Vector2>());
+        }
+
+        private void HandleMoveCanceled(InputAction.CallbackContext context)
+        {
+            OnMoveIntent?.Invoke(Vector2.zero);
+        }
+
+        private void HandleInteractPerformed(InputAction.CallbackContext context)
         {
             OnInteractIntent?.Invoke();
+        }
+        
+        private void HandleCancelTypingPerformed(InputAction.CallbackContext context)
+        {
+            OnCancelTypingIntent?.Invoke();
         }
     }
 }
