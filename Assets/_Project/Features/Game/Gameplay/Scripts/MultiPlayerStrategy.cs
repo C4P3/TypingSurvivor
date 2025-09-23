@@ -1,19 +1,24 @@
-public class MultiPlayerStrategy : IGameModeStrategy
+using TypingSurvivor.Features.Game.Gameplay.Data;
+
+namespace TypingSurvivor.Features.Game.Gameplay
 {
-    public int PlayerCount => 2;
-    public bool IsGameOver(IGameStateReader gameState)
+    public class MultiPlayerStrategy : IGameModeStrategy
     {
-        // いずれかのプレイヤーがゲームオーバーになったら終了
-        foreach (var playerData in gameState.PlayerDatas)
+        public int PlayerCount => 2;
+        public bool IsGameOver(IGameStateReader gameState)
         {
-            if (playerData.IsGameOver) return true;
+            // いずれかのプレイヤーがゲームオーバーになったら終了
+            foreach (var playerData in gameState.PlayerDatas)
+            {
+                if (playerData.IsGameOver) return true;
+            }
+            return false;
         }
-        return false;
-    }
-    // ... CalculateResultの実装 ...
-    // TODO: 実装
-    public GameResult CalculateResult(IGameStateReader gameState)
-    {
-        return new GameResult();
+        // ... CalculateResultの実装 ...
+        // TODO: 実装
+        public GameResult CalculateResult(IGameStateReader gameState)
+        {
+            return new GameResult();
+        }
     }
 }
