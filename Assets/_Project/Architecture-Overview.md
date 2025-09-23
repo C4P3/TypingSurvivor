@@ -66,5 +66,7 @@ graph TD
 * **イベント駆動**: あるシステムが状態を変更した後、その事実をイベントとして発行（Publish）し、他のシステムがそれを購読（Subscribe）するモデル。システム間の直接的な依存をなくします。  
 * **CQRS (コマンド・クエリ責務分離)** の思想: システムへの命令（書き込み/Command）と、情報の取得（読み取り/Query）をインターフェースレベルで明確に分離します（WriterとReader）。これにより、意図しない状態変更を防ぎ、システムの安全性を高めます。
 
-**全体のドキュメント:**　[README.md](./README.md)
-**次のドキュメント:** [Folder-Structure.md](./Folder-Structure.md)
+## **全体のドキュメント:**　
+[README.md](./README.md)
+## **次のドキュメント:** 
+[Folder-Structure.md](./Folder-Structure.md)
