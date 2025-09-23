@@ -1,7 +1,6 @@
 using System;
-using UnityEngine;
 
-public class PlayerStateMachine:MonoBehaviour
+public class PlayerStateMachine
 {
     private PlayerState currentState;
     private IPlayerState[] states;
@@ -16,9 +15,9 @@ public class PlayerStateMachine:MonoBehaviour
         this.states = states;
     }
 
-    public void Execute()
+    public void Update()
     {
-        states[Convert.ToInt32(currentState)].Execute();
+        states[Convert.ToInt32(currentState)].Update();
     }
 
     public void ChangeState(PlayerState nextState)

@@ -82,7 +82,7 @@ namespace TypingSurvivor.Features.Game.Player
         private void RequestMoveServerRpc(Vector2 moveDirection)
         {
             // サーバー側で移動処理を実行
-            transform.Translate(new Vector3(moveDirection.x, 0, moveDirection.y) * _moveSpeed * Time.deltaTime);
+            transform.Translate(new Vector3(moveDirection.x, moveDirection.y, 0) * _moveSpeed * Time.deltaTime);
             
             // TODO: OnPlayerMoved_ServerのInvokeを設定
         }
