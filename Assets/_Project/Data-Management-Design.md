@@ -48,7 +48,7 @@ UGSとの通信は、専門のサービスクラスに責務を分離し、AppMa
 * LeaderboardService.cs: SubmitScoreAsync(score)とGetLeaderboardAsync()メソッドを提供し、ランキングの送信と取得を担います。
 
 ### **3.3. 保存と読み込みのタイミング**
-
+```mermaid
 sequenceDiagram  
     participant App as AppManager  
     participant Auth as AuthenticationService  
@@ -56,19 +56,19 @@ sequenceDiagram
     participant Game as GameManager  
     participant Leader as LeaderboardService
 
-    App-\>\>Auth: Initialize & Sign In  
-    Auth--\>\>App: Sign In Success  
-    App-\>\>Save: LoadPlayerDataAsync()  
-    Save--\>\>App: PlayerData Loaded  
-    note over App: ロードした設定をゲームに反映\<br\>(音量、キーコンフィグなど)
+    App->>Auth: Initialize & Sign In  
+    Auth-->>App: Sign In Success  
+    App->>Save: LoadPlayerDataAsync()  
+    Save-->>App: PlayerData Loaded  
+    note over App: ロードした設定をゲームに反映<br>(音量、キーコンフィグなど)
 
-    rect rgb(230, 240, 255\)  
+    rect rgb(0, 0, 0)  
     note over Game: ...ゲームプレイ...  
-    Game-\>\>Game: ゲーム終了 (Finishedフェーズ)  
-    Game-\>\>Leader: SubmitScoreAsync(score)  
-    Game-\>\>Save: SavePlayerDataAsync(newHighScore)  
+    Game->>Game: ゲーム終了 (Finishedフェーズ)  
+    Game->>Leader: SubmitScoreAsync(score)  
+    Game->>Save: SavePlayerDataAsync(newHighScore)  
     end
-
+```
 この設計により、プレイヤーデータは安全にクラウドで管理され、ゲームのコアロジックは永続化の詳細を知ることなく、自身の責務に集中できます。
 
 **関連ドキュメント:**

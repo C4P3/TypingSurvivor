@@ -24,7 +24,7 @@
   * **内容**: このプロジェクトで採用するフォルダ構造の全体像と、その設計意図について詳述します。  
 * [**./Data-Flow.md**](./Data-Flow.md)  
   * **内容**: 「プレイヤーがアイテムを取得し、UIが更新されるまで」といった、複数の機能をまたがる代表的な処理のシーケンス図を掲載し、システム間の連携を視覚的に解説します。
-* [**./Data-Management.md**](./Data-Management.md)  
+* [**./Data-Management-Design.md**](./Data-Management-Design.md)  
 
 ### **Tier 2: 機能別 詳細設計**
 

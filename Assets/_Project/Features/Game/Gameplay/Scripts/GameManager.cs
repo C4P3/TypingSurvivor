@@ -13,6 +13,10 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
     public NetworkList<PlayerData> PlayerDatas { get; } = new(); // プレイヤーごとのデータはNetworkListで管理
     #endregion
 
+    #region SerializeField
+    [SerializeField] private GameConfig _gameConfig;
+    #endregion
+
     // --- Readerインターフェースの実装 ---
     public float CurrentOxygen => OxygenLevel.Value;
     public event Action<float> OnOxygenChanged;
