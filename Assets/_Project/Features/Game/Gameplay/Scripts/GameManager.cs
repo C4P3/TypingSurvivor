@@ -1,29 +1,31 @@
 using Unity.Netcode;
 using UnityEngine;
 using System;
+using System.Collections;
 
 public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
 {
-    // --- GameStateに相当するNetworkVariable群 ---
+    #region NetworkVariables
+    public NetworkVariable<GamePhase> CurrentPhase { get; } = new(GamePhase.WaitingForPlayers);
     public NetworkVariable<float> GameTimer { get; } = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<float> OxygenLevel { get; } = new(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    public NetworkList<PlayerData> PlayerDatas { get; } = new();　// プレイヤーごとのデータはNetworkListで管理
+    public NetworkList<PlayerData> PlayerDatas { get; } = new(); // プレイヤーごとのデータはNetworkListで管理
+    #endregion
 
     // --- Readerインターフェースの実装 ---
     public float CurrentOxygen => OxygenLevel.Value;
     public event Action<float> OnOxygenChanged;
     public event Action<int> OnScoreChanged;
 
-    // private IGameModeStrategy _gameMode;
+    // 
+    float oxygenDecreaseRate = 0.9f;
 
     // GameManagerが他のシステムの参照も知っている
     private ILevelService _levelService;
     private IPlayerStatusSystemReader _playerStatusSystem;
     private InGameHUDManager _hudManager;
-
-    // [SyncVar]
-    // private GameState _gameState;
+    private IGameModeStrategy _gameModeStrategy;
 
     void Awake()
     {
@@ -38,6 +40,21 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
         // thisはIGameStateReaderとして渡される
         _hudManager.Initialize(this, _playerStatusSystem);
     }
+
+    public override void OnNetworkSpawn()
+    {
+        if (IsClient)
+        {
+            // クライアントは、フェーズの変更を監視する
+            CurrentPhase.OnValueChanged += HandlePhaseChanged_Client;
+        }
+        if (IsServer)
+        {
+            // TODO: ここでサーバー側の初期化処理を開始する
+            // StartCoroutine(ServerGameLoop());
+        }
+    }
+
 
     // --- Readerインターフェースの実装
     public int GetPlayerScore(ulong clientId)
@@ -59,7 +76,7 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
         if (!IsServer) return;
         OxygenLevel.Value = Mathf.Clamp(OxygenLevel.Value + amount, 0, 100);
     }
-    
+
     public void AddScore(ulong clientId, int amount)
     {
         if (!IsServer) return;
@@ -76,13 +93,50 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
     }
     public void SetPlayerGameOver(ulong clientId)
     {
-        
+
     }
-    
+
     private void SubscribeServerEvents()
     {
         if (!IsServer) return;
         _levelService.OnBlockDestroyed_Server += HandleBlockDestroyed;
+    }
+
+    [ServerRpc]
+    private IEnumerator ServerGameLoop()
+    {
+        // --- 待機フェーズ ---
+        CurrentPhase.Value = GamePhase.WaitingForPlayers;
+        while (NetworkManager.Singleton.ConnectedClients.Count < _gameModeStrategy.PlayerCount)
+        {
+            yield return null;
+        }
+
+        // --- カウントダウンフェーズ ---
+        CurrentPhase.Value = GamePhase.Countdown;
+        // NetworkVariable<float> CountdownTimer を用意して同期しても良い
+        yield return new WaitForSeconds(5);
+
+        // --- プレイフェーズ ---
+        CurrentPhase.Value = GamePhase.Playing;
+        while (true)
+        {
+            // 酸素の自然減少
+            OxygenLevel.Value -= oxygenDecreaseRate * Time.deltaTime;
+            
+            // ★ルールブック（Strategy）に終了条件を確認してもらう
+            if (_gameModeStrategy.IsGameOver(this))
+            {
+                break; // ゲーム終了
+            }
+            
+            yield return null;
+        }
+
+        // --- 終了フェーズ ---
+        CurrentPhase.Value = GamePhase.Finished;
+        GameResult result = _gameModeStrategy.CalculateResult(this);
+        // TODO: リザルト情報をクライアントに通知し、スコアを送信する
     }
 
     private void HandleBlockDestroyed(ulong clientId, Vector3Int position)
@@ -90,16 +144,13 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
         // スコアを加算する処理...
         // _gameState.Score.Value += 10;
     }
-
-    // void Update()
-    // {
-    //     if () // サーバーだけがゲーム状態を更新
-    //     {
-    //         _gameState.UpdateOxygen(Time.deltaTime);
-    //         if (_gameMode.IsGameOver(_gameState))
-    //         {
-    //             // ゲームオーバー処理
-    //         }
-    //     }
-    // }
+    
+    // クライアント側でフェーズ変更を検知した時の処理
+    private void HandlePhaseChanged_Client(GamePhase previousPhase, GamePhase newPhase)
+    {
+        Debug.Log($"Game phase changed to: {newPhase}");
+        // 例: UIにカウントダウン表示を出す、プレイヤーの入力を有効/無効にするなど
+        // UIManager.Instance.OnGamePhaseChanged(newPhase);
+        // PlayerInputManager.SetInputActive(newPhase == GamePhase.Playing);
+    }
 }
