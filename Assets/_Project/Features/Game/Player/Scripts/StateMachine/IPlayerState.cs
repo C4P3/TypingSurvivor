@@ -1,6 +1,6 @@
 public interface IPlayerState
 {
     void Enter(PlayerState stateFrom);
-    void Update();
+    void Execute();
     void Exit(PlayerState stateTo);
 }

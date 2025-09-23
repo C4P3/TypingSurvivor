@@ -15,9 +15,9 @@ public class PlayerStateMachine
         this.states = states;
     }
 
-    public void Update()
+    public void Execute()
     {
-        states[Convert.ToInt32(currentState)].Update();
+        states[Convert.ToInt32(currentState)].Execute();
     }
 
     public void ChangeState(PlayerState nextState)
