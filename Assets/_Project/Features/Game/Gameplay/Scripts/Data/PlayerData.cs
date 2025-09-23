@@ -1,6 +1,10 @@
 using System;
 using Unity.Netcode;
+using UnityEngine;
 
+/// <summary>
+/// NetworkListで使うために、INetworkSerializableとIEquatableを実装する必要がある。
+/// </summary>
 public struct PlayerData : INetworkSerializable, IEquatable<PlayerData>
 {
     public ulong ClientId;
@@ -13,7 +17,7 @@ public struct PlayerData : INetworkSerializable, IEquatable<PlayerData>
         serializer.SerializeValue(ref Score);
         serializer.SerializeValue(ref IsGameOver);
     }
-    
+
     public bool Equals(PlayerData other)
     {
         return ClientId == other.ClientId && Score == other.Score && IsGameOver == other.IsGameOver;

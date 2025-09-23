@@ -54,8 +54,8 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
         }
         if (IsServer)
         {
-            // TODO: ここでサーバー側の初期化処理を開始する
-            // StartCoroutine(ServerGameLoop());
+            // ここでサーバー側の初期化処理を開始する
+            StartCoroutine(ServerGameLoop());
         }
     }
 
@@ -106,7 +106,6 @@ public class GameManager : NetworkBehaviour, IGameStateReader, IGameStateWriter
         _levelService.OnBlockDestroyed_Server += HandleBlockDestroyed;
     }
 
-    [ServerRpc]
     private IEnumerator ServerGameLoop()
     {
         // --- 待機フェーズ ---
