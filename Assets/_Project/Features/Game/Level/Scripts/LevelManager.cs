@@ -24,10 +24,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
     [Header("Dependencies")]
     [Tooltip("DIなどで注入されるマップ生成アルゴリズム")]
     [SerializeField] private ScriptableObject _mapGeneratorSO;
-
-    [Header("Tile Database")]
-    [Tooltip("TileID (ListのIndex) と TileBase を紐付けるためのリスト")]
-    [SerializeField] private List<TileBase> _tileIdMap;
+    private IMapGenerator _mapGenerator; // Interface resolved from SO
 
     [Header("Map Settings")]
     [SerializeField] private long _mapSeed;
@@ -40,9 +37,9 @@ public class LevelManager : NetworkBehaviour, ILevelService
     #endregion
 
     #region Private Fields
-    private IMapGenerator _mapGenerator;
+    // --- Tile ID Management ---
     private Dictionary<TileBase, int> _tileToBaseIdMap;
-
+    private List<TileBase> _tileIdMap;
 
     // --- Server-Side Data ---
     private Dictionary<Vector2Int, List<TileData>> _entireBlockMapData_Server;
@@ -59,20 +56,22 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
     private void Awake()
     {
-        // 依存性を解決
         _mapGenerator = _mapGeneratorSO as IMapGenerator;
         if (_mapGenerator == null)
         {
             Debug.LogError("IMapGeneratorがアタッチされていません。");
+            return;
         }
 
-        // TileBaseからIDを逆引きするための辞書を初期化
+        // ジェネレーターが使用するタイルからIDマップを動的に生成
+        _tileIdMap = new List<TileBase>();
         _tileToBaseIdMap = new Dictionary<TileBase, int>();
-        for (int i = 0; i < _tileIdMap.Count; i++)
+        foreach (var tile in _mapGenerator.AllTiles.Distinct())
         {
-            if (_tileIdMap[i] != null)
+            if (tile != null && !_tileToBaseIdMap.ContainsKey(tile))
             {
-                _tileToBaseIdMap[_tileIdMap[i]] = i;
+                _tileToBaseIdMap[tile] = _tileIdMap.Count;
+                _tileIdMap.Add(tile);
             }
         }
     }
@@ -83,12 +82,10 @@ public class LevelManager : NetworkBehaviour, ILevelService
         {
             GenerateAndChunkMap();
 
-            // プレイヤーのスポーン/デスポーンイベントを購読する
             PlayerFacade.OnPlayerSpawned_Server += HandlePlayerSpawned;
             PlayerFacade.OnPlayerDespawned_Server += HandlePlayerDespawned;
             PlayerFacade.OnPlayerMoved_Server += HandlePlayerMoved;
 
-            // 既に接続しているクライアントを処理
             foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
             {
                 HandleClientConnected(client.ClientId);
@@ -119,28 +116,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
         }
     }
     #endregion
-
-    #region Event Handlers (Called from Player System)
-
-    /// <summary>
-    /// [Server-Only] プレイヤーが移動した時にPlayerFacadeから呼び出される
-    /// </summary>
-    private void HandlePlayerMoved(ulong clientId, Vector3 newPosition)
-    {
-        Vector2Int currentChunk = WorldToChunkPos(newPosition);
-
-        if (_playerChunkPositions_Server.TryGetValue(clientId, out var previousChunk))
-        {
-            if (previousChunk != currentChunk)
-            {
-                _playerChunkPositions_Server[clientId] = currentChunk;
-                UpdateActiveChunks();
-            }
-        }
-    }
-
-    #endregion
-
+    
     #region ILevelService (Server-side Logic)
 
     public void DestroyBlock(ulong clientId, Vector3Int gridPosition)
@@ -153,8 +129,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
             tiles.RemoveAll(t => t.Position == gridPosition);
         }
 
-        // TileIdが不明なので、座標だけで検索して削除する
-        // 効率は良くないが、構造上やむを得ない
         for(int i = _activeBlockTiles.Count - 1; i >= 0; i--)
         {
             if(_activeBlockTiles[i].Position == gridPosition)
@@ -168,16 +142,14 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
     public void RemoveItem(ulong clientId, Vector3Int gridPosition)
     {
-        if (!IsServer) return; // サーバーでのみ実行
+        if (!IsServer) return;
 
-        // 全マップデータからタイルを削除する
         Vector2Int chunkPos = WorldToChunkPos(gridPosition);
         if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
         {
             tiles.RemoveAll(t => t.Position == gridPosition);
         }
 
-        // _itemTilesリストから該当する座標のTileDataを探して削除する
         for (int i = 0; i < _activeItemTiles.Count; i++)
         {
             if (_activeItemTiles[i].Position == gridPosition)
@@ -190,16 +162,13 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
     public bool IsWalkable(Vector3Int gridPosition)
     {
-        if (!IsServer) return true; // Client doesn't have the data, server is authoritative
+        if (!IsServer) return true;
 
         Vector2Int chunkPos = WorldToChunkPos(gridPosition);
         if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
         {
-            // このチャンク内に指定座標のタイルが存在するかどうかを確認
             return !tiles.Any(t => t.Position == gridPosition);
         }
-
-        // チャンク自体が存在しない場合は、そこには何もないので歩行可能
         return true;
     }
     #endregion
@@ -207,9 +176,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
     #region Server-Side Chunk Management
 
-    /// <summary>
-    /// [Server-Only] マップを生成し、チャンクごとに分割して保存する。
-    /// </summary>
     private void GenerateAndChunkMap()
     {
         if (!IsServer) return;
@@ -217,17 +183,11 @@ public class LevelManager : NetworkBehaviour, ILevelService
         _entireBlockMapData_Server = new Dictionary<Vector2Int, List<TileData>>();
         _entireItemMapData_Server = new Dictionary<Vector2Int, List<TileData>>();
 
-        if (_mapGenerator == null)
-        {
-            Debug.LogError("MapGeneratorが設定されていません。");
-            return;
-        }
-
         if (_useRandomSeed) _mapSeed = System.DateTime.Now.Ticks;
 
-        var (generatedBlocks, generatedItems) = _mapGenerator.Generate(_mapSeed);
+        // ジェネレーターにIDマップを渡して、完全なTileDataリストを生成してもらう
+        var (generatedBlocks, generatedItems) = _mapGenerator.Generate(_mapSeed, _tileToBaseIdMap);
 
-        // ブロックタイルをチャンク分けする
         foreach (var tile in generatedBlocks)
         {
             Vector2Int chunkPos = WorldToChunkPos(tile.Position);
@@ -237,7 +197,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
             }
             _entireBlockMapData_Server[chunkPos].Add(tile);
         }
-        // アイテムタイルをチャンク分けする
         foreach (var tile in generatedItems)
         {
             Vector2Int chunkPos = WorldToChunkPos(tile.Position);
@@ -248,41 +207,9 @@ public class LevelManager : NetworkBehaviour, ILevelService
             _entireItemMapData_Server[chunkPos].Add(tile);
         }
     }
-
-    /// <summary>
-    /// [Server-Only] プレイヤーがチャンクをまたいでいないかチェックする。
-    /// </summary>
-    private void CheckForChunkUpdates()
-    {
-        bool needsUpdate = false;
-        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
-        {
-            if (client.PlayerObject == null) continue;
-
-            Vector3 playerPos = client.PlayerObject.transform.position;
-            Vector2Int currentChunk = WorldToChunkPos(playerPos);
-
-            if (_playerChunkPositions_Server.TryGetValue(client.ClientId, out var previousChunk))
-            {
-                if (previousChunk != currentChunk)
-                {
-                    _playerChunkPositions_Server[client.ClientId] = currentChunk;
-                    needsUpdate = true;
-                }
-            }
-        }
-        if (needsUpdate)
-        {
-            UpdateActiveChunks();
-        }
-    }
-
-    /// <summary>
-    /// [Server-Only] 全プレイヤーにとって必要なチャンクを計算し、ロード/アンロードを実行する。
-    /// </summary>
+    
     private void UpdateActiveChunks()
     {
-        // 1. 全プレイヤーにとって「見えるべき」チャンクのリストを計算する
         var allRequiredChunks = new HashSet<Vector2Int>();
         foreach (var playerChunk in _playerChunkPositions_Server.Values)
         {
@@ -295,7 +222,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
             }
         }
 
-        // 2. 不要になったチャンクをアンロードする
         var chunksToUnload = _activeChunks_Server.Except(allRequiredChunks).ToList();
         foreach (var chunkPos in chunksToUnload)
         {
@@ -303,7 +229,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
             _activeChunks_Server.Remove(chunkPos);
         }
 
-        // 3. 新しく必要になったチャンクをロードする
         var chunksToLoad = allRequiredChunks.Except(_activeChunks_Server).ToList();
         foreach (var chunkPos in chunksToLoad)
         {
@@ -330,7 +255,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
         UnloadTilesFromNetworkList(_activeItemTiles, chunkPos);
     }
     
-    // NetworkList<TileData> からタイルをアンロードする共通メソッド
     private void UnloadTilesFromNetworkList(NetworkList<TileData> tileList, Vector2Int chunkPos)
     {
         for (int i = tileList.Count - 1; i >= 0; i--)
@@ -344,16 +268,27 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
     #endregion
 
-    #region Connection Handling
+    #region Event Handlers & Connection
+    
+    private void HandlePlayerMoved(ulong clientId, Vector3 newPosition)
+    {
+        Vector2Int currentChunk = WorldToChunkPos(newPosition);
+        if (_playerChunkPositions_Server.TryGetValue(clientId, out var previousChunk))
+        {
+            if (previousChunk != currentChunk)
+            {
+                _playerChunkPositions_Server[clientId] = currentChunk;
+                UpdateActiveChunks();
+            }
+        }
+    }
 
     private void HandleClientConnected(ulong clientId)
     {
-        // プレイヤーの初期チャンク位置を登録する (PlayerObjectのスポーンを待つのが理想)
         _playerChunkPositions_Server[clientId] = Vector2Int.zero;
         UpdateActiveChunks();
     }
     
-    // PlayerFacadeがスポーンした時に呼び出されるメソッド
     private void HandlePlayerSpawned(ulong clientId, Vector3 spawnPosition)
     {
         _playerChunkPositions_Server[clientId] = WorldToChunkPos(spawnPosition);
@@ -415,10 +350,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
         {
             targetMap.SetTile(data.Position, _tileIdMap[data.TileId]);
         }
-        else
-        {
-            Debug.LogWarning($"不正なTileId: {data.TileId} が座標 {data.Position} で検出されました。");
-        }
     }
     
     private void ClearTile(TileData data, Tilemap targetMap)
@@ -429,16 +360,12 @@ public class LevelManager : NetworkBehaviour, ILevelService
     private Vector2Int WorldToChunkPos(Vector3 worldPos)
     {
         Vector3Int gridPos = _blockTilemap.WorldToCell(worldPos);
-        int x = Mathf.FloorToInt((float)gridPos.x / _chunkSize);
-        int y = Mathf.FloorToInt((float)gridPos.y / _chunkSize);
-        return new Vector2Int(x, y);
+        return new Vector2Int(Mathf.FloorToInt((float)gridPos.x / _chunkSize), Mathf.FloorToInt((float)gridPos.y / _chunkSize));
     }
     
     private Vector2Int WorldToChunkPos(Vector3Int gridPos)
     {
-        int x = Mathf.FloorToInt((float)gridPos.x / _chunkSize);
-        int y = Mathf.FloorToInt((float)gridPos.y / _chunkSize);
-        return new Vector2Int(x, y);
+        return new Vector2Int(Mathf.FloorToInt((float)gridPos.x / _chunkSize), Mathf.FloorToInt((float)gridPos.y / _chunkSize));
     }
 
     #endregion

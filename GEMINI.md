@@ -37,19 +37,21 @@ I will respect the feature-based folder structure. When adding new functionality
 ## 6. Operational Protocol: Staying Up-to-Date
 
 -   **Source of Truth**: The project's official documentation (e.g., `Architecture-Overview.md`, feature-specific designs) is the single source of truth. This `GEMINI.md` is my sworn constitution to follow it.
--   **Pre-Task Review**: Before beginning any new development task, I will re-read the relevant design documents to ensure my understanding is current.
+-   **Context-First Principle (Formerly Pre-Task Review)**: Before beginning any new development task, I will first investigate the **entire relevant feature folder**. I will thoroughly review not only the design documents but also all existing files, code conventions, and naming schemes to gain a complete contextual understanding. This prevents design collisions and redundant work.
 -   **Adaptation**: If I detect any conflict between these guidelines and the project's documentation, I will prioritize the project's documentation and, if necessary, propose an update to this `GEMINI.md` file to reflect the latest design decisions.
-
-By following these guidelines, I will ensure that my contributions seamlessly integrate with your project's architecture. I am now ready to assist with development.
 
 ## 7. Development Methodology: A Collaborative and Iterative Approach
 
 To ensure the development process is as robust as the architecture itself, I will adhere to the following methodological principles, treating development not as a single task, but as an ongoing dialogue.
 
--   **Incremental Implementation**: I will break down complex features into smaller, logical, and testable steps. We will build and verify each piece incrementally, rather than attempting a monolithic implementation. For instance, implementing player movement began with basic tile-by-tile logic before evolving to include continuous movement, dynamic speed, and context-aware state transitions (e.g., wall collision).
+-   **Incremental Implementation**: I will break down complex features into smaller, logical, and testable steps. We will build and verify each piece incrementally, rather than attempting a monolithic implementation.
 
--   **Design-Driven Development**: Before making significant code changes, I will first discuss the proposed design with you. Key architectural decisions, logic flows, and new specifications will be captured in the project's design documents (`.md` files). This ensures we maintain a shared understanding and that the documentation remains the single source of truth.
+-   **Design-Driven Development**: Before making significant code changes, I will first discuss the proposed design with you. Key architectural decisions, logic flows, and new specifications will be captured in the project's design documents (`.md` files).
 
--   **Proactive Refactoring and Cleanup**: I will not just add new functionality but will also actively seek opportunities to improve the existing codebase. This includes simplifying complex logic, clarifying the separation of concerns between classes (as seen in the `PlayerInput` refactoring), and removing obsolete code (such as the legacy `Interact` action) to maintain code quality and readability.
+-   **Pragmatism and the Pursuit of Simplicity**: I will hold developer experience and intuitive workflows as the highest priority. An architectural principle or abstraction (e.g., "loose coupling") that results in a workflow more cumbersome than a simple, direct approach (e.g., "duplicating an asset and modifying it") is a failed abstraction. I will always favor the practical and simple solution.
 
--   **User-Centric Feedback Loop**: I will treat your feedback, bug reports, and design critiques as a critical and valued part of the development cycle. I will analyze your observations (e.g., identifying client-side movement bugs or flaws in an input system proposal), adapt my understanding, and collaboratively refine our approach to ensure the final implementation is robust and perfectly aligned with your vision.
+-   **User-Centric Feedback Loop**: I will treat your feedback, bug reports, and design critiques as a critical and valued part of the development cycle. I will analyze your observations, adapt my understanding, and collaboratively refine our approach.
+
+-   **Surgical and Safe Modifications**: All code changes will be performed with surgical precision. I will avoid broad, careless replacements that risk destroying or unintentionally altering existing code. I will always verify that each operation is safe for the project as a whole.
+
+-   **Proactive Refactoring and Cleanup**: I will not just add new functionality but will also actively seek opportunities to improve the existing codebase to maintain code quality and readability.

@@ -53,15 +53,19 @@ Features/
 │   │           ├── IItemEffect.cs  
 │   │           └── IItemService.cs  
 │   │  
-│   ├── 📂Level/              \# マップ（世界）の状態管理と生成  
-│   │   └── 📂Scripts/  
-│   │       ├── ILevelService.cs  
-│   │       ├── LevelManager.cs  
-│   │       ├── IMapGenerator.cs  
-│   │       └── TileData.cs  
+│   ├── 📂Level/              \# マップ（世界）の状態管理と生成
+│   │   ├── 📂ScriptableObjects/
+│   │   │   └── PerlinNoiseGenerator_Cave.asset
+│   │   └── 📂Scripts/
+│   │       ├── 📂MapGenerator/
+│   │       │   ├── IMapGenerator.cs
+│   │       │   └── PerlinNoiseMapGenerator.cs
+│   │       ├── ILevelService.cs
+│   │       ├── LevelManager.cs
+│   │       └── TileData.cs
 │   │  
-│   ├── 📂Player/             \# プレイヤー機能  
-│   │   ├── 📂Prefabs/  
+│   ├── 📂Player/             \# プレイヤー機能
+│   │   ├── 📂Prefabs/
 │   │   │   └── Player.prefab  
 │   │   └── 📂Scripts/  
 │   │       ├── PlayerFacade.cs  

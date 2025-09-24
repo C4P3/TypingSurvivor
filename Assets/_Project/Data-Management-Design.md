@@ -43,7 +43,10 @@ public class GameConfig : ScriptableObject
     // ... 他の全体設定アセット ...  
 }
 
-GameManagerなどの主要なManagerは、このGameConfigアセットへの参照のみをインスペクターから受け取ることで、全ての設定データにアクセスできます。
+#### **3.2. MapTheme.cs (ScriptableObject)**
+マップ生成の静的データを管理するScriptableObjectです。`MapGenerator`が生成した抽象的な値（例: ノイズ値）と、実際にシーンに配置されるタイルPrefabとの対応関係を定義します。
+
+これにより、レベルの「見た目」や「テーマ」（例: 洞窟、森、遺跡）をコードから完全に分離し、デザイナーがUnityエディタ上で直感的にレベルデザインを行えるようになります。
 
 ## **4. 詳細設計：動的データの永続化戦略**
 

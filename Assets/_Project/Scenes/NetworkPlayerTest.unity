@@ -649,16 +649,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _blockTilemap: {fileID: 1782705930}
   _itemTilemap: {fileID: 2124289493}
-  _mapGeneratorSO: {fileID: 11400000, guid: b9a29089d059c58469e17cf0e14a8cda, type: 2}
-  _tileIdMap:
-  - {fileID: 11400000, guid: 5d465524561049943baaba4ac6f319a7, type: 2}
-  - {fileID: 11400000, guid: 46a4b1748cb47c94caae08e725bdfb1f, type: 2}
-  - {fileID: 11400000, guid: 0f971df2f76c7bb4da6163ead279bbdc, type: 2}
-  - {fileID: 11400000, guid: 301ecb1ef9eee864f8f843c6e198351e, type: 2}
-  - {fileID: 11400000, guid: c0a2d122df21a2e4f9a8f0f2cf9fa4c0, type: 2}
-  - {fileID: 11400000, guid: a208d6c3c91ce71439dcba762f96185d, type: 2}
-  - {fileID: 11400000, guid: 6241e9ff7ea5a764a9341be9c5662c95, type: 2}
-  - {fileID: 11400000, guid: 6e58dd38dc12db345a226bc45a4c7d90, type: 2}
+  _mapGeneratorSO: {fileID: 11400000, guid: d392453bf04131842b85d06e1ca298ac, type: 2}
   _mapSeed: 0
   _useRandomSeed: 1
   _chunkSize: 16

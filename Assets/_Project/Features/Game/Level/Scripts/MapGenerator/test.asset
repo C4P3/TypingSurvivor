@@ -9,6 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1a07b9bba46d9647b529a6e8548287b, type: 3}
-  m_Name: SimpleTestMapGenerator
-  m_EditorClassIdentifier: Assembly-CSharp::SimpleTestMapGenerator
+  m_Script: {fileID: 11500000, guid: 5d027138a3a88394088b5b38ac265fcc, type: 3}
+  m_Name: test
+  m_EditorClassIdentifier: Assembly-CSharp::OxygenHealEffect
+  _amount: 0

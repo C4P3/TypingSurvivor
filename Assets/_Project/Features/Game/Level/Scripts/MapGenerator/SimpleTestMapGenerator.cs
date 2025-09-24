@@ -1,26 +1,37 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
-[CreateAssetMenu(fileName = "SimpleTestMapGenerator", menuName = "Map Generators/Simple Test Map Generator")]
+[CreateAssetMenu(fileName = "SimpleTestMapGenerator", menuName = "Typing Survivor/Map Generators/Simple Test Map Generator")]
 public class SimpleTestMapGenerator : ScriptableObject, IMapGenerator
 {
-    public (List<TileData> blockTiles, List<TileData> itemTiles) Generate(long seed)
+    [SerializeField] private TileBase _wallTile;
+    [SerializeField] private int _mapSize = 10;
+
+    public IEnumerable<TileBase> AllTiles
+    {
+        get { yield return _wallTile; }
+    }
+
+    public (List<TileData> blockTiles, List<TileData> itemTiles) Generate(long seed, Dictionary<TileBase, int> tileIdMap)
     {
         var blockTiles = new List<TileData>();
-        int mapSize = 4; // 10x10の壁
-
-        for (int x = -mapSize; x <= mapSize; x++)
+        if (_wallTile == null || !tileIdMap.TryGetValue(_wallTile, out int wallTileId))
         {
-            for (int y = -mapSize; y <= mapSize; y++)
+            Debug.LogError("Wall Tileが設定されていないか、IDマップに登録されていません。");
+            return (blockTiles, new List<TileData>());
+        }
+
+        for (int x = -_mapSize; x <= _mapSize; x++)
+        {
+            for (int y = -_mapSize; y <= _mapSize; y++)
             {
-                // 外周のみ壁を配置
-                if (Mathf.Abs(x) == mapSize || Mathf.Abs(y) == mapSize)
+                if (Mathf.Abs(x) == _mapSize || Mathf.Abs(y) == _mapSize)
                 {
-                // LevelManagerのTileIdMap[0]のタイルを使う
-                blockTiles.Add(new TileData { Position = new Vector3Int(x, y, 0), TileId = 0 });
+                    blockTiles.Add(new TileData { Position = new Vector3Int(x, y, 0), TileId = wallTileId });
                 }
             }
         }
-        return (blockTiles, new List<TileData>()); // アイテムは無し
+        return (blockTiles, new List<TileData>());
     }
 }

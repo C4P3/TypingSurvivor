@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine.Tilemaps;
 
 /// <summary>
 /// マップ生成に使用するブロックの種類と設定。
@@ -8,13 +10,12 @@ using System.Collections.Generic;
 public class BlockTypeSetting
 {
     public string name;
-    [Tooltip("LevelManagerのTileIdMapに対応するTile ID")]
-    public int tileId;
+    public TileBase tile;
     [Tooltip("このブロックの出現しやすさ。値が大きいほど優先して選ばれやすくなる。")]
     public float probabilityWeight = 1.0f;
 }
 
-[CreateAssetMenu(fileName = "PerlinNoiseMapGenerator", menuName = "Map Generators/Perlin Noise Map Generator")]
+[CreateAssetMenu(fileName = "PerlinNoiseMapGenerator", menuName = "Typing Survivor/Map Generators/Perlin Noise Map Generator")]
 public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
 {
     [Header("Map Dimensions")]
@@ -31,46 +32,41 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
     [Header("Item Generation")]
     [Tooltip("アイテムを配置する候補地ができる確率")]
     [Range(0, 1)] [SerializeField] private float _itemAreaChance = 0.02f;
-    [Tooltip("生成される可能性のあるアイテムのTile IDリスト")]
-    [SerializeField] private List<int> _spawnableItemIds;
+    [Tooltip("生成される可能性のあるアイテムのTileBaseリスト")]
+    [SerializeField] private List<TileBase> _spawnableItems;
 
+    public IEnumerable<TileBase> AllTiles
+    {
+        get
+        {
+            var blockTiles = _blockTypes?.Select(b => b.tile) ?? Enumerable.Empty<TileBase>();
+            var itemTiles = _spawnableItems ?? Enumerable.Empty<TileBase>();
+            return blockTiles.Concat(itemTiles).Where(t => t != null);
+        }
+    }
 
-    public (List<TileData> blockTiles, List<TileData> itemTiles) Generate(long seed)
+    public (List<TileData> blockTiles, List<TileData> itemTiles) Generate(long seed, Dictionary<TileBase, int> tileIdMap)
     {
         var blockTiles = new List<TileData>();
         var itemTiles = new List<TileData>();
-
-        if (_blockTypes == null || _blockTypes.Length == 0)
-        {
-            Debug.LogError("BlockTypesが設定されていません。");
-            return (blockTiles, itemTiles);
-        }
-
         var prng = new System.Random((int)seed);
 
-        // 各ブロックタイプに対応するノイズのオフセットを生成
-        var noiseOffsets = new Vector2[_blockTypes.Length];
-        for (int i = 0; i < _blockTypes.Length; i++)
-        {
-            noiseOffsets[i] = new Vector2(prng.Next(-10000, 10000), prng.Next(-10000, 10000));
-        }
-
-        // マップ全体をループしてタイルを生成
         for (int x = 0; x < _width; x++)
         {
             for (int y = 0; y < _height; y++)
             {
-                var tilePos = new Vector3Int(x, y, 0);
+                var tilePos = new Vector3Int(x - _width / 2, y - _height / 2, 0);
 
                 // --- アイテム生成ロジック ---
-                if (_spawnableItemIds.Count > 0 && prng.NextDouble() < _itemAreaChance)
+                if (_spawnableItems.Count > 0 && prng.NextDouble() < _itemAreaChance)
                 {
-                    // ランダムにアイテムを選ぶ
-                    int randomItemId = _spawnableItemIds[prng.Next(0, _spawnableItemIds.Count)];
-                    itemTiles.Add(new TileData { Position = tilePos, TileId = randomItemId });
-                    continue; // アイテムを置いた場所にはブロックを置かない
+                    TileBase randomItemTile = _spawnableItems[prng.Next(0, _spawnableItems.Count)];
+                    if (tileIdMap.TryGetValue(randomItemTile, out int tileId))
+                    {
+                        itemTiles.Add(new TileData { Position = tilePos, TileId = tileId });
+                        continue; // アイテムを置いた場所にはブロックを置かない
+                    }
                 }
-
 
                 // --- ブロック生成ロジック ---
                 BlockTypeSetting chosenBlock = null;
@@ -78,10 +74,9 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
 
                 for (int i = 0; i < _blockTypes.Length; i++)
                 {
-                    // パーリンノイズを計算し、ブロックごとの重みを加算
-                    float noiseX = (x + noiseOffsets[i].x) * _noiseScale;
-                    float noiseY = (y + noiseOffsets[i].y) * _noiseScale;
-                    float currentNoise = Mathf.PerlinNoise(noiseX, noiseY) + _blockTypes[i].probabilityWeight;
+                    float noiseX = (tilePos.x + prng.Next(-1000, 1000)) * _noiseScale;
+                    float noiseY = (tilePos.y + prng.Next(-1000, 1000)) * _noiseScale;
+                    float currentNoise = Mathf.PerlinNoise(noiseX, noiseY) * _blockTypes[i].probabilityWeight;
 
                     if (currentNoise > maxNoiseValue)
                     {
@@ -90,14 +85,15 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
                     }
                 }
 
-                // 最もノイズ値が高かったブロックを、閾値を超えていれば配置
-                if (chosenBlock != null && maxNoiseValue > (_blockThreshold + chosenBlock.probabilityWeight))
+                if (chosenBlock != null && chosenBlock.tile != null && maxNoiseValue > _blockThreshold)
                 {
-                    blockTiles.Add(new TileData { Position = tilePos, TileId = chosenBlock.tileId });
+                    if (tileIdMap.TryGetValue(chosenBlock.tile, out int tileId))
+                    {
+                        blockTiles.Add(new TileData { Position = tilePos, TileId = tileId });
+                    }
                 }
             }
         }
-
         return (blockTiles, itemTiles);
     }
 }
