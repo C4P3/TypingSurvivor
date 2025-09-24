@@ -14,18 +14,20 @@ namespace TypingSurvivor.Features.Game.Player
         public void Enter(PlayerState stateFrom)
         {
             Debug.Log("Entering Typing State");
-            // TODO: タイピングUIの表示
+            // TODO: 破壊対象のブロックに応じたお題を取得する
+            var challenge = new TypingChallenge { Word = "neko" };
+            _facade.TypingManager?.StartTyping(challenge);
         }
 
         public void Execute()
         {
-            // タイピング中の処理
+            // TypingManagerが入力処理を行うため、ここでは何もしない
         }
 
         public void Exit(PlayerState stateTo)
         {
             Debug.Log("Exiting Typing State");
-            // TODO: タイピングUIの非表示
+            _facade.TypingManager?.StopTyping();
         }
         
         public void OnTargetPositionChanged()

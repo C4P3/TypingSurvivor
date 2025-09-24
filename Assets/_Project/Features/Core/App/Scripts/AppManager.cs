@@ -14,6 +14,10 @@ namespace TypingSurvivor.Features.Core.App
         public static AppManager Instance { get; private set; }
 
         public IAuthenticationService AuthService { get; private set; }
+        public IPlayerStatusSystemReader StatusReader { get; private set; }
+        public IPlayerStatusSystemWriter StatusWriter { get; private set; }
+        public ILevelService LevelService { get; private set; }
+        public IItemService ItemService { get; private set; }
 
         private async void Awake()
         {
@@ -28,6 +32,7 @@ namespace TypingSurvivor.Features.Core.App
 
             await InitializeUgsAsync();
 
+            // TODO: サーバー/クライアントの起動フローを管理するクラスに移動すべき
             InitializeServices();
         }
 
@@ -46,8 +51,17 @@ namespace TypingSurvivor.Features.Core.App
 
         private void InitializeServices()
         {
-            // Create and hold the instance of the authentication service.
+            // --- Plain C# Services ---
             AuthService = new ClientAuthenticationService();
+            
+            var statusSystem = new PlayerStatusSystem();
+            StatusReader = statusSystem;
+            StatusWriter = statusSystem;
+
+            // --- MonoBehaviour Services (Scene-dependent) ---
+            // TODO: シーンロードのたびに再検索が必要になる可能性がある
+            LevelService = FindObjectOfType<LevelManager>();
+            ItemService = FindObjectOfType<ItemService>();
 
             // In the future, this method will also be responsible for
             // initializing other application-wide services like:

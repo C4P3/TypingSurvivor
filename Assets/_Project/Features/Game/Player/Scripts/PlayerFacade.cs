@@ -5,6 +5,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using TypingSurvivor.Features.Game.Player.Input;
+using TypingSurvivor.Features.Core.App;
 
 namespace TypingSurvivor.Features.Game.Player
 {
@@ -21,8 +22,12 @@ namespace TypingSurvivor.Features.Game.Player
         [SerializeField] private PlayerStateMachine _stateMachine;
         [SerializeField] private PlayerView _view;
 
+        // --- クライアントサイドのシステム ---
+        private TypingManager _typingManager;
+
         // --- サーバーサイドの依存関係 ---
         private ILevelService _levelService;
+        private IItemService _itemService;
         private IPlayerStatusSystemReader _statusReader;
         private Grid _grid;
 
@@ -40,6 +45,7 @@ namespace TypingSurvivor.Features.Game.Player
         public Grid Grid => _grid;
         public float MoveDuration => NetworkMoveDuration.Value;
         public PlayerInput PlayerInput => _input;
+        public TypingManager TypingManager => _typingManager;
         #endregion
 
         #region Unity & Network Callbacks
@@ -59,9 +65,11 @@ namespace TypingSurvivor.Features.Game.Player
 
             if (IsServer)
             {
-                _levelService = FindObjectsOfType<MonoBehaviour>().OfType<ILevelService>().FirstOrDefault();
-                _statusReader = FindObjectsOfType<MonoBehaviour>().OfType<IPlayerStatusSystemReader>().FirstOrDefault();
+                _levelService = AppManager.Instance.LevelService;
+                _itemService = AppManager.Instance.ItemService;
+                _statusReader = AppManager.Instance.StatusReader;
                 if (_levelService == null) Debug.LogError("ILevelServiceの実装が見つかりません。");
+                if (_itemService == null) Debug.LogError("IItemServiceの実装が見つかりません。");
                 if (_statusReader == null) Debug.LogError("IPlayerStatusSystemReaderの実装が見つかりません。");
 
                 NetworkGridPosition.Value = _grid.WorldToCell(transform.position);
@@ -73,6 +81,9 @@ namespace TypingSurvivor.Features.Game.Player
                 _input.enabled = true;
                 _input.OnMovePerformed += HandleMovePerformed;
                 _input.OnMoveCanceled += HandleMoveCanceled;
+
+                _typingManager = new TypingManager();
+                _typingManager.OnTypingSuccess += HandleTypingSuccess;
                 
                 if(IsServer) OnPlayerSpawned_Server?.Invoke(OwnerClientId, transform.position);
                 else RequestSpawnedServerRpc();
@@ -91,6 +102,9 @@ namespace TypingSurvivor.Features.Game.Player
                 _input.enabled = false;
                 _input.OnMovePerformed -= HandleMovePerformed;
                 _input.OnMoveCanceled -= HandleMoveCanceled;
+
+                _typingManager.OnTypingSuccess -= HandleTypingSuccess;
+                _typingManager.StopTyping(); // 念のため購読解除
             }
             
             if(IsServer) OnPlayerDespawned_Server?.Invoke(OwnerClientId);
@@ -144,6 +158,12 @@ namespace TypingSurvivor.Features.Game.Player
         {
             RequestStopContinuousMoveServerRpc();
         }
+
+        private void HandleTypingSuccess()
+        {
+            // タイピング成功をサーバーに通知し、ブロック破壊を要求する
+            DestroyBlock_ServerRpc(NetworkTypingTargetPosition.Value);
+        }
         
         [ServerRpc]
         private void RequestSpawnedServerRpc()
@@ -187,19 +207,36 @@ namespace TypingSurvivor.Features.Game.Player
             _continuousMoveDirection_Server = Vector3Int.zero;
         }
 
+        [ServerRpc]
+        private void DestroyBlock_ServerRpc(Vector3Int blockPosition)
+        {
+            // TODO: 破壊権限のチェックなど
+            
+            _levelService?.DestroyBlock(OwnerClientId, blockPosition);
+            
+            // 破壊後はRoaming状態に戻る
+            _currentState.Value = PlayerState.Roaming;
+        }
+
         private IEnumerator ContinuousMove_Server()
         {
             _isMoving_Server = true;
 
             while (_continuousMoveDirection_Server != Vector3Int.zero)
             {
-                if (_levelService == null || _grid == null || _statusReader == null)
+                if (_levelService == null || _grid == null || _statusReader == null || _itemService == null)
                 {
                     _isMoving_Server = false;
                     yield break;
                 }
 
                 Vector3Int targetGridPos = NetworkGridPosition.Value + _continuousMoveDirection_Server;
+
+                // 移動先にアイテムがあれば取得する
+                if (_levelService.HasItemTile(targetGridPos))
+                {
+                    _itemService.AcquireItem(OwnerClientId, targetGridPos);
+                }
 
                 if (_levelService.IsWalkable(targetGridPos))
                 {

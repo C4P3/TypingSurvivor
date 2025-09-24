@@ -67,5 +67,6 @@ Item機能は、ゲーム内に登場する全てのアイテム（消耗品、�
 ### **全体のドキュメント:**　
 [../../../README.md](../../../README.md)
 ### **関連ドキュメント:**
+* **[./Item-List.md](./Item-List.md)**: 具体的なアイテムの性能やパラメータを定義する**ゲームデザイン仕様書**。
 * [../Gameplay/Gameplay-Design.md](../Gameplay/Gameplay-Design.md)  
 * [../../../Data-Flow.md](../../../Data-Flow.md)

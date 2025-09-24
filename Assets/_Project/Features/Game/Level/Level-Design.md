@@ -15,10 +15,14 @@ Level機能は、ゲームの舞台となる**世界の物理的な状態**を�
 
 * **役割**: ILevelServiceインターフェースを実装する、サーバーサイドのメインクラス。NetworkBehaviourを継承します。  
 * **責務**:  
-  * **状態の所有**: NetworkList\<TileData\>として、現在アクティブな（同期対象の）タイルデータを保持する。  
+  * **状態の所有**: NetworkList<TileData>として、現在アクティブな（同期対象の）タイルデータを保持する。  
   * **チャンク管理**: 全プレイヤーの位置を監視し、どのチャンクをアクティブにすべきかを判断し、NetworkListの内容を更新（ロード/アンロード）する。  
-  * **ロジックの実行**: DestroyBlockなどの命令を受け、NetworkListやサーバーが保持する全マップデータを変更する。  
-  * **イベントの発行**: ブロックが破壊された際などに、OnBlockDestroyed\_Serverのようなサーバーサイドイベントを発行し、GameManagerなどの他システムに事実を通知する。
+  * **ロジックの実行**: 外部からの要求に応じてマップの状態を変更したり、情報を返したりする。`ILevelService`インターフェースを通じて以下の機能を提供する。
+    * `TileBase GetTile(Vector3Int gridPosition)`: 指定座標にあるタイル（ブロックまたはアイテム）を返す。
+    * `bool IsWalkable(Vector3Int gridPosition)`: 指定座標が歩行可能かを返す。
+    * `void RemoveItem(Vector3Int gridPosition)`: 指定座標のアイテムをマップから削除する。
+    * `void DestroyBlock(ulong clientId, Vector3Int gridPosition)`: 指定座標のブロックを破壊する。
+  * **イベントの発行**: ブロックが破壊された際などに、OnBlockDestroyed_Serverのようなサーバーサイドイベントを発行し、GameManagerなどの他システムに事実を通知する。
 
 ### **2.2. IMapGenerator.cs (Interface / ScriptableObject)**
 

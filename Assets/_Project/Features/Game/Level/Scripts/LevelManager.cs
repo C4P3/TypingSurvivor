@@ -119,6 +119,40 @@ public class LevelManager : NetworkBehaviour, ILevelService
     
     #region ILevelService (Server-side Logic)
 
+    public TileBase GetTile(Vector3Int gridPosition)
+    {
+        if (!IsServer) return null;
+
+        // ビュー(Tilemap)ではなく、サーバーが持つ権威データから判定する
+        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+        
+        // アイテムを優先的に検索
+        if (_entireItemMapData_Server.TryGetValue(chunkPos, out var itemTiles))
+        {
+            foreach (var tileData in itemTiles)
+            {
+                if (tileData.Position == gridPosition)
+                {
+                    return _tileIdMap[tileData.TileId];
+                }
+            }
+        }
+        
+        // ブロックを検索
+        if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var blockTiles))
+        {
+            foreach (var tileData in blockTiles)
+            {
+                if (tileData.Position == gridPosition)
+                {
+                    return _tileIdMap[tileData.TileId];
+                }
+            }
+        }
+
+        return null;
+    }
+
     public void DestroyBlock(ulong clientId, Vector3Int gridPosition)
     {
         if (!IsServer) return;
@@ -140,7 +174,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
         OnBlockDestroyed_Server?.Invoke(clientId, gridPosition);
     }
 
-    public void RemoveItem(ulong clientId, Vector3Int gridPosition)
+    public void RemoveItem(Vector3Int gridPosition)
     {
         if (!IsServer) return;
 
@@ -150,7 +184,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
             tiles.RemoveAll(t => t.Position == gridPosition);
         }
 
-        for (int i = 0; i < _activeItemTiles.Count; i++)
+        for (int i = _activeItemTiles.Count - 1; i >= 0; i--)
         {
             if (_activeItemTiles[i].Position == gridPosition)
             {
@@ -170,6 +204,19 @@ public class LevelManager : NetworkBehaviour, ILevelService
             return !tiles.Any(t => t.Position == gridPosition);
         }
         return true;
+    }
+
+    public bool HasItemTile(Vector3Int gridPosition)
+    {
+        if (!IsServer) return false;
+        
+        // ビュー(Tilemap)ではなく、サーバーが持つ権威データから判定する
+        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+        if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
+        {
+            return tiles.Any(t => t.Position == gridPosition);
+        }
+        return false;
     }
     #endregion
 

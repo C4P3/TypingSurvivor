@@ -1,32 +1,49 @@
 using System;
-using GameControlsInput;
 using UnityEngine.InputSystem;
 
-public struct TypingText
+// TODO: TypingChallengeクラスが実装されたら、これと差し替える
+public struct TypingChallenge
 {
-    public string Title;    // 表示用の日本語テキスト
-    public string Hiragana; // 判定用のひらがな
-    public int Level;       // 難易度レベル
+    public string Word; // e.g., "neko"
 }
 
 public class TypingManager
 {
-    // public static event Action OnTypingEnded;
+    public event Action OnTypingSuccess;
     
-    void OnEnable()
+    private TypingChallenge _currentChallenge;
+    private string _remainingText;
+
+    public void StartTyping(TypingChallenge challenge)
     {
+        _currentChallenge = challenge;
+        _remainingText = _currentChallenge.Word;
+        
         // テキスト入力イベントを購読
         Keyboard.current.onTextInput += OnTextInput;
     }
 
-    void OnDisable()
+    public void StopTyping()
     {
+        // テキスト入力イベントの購読を解除
         Keyboard.current.onTextInput -= OnTextInput;
     }
 
     private void OnTextInput(char character)
     {
-        // ここでタイピング判定ロジックを呼び出す
-        // 例: _typingModel.TypeCharacter(character);
+        if (string.IsNullOrEmpty(_remainingText)) return;
+
+        // 入力された文字が、残りのテキストの先頭と一致するかチェック
+        if (character == _remainingText[0])
+        {
+            _remainingText = _remainingText.Substring(1);
+
+            // 全て入力し終えたかチェック
+            if (string.IsNullOrEmpty(_remainingText))
+            {
+                OnTypingSuccess?.Invoke();
+                StopTyping();
+            }
+        }
     }
 }

@@ -47,6 +47,7 @@ Player機能は、ユーザーが操作するキャラクターに関する全�
 ### **3.1. PlayerStatusSystem**
 
 * **役割**: ローグライクモードなどで得られる、永続的なステータス強化（移動速度UP、最大HP上昇など）を管理するサーバーサイドのシステム。  
+* **実装**: このシステムのインスタンスは、サーバー起動時に一度だけ生成され、中央のサービスアクセスポイント（`AppManager`など）に登録されます。`PlayerFacade`のようなコンポーネントは、`AppManager.Instance.StatusReader` のように、この中央アクセスポイントを通じてシステムの機能を利用します。
 * **インターフェース**:  
   * **IPlayerStatusSystemReader.cs**: float GetStatValue(ulong clientId, PlayerStat stat)など、現在のステータス値を取得する。主にPlayerFacadeやUIが利用する。  
   * **IPlayerStatusSystemWriter.cs**: void AddPermanentModifier(ulong clientId, PlayerStat stat, float value)など、ステータスを変更する。主にItemEffectから利用される。

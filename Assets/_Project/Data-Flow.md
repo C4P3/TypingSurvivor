@@ -58,5 +58,34 @@ sequenceDiagram
     C_UI->>C_UI: HandleScoreChanged(newScore)  
     note right of C_UI: ScoreViewコンポーネントに<br>表示更新を指示
 ```
+## **3\. フロー③：移動中に壁と衝突し、タイピングモードへ移行する**
+
+プレイヤーの移動要求がサーバーで処理され、移動先に破壊可能なブロックが存在した場合に、サーバーが権威をもってプレイヤーの状態を「タイピング中」へ移行させ、その状態がクライアントに同期されてUIに反映されるまでの一連の流れです。
+
+```mermaid
+sequenceDiagram
+    participant C_PlayerInput as Client<br>PlayerInput
+    participant C_Facade as Client<br>PlayerFacade
+    participant S_Facade as Server<br>PlayerFacade
+    participant S_PlayerSM as Server<br>PlayerStateMachine
+    participant S_LevelManager as Server<br>ILevelService
+    participant C_TypingManager as Client<br>TypingManager
+    participant C_UI as Client<br>UI
+
+    %% 1. 移動と衝突
+    Note over C_PlayerInput, S_LevelManager: 1. 移動と衝突
+    C_PlayerInput->>C_Facade: OnMoveIntent (direction)
+    C_Facade->>S_Facade: Move_ServerRpc(direction)
+    S_Facade->>S_LevelManager: IsWalkable(targetPos) ?
+    S_LevelManager-->>S_Facade: false (破壊可能な壁)
+
+    %% 2. タイピング状態へ移行
+    Note over S_Facade, C_UI: 2. サーバーがタイピング状態へ移行を決定
+    S_Facade->>S_Facade: NetworkTypingTarget.Value = targetPos
+    S_Facade->>S_PlayerSM: ChangeState(TypingState)
+    S_Facade-->>C_Facade: NetworkVariableが同期される
+    C_Facade->>C_TypingManager: StartTyping(targetWord)
+    C_TypingManager->>C_UI: ShowTypingUI("neko")
+```
 **全体のドキュメント:**　[README.md](./README.md)
 **次のドキュメント:** [Gameplay-Design.md](./Features/Game/Gameplay/Gameplay-Design.md) (各機能詳細設計へ)
