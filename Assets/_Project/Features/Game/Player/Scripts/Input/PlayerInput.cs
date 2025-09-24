@@ -10,25 +10,24 @@ namespace TypingSurvivor.Features.Game.Player.Input
         // Gameplay Actions
         public event Action<Vector2> OnMovePerformed;
         public event Action OnMoveCanceled;
-        public event Action OnInteractIntent;
 
         // Typing Actions
+        public event Action<Vector2> OnTypingMovePerformed;
         public event Action OnCancelTypingIntent;
 
         private GameControls _gameControls;
+        private InputAction _moveInteractAction;
 
         private void Awake()
         {
             _gameControls = new GameControls();
+            _moveInteractAction = _gameControls.Gameplay.MoveInteract;
         }
 
         private void OnEnable()
         {
-            // Subscribe to events regardless of which map is active
             SubscribeGameplayEvents();
             SubscribeTypingEvents();
-
-            // Enable a default map
             EnableGameplayInput();
         }
 
@@ -36,49 +35,52 @@ namespace TypingSurvivor.Features.Game.Player.Input
         {
             UnsubscribeGameplayEvents();
             UnsubscribeTypingEvents();
-            
-            _gameControls.Player.Disable();
+            _gameControls.Gameplay.Disable();
             _gameControls.Typing.Disable();
         }
+
 
         public void EnableGameplayInput()
         {
             _gameControls.Typing.Disable();
-            _gameControls.Player.Enable();
+            _gameControls.Gameplay.Enable();
         }
 
         public void EnableTypingInput()
         {
-            _gameControls.Player.Disable();
+            _gameControls.Gameplay.Disable();
             _gameControls.Typing.Enable();
         }
 
         private void SubscribeGameplayEvents()
         {
-            _gameControls.Player.Move.performed += HandleMovePerformed;
-            _gameControls.Player.Move.canceled += HandleMoveCanceled;
-            _gameControls.Player.Interact.performed += HandleInteractPerformed;
+            _gameControls.Gameplay.Move.performed += HandleMovePerformed;
+            _gameControls.Gameplay.Move.canceled += HandleMoveCanceled;
         }
 
         private void UnsubscribeGameplayEvents()
         {
-            _gameControls.Player.Move.performed -= HandleMovePerformed;
-            _gameControls.Player.Move.canceled -= HandleMoveCanceled;
-            _gameControls.Player.Interact.performed -= HandleInteractPerformed;
+            _gameControls.Gameplay.Move.performed -= HandleMovePerformed;
+            _gameControls.Gameplay.Move.canceled -= HandleMoveCanceled;
         }
         
         private void SubscribeTypingEvents()
         {
+            _gameControls.Typing.Move.performed += HandleTypingMovePerformed;
             _gameControls.Typing.Cancel.performed += HandleCancelTypingPerformed;
         }
 
         private void UnsubscribeTypingEvents()
         {
+            _gameControls.Typing.Move.performed -= HandleTypingMovePerformed;
             _gameControls.Typing.Cancel.performed -= HandleCancelTypingPerformed;
         }
 
         private void HandleMovePerformed(InputAction.CallbackContext context)
         {
+            // MoveInteractキーが押されていなければ、移動イベントを発行しない
+            if (!_moveInteractAction.IsPressed()) return;
+            
             OnMovePerformed?.Invoke(context.ReadValue<Vector2>());
         }
 
@@ -86,12 +88,12 @@ namespace TypingSurvivor.Features.Game.Player.Input
         {
             OnMoveCanceled?.Invoke();
         }
-
-        private void HandleInteractPerformed(InputAction.CallbackContext context)
-        {
-            OnInteractIntent?.Invoke();
-        }
         
+        private void HandleTypingMovePerformed(InputAction.CallbackContext context)
+        {
+            OnTypingMovePerformed?.Invoke(context.ReadValue<Vector2>());
+        }
+
         private void HandleCancelTypingPerformed(InputAction.CallbackContext context)
         {
             OnCancelTypingIntent?.Invoke();

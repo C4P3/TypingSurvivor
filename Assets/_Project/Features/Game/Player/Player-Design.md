@@ -55,9 +55,35 @@ Player機能は、ユーザーが操作するキャラクターに関する全�
 
 * PlayerFacadeは、自身の重要な状態変化をサーバーサイドでイベントとして発行します。  
   * OnPlayerMoved\_Server(ulong clientId, Vector3 newPosition): LevelManagerが購読し、チャンク更新のトリガーとする。  
-  * OnPlayerSpawned\_Server(ulong clientId, Vector3 spawnPosition): LevelManagerなどが購読し、プレイヤーの初期状態を設定する。\
+  * OnPlayerSpawned\_Server(ulong clientId, Vector3 spawnPosition): LevelManagerなどが購読し、プレイヤーの初期状態を設定する。
 
-### **全体のドキュメント:**　
+## **4. ゲームプレイフローとステート移行**
+
+### **4.1. 壁衝突によるタイピングへの移行**
+
+移動先に破壊可能なブロック（壁）が存在した場合、プレイヤーは移動を停止し、そのブロックを破壊するためのタイピングモードに移行します。
+
+*   **サーバーサイドロジック**:
+    1.  `PlayerFacade`の`ContinuousMove_Server`コルーチン内で、移動先の`IsWalkable`をチェックします。
+    2.  もし`false`だった場合、サーバーは移動を中断します。
+    3.  サーバーは、プレイヤーの`_currentState`を`PlayerState.Typing`に変更します。
+    4.  タイピング対象のブロックの座標を、新しく追加する`NetworkVariable<Vector3Int> NetworkTypingTargetPosition`に保存し、全クライアントに同期します。
+*   **クライアントサイドロジック**:
+    1.  `_currentState`の変更を検知し、`PlayerStateMachine`が`TypingState`に遷移します。
+    2.  `TypingState`の`Enter`メソッド内で、`PlayerInput`の入力アクションマップを`Typing`に切り替えます。
+
+### **4.2. 入力仕様**
+
+タイピングと移動のアクションが衝突しないよう、また直感的な操作を提供するために、入力仕様を以下のように定めます。
+
+*   **通常移動 (`Gameplay`アクションマップ)**:
+    *   **`Shift + WASD`**: `Move`アクションは、`Interact`アクション（Shiftキー）との**Hold Interaction**によってトリガーされます。Shiftキーを押している間だけ、WASDキーが移動入力として扱われます。
+*   **タイピングモードからの離脱 (`Typing`アクションマップ)**:
+    *   **`WASD`**: `Typing`アクションマップにも`Move`アクションを追加します。タイピング中にWASDキーが押されると、プレイヤーはタイピングを中断し、移動モードに戻りたいという「意図」をサーバーに送信します。サーバーはこれを受け取り、ステートを`Roaming`に戻します。
+
+\
+\
+### **全体のド-キュメント:**　
 [../../../README.md](../../../README.md)
 ### **関連ドキュメント:**
 * [./Level/Level-Design.md](../Level/Level-Design.md)  
