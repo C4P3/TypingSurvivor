@@ -14,9 +14,6 @@ namespace TypingSurvivor.Features.Game.Player
         public void Enter(PlayerState stateFrom)
         {
             Debug.Log("Entering Typing State");
-            // 入力マップをタイピング用に切り替える
-            _facade.PlayerInput.EnableTypingInput();
-            
             // TODO: タイピングUIの表示
         }
 
@@ -28,9 +25,6 @@ namespace TypingSurvivor.Features.Game.Player
         public void Exit(PlayerState stateTo)
         {
             Debug.Log("Exiting Typing State");
-            // 入力マップをゲームプレイ用に戻す
-            _facade.PlayerInput.EnableGameplayInput();
-            
             // TODO: タイピングUIの非表示
         }
         

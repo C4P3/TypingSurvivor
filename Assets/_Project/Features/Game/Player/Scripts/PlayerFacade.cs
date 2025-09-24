@@ -32,9 +32,6 @@ namespace TypingSurvivor.Features.Game.Player
         public readonly NetworkVariable<float> NetworkMoveDuration = new(0.25f, writePerm: NetworkVariableWritePermission.Server);
         public readonly NetworkVariable<Vector3Int> NetworkTypingTargetPosition = new(writePerm: NetworkVariableWritePermission.Server);
 
-        // --- クライアントサイドの内部状態 ---
-        private bool _isMoveInputHeld;
-
         // --- サーバーサイドの内部状態 ---
         private Vector3Int _continuousMoveDirection_Server;
         private bool _isMoving_Server;
@@ -76,7 +73,6 @@ namespace TypingSurvivor.Features.Game.Player
                 _input.enabled = true;
                 _input.OnMovePerformed += HandleMovePerformed;
                 _input.OnMoveCanceled += HandleMoveCanceled;
-                _input.OnTypingMovePerformed += HandleTypingMovePerformed;
                 
                 if(IsServer) OnPlayerSpawned_Server?.Invoke(OwnerClientId, transform.position);
                 else RequestSpawnedServerRpc();
@@ -95,7 +91,6 @@ namespace TypingSurvivor.Features.Game.Player
                 _input.enabled = false;
                 _input.OnMovePerformed -= HandleMovePerformed;
                 _input.OnMoveCanceled -= HandleMoveCanceled;
-                _input.OnTypingMovePerformed -= HandleTypingMovePerformed;
             }
             
             if(IsServer) OnPlayerDespawned_Server?.Invoke(OwnerClientId);
@@ -128,27 +123,12 @@ namespace TypingSurvivor.Features.Game.Player
             int y = Mathf.RoundToInt(normalized.y);
             Vector3Int directionInt = new Vector3Int(x, y, 0);
 
-            if (!_isMoveInputHeld)
-            {
-                _isMoveInputHeld = true;
-                RequestStartContinuousMoveServerRpc(directionInt);
-            }
-            else
-            {
-                RequestUpdateMoveDirectionServerRpc(directionInt);
-            }
+            RequestMoveBasedOnStateServerRpc(directionInt);
         }
 
         private void HandleMoveCanceled()
         {
-            if (!_isMoveInputHeld) return;
-            _isMoveInputHeld = false;
             RequestStopContinuousMoveServerRpc();
-        }
-
-        private void HandleTypingMovePerformed(Vector2 moveDirection)
-        {
-            RequestExitTypingStateServerRpc();
         }
         
         [ServerRpc]
@@ -158,9 +138,25 @@ namespace TypingSurvivor.Features.Game.Player
         }
 
         [ServerRpc]
-        private void RequestStartContinuousMoveServerRpc(Vector3Int moveDirection)
+        private void RequestMoveBasedOnStateServerRpc(Vector3Int direction)
         {
-            _continuousMoveDirection_Server = moveDirection;
+            switch (_currentState.Value)
+            {
+                case PlayerState.Roaming:
+                case PlayerState.Moving:
+                    HandleMoveIntent_Server(direction);
+                    break;
+                
+                case PlayerState.Typing:
+                    _currentState.Value = PlayerState.Roaming;
+                    HandleMoveIntent_Server(direction);
+                    break;
+            }
+        }
+
+        private void HandleMoveIntent_Server(Vector3Int direction)
+        {
+            _continuousMoveDirection_Server = direction;
             if (!_isMoving_Server)
             {
                 StartCoroutine(ContinuousMove_Server());
@@ -168,24 +164,9 @@ namespace TypingSurvivor.Features.Game.Player
         }
 
         [ServerRpc]
-        private void RequestUpdateMoveDirectionServerRpc(Vector3Int newDirection)
-        {
-            _continuousMoveDirection_Server = newDirection;
-        }
-
-        [ServerRpc]
         private void RequestStopContinuousMoveServerRpc()
         {
             _continuousMoveDirection_Server = Vector3Int.zero;
-        }
-
-        [ServerRpc]
-        private void RequestExitTypingStateServerRpc()
-        {
-            if (_currentState.Value == PlayerState.Typing)
-            {
-                _currentState.Value = PlayerState.Roaming;
-            }
         }
 
         private IEnumerator ContinuousMove_Server()
@@ -223,10 +204,9 @@ namespace TypingSurvivor.Features.Game.Player
                 }
                 else
                 {
-                    // 壁にぶつかったのでタイピングステートに移行
                     NetworkTypingTargetPosition.Value = targetGridPos;
                     _currentState.Value = PlayerState.Typing;
-                    _continuousMoveDirection_Server = Vector3Int.zero; // 移動の意図をリセット
+                    _continuousMoveDirection_Server = Vector3Int.zero;
                 }
             }
 
@@ -236,12 +216,6 @@ namespace TypingSurvivor.Features.Game.Player
 
         private void OnStateChanged(PlayerState previousValue, PlayerState newValue)
         {
-            // サーバー側で移動が完了してRoamingに戻った場合、クライアント側の入力がまだ続いている可能性があるため、
-            // クライアントの入力状態をリセットする
-            if (IsOwner && newValue == PlayerState.Roaming)
-            {
-                _isMoveInputHeld = false;
-            }
             _stateMachine.ChangeState(newValue);
         }
 

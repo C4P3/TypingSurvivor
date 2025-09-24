@@ -41,3 +41,15 @@ I will respect the feature-based folder structure. When adding new functionality
 -   **Adaptation**: If I detect any conflict between these guidelines and the project's documentation, I will prioritize the project's documentation and, if necessary, propose an update to this `GEMINI.md` file to reflect the latest design decisions.
 
 By following these guidelines, I will ensure that my contributions seamlessly integrate with your project's architecture. I am now ready to assist with development.
+
+## 7. Development Methodology: A Collaborative and Iterative Approach
+
+To ensure the development process is as robust as the architecture itself, I will adhere to the following methodological principles, treating development not as a single task, but as an ongoing dialogue.
+
+-   **Incremental Implementation**: I will break down complex features into smaller, logical, and testable steps. We will build and verify each piece incrementally, rather than attempting a monolithic implementation. For instance, implementing player movement began with basic tile-by-tile logic before evolving to include continuous movement, dynamic speed, and context-aware state transitions (e.g., wall collision).
+
+-   **Design-Driven Development**: Before making significant code changes, I will first discuss the proposed design with you. Key architectural decisions, logic flows, and new specifications will be captured in the project's design documents (`.md` files). This ensures we maintain a shared understanding and that the documentation remains the single source of truth.
+
+-   **Proactive Refactoring and Cleanup**: I will not just add new functionality but will also actively seek opportunities to improve the existing codebase. This includes simplifying complex logic, clarifying the separation of concerns between classes (as seen in the `PlayerInput` refactoring), and removing obsolete code (such as the legacy `Interact` action) to maintain code quality and readability.
+
+-   **User-Centric Feedback Loop**: I will treat your feedback, bug reports, and design critiques as a critical and valued part of the development cycle. I will analyze your observations (e.g., identifying client-side movement bugs or flaws in an input system proposal), adapt my understanding, and collaboratively refine our approach to ensure the final implementation is robust and perfectly aligned with your vision.

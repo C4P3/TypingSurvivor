@@ -627,6 +627,24 @@ namespace GameControlsInput
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""CancelTyping"",
+                    ""type"": ""Button"",
+                    ""id"": ""622970fb-168c-49e7-bb8f-51c1491548ce"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""PauseGame"",
+                    ""type"": ""Button"",
+                    ""id"": ""cf34604c-ebf8-4410-9c82-57173b8e9350"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -695,83 +713,26 @@ namespace GameControlsInput
                     ""action"": ""MoveInteract"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
-                }
-            ]
-        },
-        {
-            ""name"": ""Typing"",
-            ""id"": ""3a496e9a-66df-4dd4-a340-94bad98ea574"",
-            ""actions"": [
-                {
-                    ""name"": ""Cancel"",
-                    ""type"": ""Button"",
-                    ""id"": ""47285209-2f26-4db8-953b-c5febdb5efdc"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
                 },
-                {
-                    ""name"": ""MoveInteract"",
-                    ""type"": ""Button"",
-                    ""id"": ""a9a819d5-ee67-4486-8a3f-ee13ac010486"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""Move"",
-                    ""type"": ""Value"",
-                    ""id"": ""1fcc2076-e951-430c-8dd2-b61e6616ba02"",
-                    ""expectedControlType"": ""Vector2"",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": true
-                }
-            ],
-            ""bindings"": [
                 {
                     ""name"": """",
-                    ""id"": ""be2cf665-7e9d-43c2-8ac5-d984c2a13765"",
+                    ""id"": ""b0bcb2f0-74cd-4e6f-9d8c-ed651fec4d17"",
                     ""path"": ""<Keyboard>/enter"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": "";Keyboard&Mouse"",
-                    ""action"": ""Cancel"",
+                    ""groups"": """",
+                    ""action"": ""CancelTyping"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
                 {
                     ""name"": """",
-                    ""id"": ""78583d4f-d8a5-4bf4-b755-cd432b8c0b69"",
+                    ""id"": ""ba3a5526-fa31-4f12-9319-74b887cf8e1b"",
                     ""path"": ""<Keyboard>/escape"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": "";Keyboard&Mouse"",
-                    ""action"": ""Cancel"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""81ea48f1-6898-4dc0-826e-0094bdd82e2d"",
-                    ""path"": """",
-                    ""interactions"": """",
-                    ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""MoveInteract"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""3d85db85-bd1c-4982-a06b-726a844d15bc"",
-                    ""path"": """",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
+                    ""action"": ""PauseGame"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -857,18 +818,14 @@ namespace GameControlsInput
             m_Gameplay = asset.FindActionMap("Gameplay", throwIfNotFound: true);
             m_Gameplay_Move = m_Gameplay.FindAction("Move", throwIfNotFound: true);
             m_Gameplay_MoveInteract = m_Gameplay.FindAction("MoveInteract", throwIfNotFound: true);
-            // Typing
-            m_Typing = asset.FindActionMap("Typing", throwIfNotFound: true);
-            m_Typing_Cancel = m_Typing.FindAction("Cancel", throwIfNotFound: true);
-            m_Typing_MoveInteract = m_Typing.FindAction("MoveInteract", throwIfNotFound: true);
-            m_Typing_Move = m_Typing.FindAction("Move", throwIfNotFound: true);
+            m_Gameplay_CancelTyping = m_Gameplay.FindAction("CancelTyping", throwIfNotFound: true);
+            m_Gameplay_PauseGame = m_Gameplay.FindAction("PauseGame", throwIfNotFound: true);
         }
 
         ~@GameControls()
         {
             UnityEngine.Debug.Assert(!m_UI.enabled, "This will cause a leak and performance issues, GameControls.UI.Disable() has not been called.");
             UnityEngine.Debug.Assert(!m_Gameplay.enabled, "This will cause a leak and performance issues, GameControls.Gameplay.Disable() has not been called.");
-            UnityEngine.Debug.Assert(!m_Typing.enabled, "This will cause a leak and performance issues, GameControls.Typing.Disable() has not been called.");
         }
 
         /// <summary>
@@ -1141,6 +1098,8 @@ namespace GameControlsInput
         private List<IGameplayActions> m_GameplayActionsCallbackInterfaces = new List<IGameplayActions>();
         private readonly InputAction m_Gameplay_Move;
         private readonly InputAction m_Gameplay_MoveInteract;
+        private readonly InputAction m_Gameplay_CancelTyping;
+        private readonly InputAction m_Gameplay_PauseGame;
         /// <summary>
         /// Provides access to input actions defined in input action map "Gameplay".
         /// </summary>
@@ -1160,6 +1119,14 @@ namespace GameControlsInput
             /// Provides access to the underlying input action "Gameplay/MoveInteract".
             /// </summary>
             public InputAction @MoveInteract => m_Wrapper.m_Gameplay_MoveInteract;
+            /// <summary>
+            /// Provides access to the underlying input action "Gameplay/CancelTyping".
+            /// </summary>
+            public InputAction @CancelTyping => m_Wrapper.m_Gameplay_CancelTyping;
+            /// <summary>
+            /// Provides access to the underlying input action "Gameplay/PauseGame".
+            /// </summary>
+            public InputAction @PauseGame => m_Wrapper.m_Gameplay_PauseGame;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -1192,6 +1159,12 @@ namespace GameControlsInput
                 @MoveInteract.started += instance.OnMoveInteract;
                 @MoveInteract.performed += instance.OnMoveInteract;
                 @MoveInteract.canceled += instance.OnMoveInteract;
+                @CancelTyping.started += instance.OnCancelTyping;
+                @CancelTyping.performed += instance.OnCancelTyping;
+                @CancelTyping.canceled += instance.OnCancelTyping;
+                @PauseGame.started += instance.OnPauseGame;
+                @PauseGame.performed += instance.OnPauseGame;
+                @PauseGame.canceled += instance.OnPauseGame;
             }
 
             /// <summary>
@@ -1209,6 +1182,12 @@ namespace GameControlsInput
                 @MoveInteract.started -= instance.OnMoveInteract;
                 @MoveInteract.performed -= instance.OnMoveInteract;
                 @MoveInteract.canceled -= instance.OnMoveInteract;
+                @CancelTyping.started -= instance.OnCancelTyping;
+                @CancelTyping.performed -= instance.OnCancelTyping;
+                @CancelTyping.canceled -= instance.OnCancelTyping;
+                @PauseGame.started -= instance.OnPauseGame;
+                @PauseGame.performed -= instance.OnPauseGame;
+                @PauseGame.canceled -= instance.OnPauseGame;
             }
 
             /// <summary>
@@ -1242,124 +1221,6 @@ namespace GameControlsInput
         /// Provides a new <see cref="GameplayActions" /> instance referencing this action map.
         /// </summary>
         public GameplayActions @Gameplay => new GameplayActions(this);
-
-        // Typing
-        private readonly InputActionMap m_Typing;
-        private List<ITypingActions> m_TypingActionsCallbackInterfaces = new List<ITypingActions>();
-        private readonly InputAction m_Typing_Cancel;
-        private readonly InputAction m_Typing_MoveInteract;
-        private readonly InputAction m_Typing_Move;
-        /// <summary>
-        /// Provides access to input actions defined in input action map "Typing".
-        /// </summary>
-        public struct TypingActions
-        {
-            private @GameControls m_Wrapper;
-
-            /// <summary>
-            /// Construct a new instance of the input action map wrapper class.
-            /// </summary>
-            public TypingActions(@GameControls wrapper) { m_Wrapper = wrapper; }
-            /// <summary>
-            /// Provides access to the underlying input action "Typing/Cancel".
-            /// </summary>
-            public InputAction @Cancel => m_Wrapper.m_Typing_Cancel;
-            /// <summary>
-            /// Provides access to the underlying input action "Typing/MoveInteract".
-            /// </summary>
-            public InputAction @MoveInteract => m_Wrapper.m_Typing_MoveInteract;
-            /// <summary>
-            /// Provides access to the underlying input action "Typing/Move".
-            /// </summary>
-            public InputAction @Move => m_Wrapper.m_Typing_Move;
-            /// <summary>
-            /// Provides access to the underlying input action map instance.
-            /// </summary>
-            public InputActionMap Get() { return m_Wrapper.m_Typing; }
-            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
-            public void Enable() { Get().Enable(); }
-            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
-            public void Disable() { Get().Disable(); }
-            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
-            public bool enabled => Get().enabled;
-            /// <summary>
-            /// Implicitly converts an <see ref="TypingActions" /> to an <see ref="InputActionMap" /> instance.
-            /// </summary>
-            public static implicit operator InputActionMap(TypingActions set) { return set.Get(); }
-            /// <summary>
-            /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
-            /// </summary>
-            /// <param name="instance">Callback instance.</param>
-            /// <remarks>
-            /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
-            /// </remarks>
-            /// <seealso cref="TypingActions" />
-            public void AddCallbacks(ITypingActions instance)
-            {
-                if (instance == null || m_Wrapper.m_TypingActionsCallbackInterfaces.Contains(instance)) return;
-                m_Wrapper.m_TypingActionsCallbackInterfaces.Add(instance);
-                @Cancel.started += instance.OnCancel;
-                @Cancel.performed += instance.OnCancel;
-                @Cancel.canceled += instance.OnCancel;
-                @MoveInteract.started += instance.OnMoveInteract;
-                @MoveInteract.performed += instance.OnMoveInteract;
-                @MoveInteract.canceled += instance.OnMoveInteract;
-                @Move.started += instance.OnMove;
-                @Move.performed += instance.OnMove;
-                @Move.canceled += instance.OnMove;
-            }
-
-            /// <summary>
-            /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
-            /// </summary>
-            /// <remarks>
-            /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
-            /// </remarks>
-            /// <seealso cref="TypingActions" />
-            private void UnregisterCallbacks(ITypingActions instance)
-            {
-                @Cancel.started -= instance.OnCancel;
-                @Cancel.performed -= instance.OnCancel;
-                @Cancel.canceled -= instance.OnCancel;
-                @MoveInteract.started -= instance.OnMoveInteract;
-                @MoveInteract.performed -= instance.OnMoveInteract;
-                @MoveInteract.canceled -= instance.OnMoveInteract;
-                @Move.started -= instance.OnMove;
-                @Move.performed -= instance.OnMove;
-                @Move.canceled -= instance.OnMove;
-            }
-
-            /// <summary>
-            /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="TypingActions.UnregisterCallbacks(ITypingActions)" />.
-            /// </summary>
-            /// <seealso cref="TypingActions.UnregisterCallbacks(ITypingActions)" />
-            public void RemoveCallbacks(ITypingActions instance)
-            {
-                if (m_Wrapper.m_TypingActionsCallbackInterfaces.Remove(instance))
-                    UnregisterCallbacks(instance);
-            }
-
-            /// <summary>
-            /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
-            /// </summary>
-            /// <remarks>
-            /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
-            /// </remarks>
-            /// <seealso cref="TypingActions.AddCallbacks(ITypingActions)" />
-            /// <seealso cref="TypingActions.RemoveCallbacks(ITypingActions)" />
-            /// <seealso cref="TypingActions.UnregisterCallbacks(ITypingActions)" />
-            public void SetCallbacks(ITypingActions instance)
-            {
-                foreach (var item in m_Wrapper.m_TypingActionsCallbackInterfaces)
-                    UnregisterCallbacks(item);
-                m_Wrapper.m_TypingActionsCallbackInterfaces.Clear();
-                AddCallbacks(instance);
-            }
-        }
-        /// <summary>
-        /// Provides a new <see cref="TypingActions" /> instance referencing this action map.
-        /// </summary>
-        public TypingActions @Typing => new TypingActions(this);
         private int m_KeyboardMouseSchemeIndex = -1;
         /// <summary>
         /// Provides access to the input control scheme.
@@ -1524,35 +1385,20 @@ namespace GameControlsInput
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnMoveInteract(InputAction.CallbackContext context);
-        }
-        /// <summary>
-        /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Typing" which allows adding and removing callbacks.
-        /// </summary>
-        /// <seealso cref="TypingActions.AddCallbacks(ITypingActions)" />
-        /// <seealso cref="TypingActions.RemoveCallbacks(ITypingActions)" />
-        public interface ITypingActions
-        {
             /// <summary>
-            /// Method invoked when associated input action "Cancel" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// Method invoked when associated input action "CancelTyping" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
             /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnCancel(InputAction.CallbackContext context);
+            void OnCancelTyping(InputAction.CallbackContext context);
             /// <summary>
-            /// Method invoked when associated input action "MoveInteract" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// Method invoked when associated input action "PauseGame" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
             /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnMoveInteract(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Move" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnMove(InputAction.CallbackContext context);
+            void OnPauseGame(InputAction.CallbackContext context);
         }
     }
 }

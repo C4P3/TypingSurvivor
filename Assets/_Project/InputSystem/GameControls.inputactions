@@ -539,6 +539,24 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "CancelTyping",
+                    "type": "Button",
+                    "id": "622970fb-168c-49e7-bb8f-51c1491548ce",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "PauseGame",
+                    "type": "Button",
+                    "id": "cf34604c-ebf8-4410-9c82-57173b8e9350",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -607,83 +625,26 @@
                     "action": "MoveInteract",
                     "isComposite": false,
                     "isPartOfComposite": false
-                }
-            ]
-        },
-        {
-            "name": "Typing",
-            "id": "3a496e9a-66df-4dd4-a340-94bad98ea574",
-            "actions": [
-                {
-                    "name": "Cancel",
-                    "type": "Button",
-                    "id": "47285209-2f26-4db8-953b-c5febdb5efdc",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
                 },
-                {
-                    "name": "MoveInteract",
-                    "type": "Button",
-                    "id": "a9a819d5-ee67-4486-8a3f-ee13ac010486",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "Move",
-                    "type": "Value",
-                    "id": "1fcc2076-e951-430c-8dd2-b61e6616ba02",
-                    "expectedControlType": "Vector2",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                }
-            ],
-            "bindings": [
                 {
                     "name": "",
-                    "id": "be2cf665-7e9d-43c2-8ac5-d984c2a13765",
+                    "id": "b0bcb2f0-74cd-4e6f-9d8c-ed651fec4d17",
                     "path": "<Keyboard>/enter",
                     "interactions": "",
                     "processors": "",
-                    "groups": ";Keyboard&Mouse",
-                    "action": "Cancel",
+                    "groups": "",
+                    "action": "CancelTyping",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
                     "name": "",
-                    "id": "78583d4f-d8a5-4bf4-b755-cd432b8c0b69",
+                    "id": "ba3a5526-fa31-4f12-9319-74b887cf8e1b",
                     "path": "<Keyboard>/escape",
                     "interactions": "",
                     "processors": "",
-                    "groups": ";Keyboard&Mouse",
-                    "action": "Cancel",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "81ea48f1-6898-4dc0-826e-0094bdd82e2d",
-                    "path": "",
-                    "interactions": "",
-                    "processors": "",
                     "groups": "",
-                    "action": "MoveInteract",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "3d85db85-bd1c-4982-a06b-726a844d15bc",
-                    "path": "",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Move",
+                    "action": "PauseGame",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
