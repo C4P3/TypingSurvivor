@@ -12,4 +12,7 @@ public interface ILevelService
     void DestroyBlock(ulong clientId, Vector3Int gridPosition);
     // 指定座標のアイテムをマップから取り除く。
     void RemoveItem(ulong clientId, Vector3Int gridPosition);
+
+    // 指定されたグリッド座標が歩行可能かどうかを判定する。
+    bool IsWalkable(Vector3Int gridPosition);
 }

@@ -11,7 +11,7 @@ public struct TypingText
 
 public class TypingManager
 {
-    public static event Action OnTypingEnded;
+    // public static event Action OnTypingEnded;
     
     void OnEnable()
     {

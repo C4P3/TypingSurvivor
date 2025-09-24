@@ -1,6 +1,9 @@
 using System;
+using System.Collections;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 using TypingSurvivor.Features.Game.Player.Input;
 
 namespace TypingSurvivor.Features.Game.Player
@@ -20,76 +23,165 @@ namespace TypingSurvivor.Features.Game.Player
         [SerializeField] private PlayerStateMachine _stateMachine;
         [SerializeField] private PlayerView _view;
 
+        // --- サーバーサイドの依存関係 ---
+        private ILevelService _levelService;
+        private Grid _grid;
+
         // --- 同期変数 ---
-        // private readonly NetworkVariable<PlayerState> _currentState = new(writePerm: NetworkVariableWritePermission.Server);
+        private readonly NetworkVariable<PlayerState> _currentState = new(writePerm: NetworkVariableWritePermission.Server);
+        public readonly NetworkVariable<Vector3Int> NetworkGridPosition = new(writePerm: NetworkVariableWritePermission.Server);
 
         // --- 内部状態 ---
-        [SerializeField] private float _moveSpeed = 5f; // 仮の移動速度
+        [Header("Movement Settings")]
+        [SerializeField] private float _moveDuration = 0.25f; // 1タイル移動するのにかかる時間
+        private bool _isMoving_Server; // サーバー側での移動状態フラグ
+
+        #region Properties for States
+        // ステートマシン内の各Stateが必要とする情報へのアクセスを提供
+        public Grid Grid => _grid;
+        public float MoveDuration => _moveDuration;
+        #endregion
 
         #region Unity & Network Callbacks
 
+        private void Awake()
+        {
+            // ステートマシンの初期化
+            InitializeStateMachine();
+        }
+
         public override void OnNetworkSpawn()
         {
-            // _currentState.OnValueChanged += OnStateChanged;
+            _currentState.OnValueChanged += OnStateChanged;
+
+            if (IsServer)
+            {
+                _levelService = FindObjectsOfType<MonoBehaviour>().OfType<ILevelService>().FirstOrDefault();
+                _grid = FindObjectOfType<Grid>();
+                if (_levelService == null) Debug.LogError("ILevelServiceの実装が見つかりません。");
+                if (_grid == null) Debug.LogError("Gridが見つかりません。");
+
+                // 初期位置とステートを設定
+                NetworkGridPosition.Value = _grid.WorldToCell(transform.position);
+                _currentState.Value = PlayerState.Roaming;
+            }
 
             if (IsOwner)
             {
                 _input.enabled = true;
                 _input.OnMoveIntent += HandleMoveIntent;
                 _input.OnInteractIntent += HandleInteractIntent;
-                OnPlayerSpawned_Server?.Invoke(OwnerClientId, this.gameObject.transform.position);
+                if(IsServer)
+                {
+                    OnPlayerSpawned_Server?.Invoke(OwnerClientId, transform.position);
+                }
+                else
+                {
+                    RequestSpawnedServerRpc();
+                }
             }
+            
+            // 初期ステートを反映
+            OnStateChanged(PlayerState.Roaming, _currentState.Value);
         }
 
         public override void OnNetworkDespawn()
         {
-            // _currentState.OnValueChanged -= OnStateChanged;
+            _currentState.OnValueChanged -= OnStateChanged;
 
             if (IsOwner)
             {
                 _input.enabled = false;
                 _input.OnMoveIntent -= HandleMoveIntent;
                 _input.OnInteractIntent -= HandleInteractIntent;
+            }
+            
+            if(IsServer)
+            {
                 OnPlayerDespawned_Server?.Invoke(OwnerClientId);
             }
         }
 
+        private void Update()
+        {
+            // 現在のステートのExecute処理を毎フレーム実行
+            _stateMachine?.Execute();
+        }
+
         #endregion
+
+        private void InitializeStateMachine()
+        {
+            var states = new IPlayerState[]
+            {
+                new RoamingState(),
+                new MovingState(this, transform),
+                new TypingState()
+            };
+            _stateMachine = new PlayerStateMachine(states);
+        }
 
         #region Event Handlers & RPCs
 
-        /// <summary>
-        /// [クライアントサイド] Inputからの移動イベントを受け取る
-        /// </summary>
         private void HandleMoveIntent(Vector2 moveDirection)
         {
-            // サーバーに移動要求を送信する
-            RequestMoveServerRpc(moveDirection);
+            if (moveDirection == Vector2.zero) return;
+
+            Vector3Int directionInt;
+            if (Mathf.Abs(moveDirection.x) > Mathf.Abs(moveDirection.y))
+            {
+                directionInt = new Vector3Int((int)Mathf.Sign(moveDirection.x), 0, 0);
+            }
+            else
+            {
+                directionInt = new Vector3Int(0, (int)Mathf.Sign(moveDirection.y), 0);
+            }
+            
+            RequestMoveServerRpc(directionInt);
         }
 
-        /// <summary>
-        /// [クライアントサイド] Inputからのインタラクトイベントを受け取る
-        /// </summary>
         private void HandleInteractIntent()
         {
             RequestInteractServerRpc();
         }
         
-        /// <summary>
-        /// [サーバーサイド] クライアントからの移動要求を受け取り、サーバー上でのみ実行される
-        /// </summary>
         [ServerRpc]
-        private void RequestMoveServerRpc(Vector2 moveDirection)
+        private void RequestSpawnedServerRpc()
         {
-            // サーバー側で移動処理を実行
-            transform.Translate(new Vector3(moveDirection.x, moveDirection.y, 0) * _moveSpeed * Time.deltaTime);
-            
-            // TODO: OnPlayerMoved_ServerのInvokeを設定
+            OnPlayerSpawned_Server?.Invoke(OwnerClientId, this.gameObject.transform.position);
         }
 
-        /// <summary>
-        /// [サーバーサイド] クライアントからのインタラクト要求を受け取り、サーバー上でのみ実行される
-        /// </summary>
+        [ServerRpc]
+        private void RequestMoveServerRpc(Vector3Int moveDirection)
+        {
+            if (_isMoving_Server) return;
+            if (_levelService == null || _grid == null) return;
+
+            Vector3Int currentGridPos = NetworkGridPosition.Value;
+            Vector3Int targetGridPos = currentGridPos + moveDirection;
+
+            if (_levelService.IsWalkable(targetGridPos))
+            {
+                _isMoving_Server = true;
+                NetworkGridPosition.Value = targetGridPos;
+                _currentState.Value = PlayerState.Moving;
+
+                StartCoroutine(FinishMovement_Server());
+            }
+        }
+
+        private IEnumerator FinishMovement_Server()
+        {
+            yield return new WaitForSeconds(_moveDuration);
+            
+            // 移動後の位置を確定し、イベントを発行
+            transform.position = _grid.GetCellCenterWorld(NetworkGridPosition.Value);
+            OnPlayerMoved_Server?.Invoke(OwnerClientId, transform.position);
+
+            _currentState.Value = PlayerState.Roaming;
+            _isMoving_Server = false;
+        }
+
         [ServerRpc]
         private void RequestInteractServerRpc()
         {
@@ -97,12 +189,12 @@ namespace TypingSurvivor.Features.Game.Player
             // _currentState.Value = PlayerState.Typing;
         }
 
-        // private void OnStateChanged(PlayerState previousValue, PlayerState newValue)
-        // {
-        //     Debug.Log($"State changed from {previousValue} to {newValue} on client {NetworkManager.LocalClientId}");
-        //     _stateMachine.ChangeState(newValue);
-        //     _view.UpdateAnimation(newValue);
-        // }
+        private void OnStateChanged(PlayerState previousValue, PlayerState newValue)
+        {
+            Debug.Log($"State changed from {previousValue} to {newValue} on client {NetworkManager.LocalClientId}");
+            _stateMachine.ChangeState(newValue);
+            // _view.UpdateAnimation(newValue); // Viewへの通知はStateクラスの責務にしても良い
+        }
 
         #endregion
     }

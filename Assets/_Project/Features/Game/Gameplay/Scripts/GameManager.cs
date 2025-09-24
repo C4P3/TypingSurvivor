@@ -93,10 +93,10 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 
                 // IGameStateReaderをGameStateが持つようになったので、
                 // IsGameOverの引数をGameStateに変更する必要があるかもしれない
-                // if (_gameModeStrategy.IsGameOver(_gameState))
-                // {
-                //     break;
-                // }
+                if (_gameModeStrategy.IsGameOver(_gameState))
+                {
+                    break;
+                }
                 
                 yield return null;
             }

@@ -187,6 +187,21 @@ public class LevelManager : NetworkBehaviour, ILevelService
             }
         }
     }
+
+    public bool IsWalkable(Vector3Int gridPosition)
+    {
+        if (!IsServer) return true; // Client doesn't have the data, server is authoritative
+
+        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+        if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
+        {
+            // このチャンク内に指定座標のタイルが存在するかどうかを確認
+            return !tiles.Any(t => t.Position == gridPosition);
+        }
+
+        // チャンク自体が存在しない場合は、そこには何もないので歩行可能
+        return true;
+    }
     #endregion
 
 
