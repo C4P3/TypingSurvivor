@@ -22,9 +22,11 @@ public class LevelManager : NetworkBehaviour, ILevelService
     [SerializeField] private Tilemap _itemTilemap;
 
     [Header("Dependencies")]
-    [Tooltip("DIなどで注入されるマップ生成アルゴリズム")]
     [SerializeField] private ScriptableObject _mapGeneratorSO;
-    private IMapGenerator _mapGenerator; // Interface resolved from SO
+    private IMapGenerator _mapGenerator;
+    [SerializeField] private ScriptableObject _itemPlacementStrategySO;
+    private IItemPlacementStrategy _itemPlacementStrategy;
+    [SerializeField] private ItemRegistry _itemRegistry;
 
     [Header("Map Settings")]
     [SerializeField] private long _mapSeed;
@@ -57,16 +59,23 @@ public class LevelManager : NetworkBehaviour, ILevelService
     private void Awake()
     {
         _mapGenerator = _mapGeneratorSO as IMapGenerator;
-        if (_mapGenerator == null)
-        {
-            Debug.LogError("IMapGeneratorがアタッチされていません。");
-            return;
-        }
+        if (_mapGenerator == null) Debug.LogError("IMapGeneratorがアタッチされていません。");
 
-        // ジェネレーターが使用するタイルからIDマップを動的に生成
+        _itemPlacementStrategy = _itemPlacementStrategySO as IItemPlacementStrategy;
+        if (_itemPlacementStrategy == null) Debug.LogError("IItemPlacementStrategyがアタッチされていません。");
+
+        // ジェネレーターが使用するブロックタイルと、ItemRegistryにあるアイテムタイルの両方からIDマップを動的に生成
         _tileIdMap = new List<TileBase>();
         _tileToBaseIdMap = new Dictionary<TileBase, int>();
-        foreach (var tile in _mapGenerator.AllTiles.Distinct())
+        
+        var allTiles = new List<TileBase>();
+        if(_mapGenerator.AllTiles != null) allTiles.AddRange(_mapGenerator.AllTiles);
+        if(_itemRegistry != null && _itemRegistry.AllItems != null)
+        {
+            allTiles.AddRange(_itemRegistry.AllItems.Select(item => item.itemTile));
+        }
+
+        foreach (var tile in allTiles.Distinct())
         {
             if (tile != null && !_tileToBaseIdMap.ContainsKey(tile))
             {
@@ -231,9 +240,13 @@ public class LevelManager : NetworkBehaviour, ILevelService
         _entireItemMapData_Server = new Dictionary<Vector2Int, List<TileData>>();
 
         if (_useRandomSeed) _mapSeed = System.DateTime.Now.Ticks;
+        var prng = new System.Random((int)_mapSeed);
 
-        // ジェネレーターにIDマップを渡して、完全なTileDataリストを生成してもらう
-        var (generatedBlocks, generatedItems) = _mapGenerator.Generate(_mapSeed, _tileToBaseIdMap);
+        // 1. 地形を生成
+        var generatedBlocks = _mapGenerator.Generate(_mapSeed, _tileToBaseIdMap);
+
+        // 2. アイテムを配置
+        var generatedItems = _itemPlacementStrategy.PlaceItems(generatedBlocks, _itemRegistry, prng, _tileToBaseIdMap);
 
         foreach (var tile in generatedBlocks)
         {

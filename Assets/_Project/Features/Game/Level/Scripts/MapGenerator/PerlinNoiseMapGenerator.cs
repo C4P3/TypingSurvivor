@@ -29,26 +29,11 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
     [Tooltip("この値よりノイズが大きい場所だけにブロックを生成します。値を上げると空間が増えます。")]
     [Range(0, 1)] [SerializeField] private float _blockThreshold = 0.6f;
 
-    [Header("Item Generation")]
-    [Tooltip("アイテムを配置する候補地ができる確率")]
-    [Range(0, 1)] [SerializeField] private float _itemAreaChance = 0.02f;
-    [Tooltip("生成される可能性のあるアイテムのTileBaseリスト")]
-    [SerializeField] private List<TileBase> _spawnableItems;
+    public List<TileBase> AllTiles => _blockTypes?.Select(b => b.tile).Where(t => t != null).ToList();
 
-    public IEnumerable<TileBase> AllTiles
-    {
-        get
-        {
-            var blockTiles = _blockTypes?.Select(b => b.tile) ?? Enumerable.Empty<TileBase>();
-            var itemTiles = _spawnableItems ?? Enumerable.Empty<TileBase>();
-            return blockTiles.Concat(itemTiles).Where(t => t != null);
-        }
-    }
-
-    public (List<TileData> blockTiles, List<TileData> itemTiles) Generate(long seed, Dictionary<TileBase, int> tileIdMap)
+    public List<TileData> Generate(long seed, Dictionary<TileBase, int> tileIdMap)
     {
         var blockTiles = new List<TileData>();
-        var itemTiles = new List<TileData>();
         var prng = new System.Random((int)seed);
 
         for (int x = 0; x < _width; x++)
@@ -56,17 +41,6 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
             for (int y = 0; y < _height; y++)
             {
                 var tilePos = new Vector3Int(x - _width / 2, y - _height / 2, 0);
-
-                // --- アイテム生成ロジック ---
-                if (_spawnableItems.Count > 0 && prng.NextDouble() < _itemAreaChance)
-                {
-                    TileBase randomItemTile = _spawnableItems[prng.Next(0, _spawnableItems.Count)];
-                    if (tileIdMap.TryGetValue(randomItemTile, out int tileId))
-                    {
-                        itemTiles.Add(new TileData { Position = tilePos, TileId = tileId });
-                        continue; // アイテムを置いた場所にはブロックを置かない
-                    }
-                }
 
                 // --- ブロック生成ロジック ---
                 BlockTypeSetting chosenBlock = null;
@@ -94,6 +68,6 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
                 }
             }
         }
-        return (blockTiles, itemTiles);
+        return blockTiles;
     }
 }

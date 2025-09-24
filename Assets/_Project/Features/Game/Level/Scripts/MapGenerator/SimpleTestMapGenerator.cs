@@ -5,21 +5,18 @@ using UnityEngine.Tilemaps;
 [CreateAssetMenu(fileName = "SimpleTestMapGenerator", menuName = "Typing Survivor/Map Generators/Simple Test Map Generator")]
 public class SimpleTestMapGenerator : ScriptableObject, IMapGenerator
 {
-    [SerializeField] private TileBase _wallTile;
+    [SerializeField] private static TileBase _wallTile;
     [SerializeField] private int _mapSize = 10;
+    private List<TileBase> _allTiles = new List<TileBase>() { _wallTile };
+    public List<TileBase> AllTiles =>  _allTiles;
 
-    public IEnumerable<TileBase> AllTiles
-    {
-        get { yield return _wallTile; }
-    }
-
-    public (List<TileData> blockTiles, List<TileData> itemTiles) Generate(long seed, Dictionary<TileBase, int> tileIdMap)
+    public List<TileData> Generate(long seed, Dictionary<TileBase, int> tileIdMap)
     {
         var blockTiles = new List<TileData>();
         if (_wallTile == null || !tileIdMap.TryGetValue(_wallTile, out int wallTileId))
         {
             Debug.LogError("Wall Tileが設定されていないか、IDマップに登録されていません。");
-            return (blockTiles, new List<TileData>());
+            return blockTiles;
         }
 
         for (int x = -_mapSize; x <= _mapSize; x++)
@@ -32,6 +29,6 @@ public class SimpleTestMapGenerator : ScriptableObject, IMapGenerator
                 }
             }
         }
-        return (blockTiles, new List<TileData>());
+        return blockTiles;
     }
 }

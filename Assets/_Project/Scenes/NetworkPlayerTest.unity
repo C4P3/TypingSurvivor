@@ -695,6 +695,8 @@ MonoBehaviour:
   _blockTilemap: {fileID: 1782705930}
   _itemTilemap: {fileID: 2124289493}
   _mapGeneratorSO: {fileID: 11400000, guid: d392453bf04131842b85d06e1ca298ac, type: 2}
+  _itemPlacementStrategySO: {fileID: 11400000, guid: 217f2894330b6a4498b32bf3c17d87f6, type: 2}
+  _itemRegistry: {fileID: 11400000, guid: c42d7c91d9e15164eb975ae5d700f915, type: 2}
   _mapSeed: 0
   _useRandomSeed: 1
   _chunkSize: 5

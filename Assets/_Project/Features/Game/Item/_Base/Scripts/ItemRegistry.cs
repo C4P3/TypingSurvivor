@@ -6,6 +6,7 @@ using UnityEngine.Tilemaps;
 public class ItemRegistry : ScriptableObject
 {
     [SerializeField] private List<ItemData> _itemDataList;
+    public IReadOnlyList<ItemData> AllItems => _itemDataList;
 
     private Dictionary<TileBase, ItemData> _tileToItemData;
 
