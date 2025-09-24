@@ -16,5 +16,10 @@ namespace TypingSurvivor.Features.Game.Player
         {
             // TODO: タイピングUIの非表示、入力マップの復元など
         }
+        
+        public void OnTargetPositionChanged()
+        {
+            // Typing状態では何もしない
+        }
     }
 }

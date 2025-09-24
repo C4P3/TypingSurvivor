@@ -21,15 +21,7 @@ namespace TypingSurvivor.Features.Game.Player
 
         public void Enter(PlayerState stateFrom)
         {
-            // Facadeから移動に必要な情報を取得
-            var grid = _facade.Grid;
-            _moveDuration = _facade.MoveDuration;
-            
-            // 移動の開始地点と目標地点を設定
-            _startPos = _transform.position;
-            _targetPos = grid.GetCellCenterWorld(_facade.NetworkGridPosition.Value);
-            
-            _elapsedTime = 0f;
+            ResetMovement();
         }
 
         public void Execute()
@@ -44,7 +36,28 @@ namespace TypingSurvivor.Features.Game.Player
         public void Exit(PlayerState stateTo)
         {
             // 念のため、移動完了時に正確な位置にスナップさせる
-            _transform.position = _targetPos;
+            // ただし、次のステートもMovingの場合は、中途半端な位置で止まってしまうのでスナップしない
+            if (stateTo != PlayerState.Moving)
+            {
+                _transform.position = _targetPos;
+            }
+        }
+
+        public void OnTargetPositionChanged()
+        {
+            // サーバーから目標座標の変更通知が来たので、移動アニメーションをリセット
+            ResetMovement();
+        }
+
+        private void ResetMovement()
+        {
+            var grid = _facade.Grid;
+            if (grid == null) return; // Facadeの準備ができていない場合は何もしない
+
+            _moveDuration = _facade.MoveDuration;
+            _startPos = _transform.position;
+            _targetPos = grid.GetCellCenterWorld(_facade.NetworkGridPosition.Value);
+            _elapsedTime = 0f;
         }
     }
 }

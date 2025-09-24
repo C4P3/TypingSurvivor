@@ -7,7 +7,7 @@ public class SimpleTestMapGenerator : ScriptableObject, IMapGenerator
     public (List<TileData> blockTiles, List<TileData> itemTiles) Generate(long seed)
     {
         var blockTiles = new List<TileData>();
-        int mapSize = 10; // 10x10の壁
+        int mapSize = 4; // 10x10の壁
 
         for (int x = -mapSize; x <= mapSize; x++)
         {

@@ -8,7 +8,8 @@ namespace TypingSurvivor.Features.Game.Player.Input
     public class PlayerInput : MonoBehaviour
     {
         // Gameplay Actions
-        public event Action<Vector2> OnMoveIntent;
+        public event Action<Vector2> OnMovePerformed;
+        public event Action OnMoveCanceled;
         public event Action OnInteractIntent;
 
         // Typing Actions
@@ -78,12 +79,12 @@ namespace TypingSurvivor.Features.Game.Player.Input
 
         private void HandleMovePerformed(InputAction.CallbackContext context)
         {
-            OnMoveIntent?.Invoke(context.ReadValue<Vector2>());
+            OnMovePerformed?.Invoke(context.ReadValue<Vector2>());
         }
 
         private void HandleMoveCanceled(InputAction.CallbackContext context)
         {
-            OnMoveIntent?.Invoke(Vector2.zero);
+            OnMoveCanceled?.Invoke();
         }
 
         private void HandleInteractPerformed(InputAction.CallbackContext context)

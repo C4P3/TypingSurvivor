@@ -16,5 +16,10 @@ namespace TypingSurvivor.Features.Game.Player
         {
             // TODO: アイドリングアニメーションの終了など
         }
+        
+        public void OnTargetPositionChanged()
+        {
+            // Roaming状態では何もしない
+        }
     }
 }
