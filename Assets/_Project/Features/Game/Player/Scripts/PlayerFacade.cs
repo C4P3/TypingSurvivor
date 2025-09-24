@@ -119,8 +119,22 @@ namespace TypingSurvivor.Features.Game.Player
         private void HandleMovePerformed(Vector2 moveDirection)
         {
             Vector2 normalized = moveDirection.normalized;
-            int x = Mathf.RoundToInt(normalized.x);
-            int y = Mathf.RoundToInt(normalized.y);
+            float absX = Mathf.Abs(normalized.x);
+            float absY = Mathf.Abs(normalized.y);
+
+            int x, y;
+
+            if (absX > absY)
+            {
+                x = (int)Mathf.Sign(normalized.x);
+                y = 0;
+            }
+            else
+            {
+                x = 0;
+                y = (int)Mathf.Sign(normalized.y);
+            }
+            
             Vector3Int directionInt = new Vector3Int(x, y, 0);
 
             RequestMoveBasedOnStateServerRpc(directionInt);
@@ -148,8 +162,12 @@ namespace TypingSurvivor.Features.Game.Player
                     break;
                 
                 case PlayerState.Typing:
-                    _currentState.Value = PlayerState.Roaming;
-                    HandleMoveIntent_Server(direction);
+                    Vector3Int typingTargetDirection = NetworkTypingTargetPosition.Value - NetworkGridPosition.Value;
+                    if (direction != typingTargetDirection)
+                    {
+                        _currentState.Value = PlayerState.Roaming;
+                        HandleMoveIntent_Server(direction);
+                    }
                     break;
             }
         }
@@ -187,11 +205,6 @@ namespace TypingSurvivor.Features.Game.Player
                 {
                     float moveSpeed = _statusReader.GetStatValue(OwnerClientId, PlayerStat.MoveSpeed);
                     float duration = 1f / Mathf.Max(0.1f, moveSpeed);
-
-                    if (_continuousMoveDirection_Server.x != 0 && _continuousMoveDirection_Server.y != 0)
-                    {
-                        duration *= 1.414f;
-                    }
                     
                     NetworkMoveDuration.Value = duration;
                     NetworkGridPosition.Value = targetGridPos;
@@ -204,9 +217,12 @@ namespace TypingSurvivor.Features.Game.Player
                 }
                 else
                 {
+                    // Typingステートに移行し、移動コルーチンを完全に終了させる
                     NetworkTypingTargetPosition.Value = targetGridPos;
                     _currentState.Value = PlayerState.Typing;
                     _continuousMoveDirection_Server = Vector3Int.zero;
+                    _isMoving_Server = false;
+                    yield break;
                 }
             }
 
