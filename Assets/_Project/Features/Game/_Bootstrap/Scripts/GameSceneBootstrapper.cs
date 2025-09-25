@@ -33,8 +33,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 return;
             }
 
-            // 1. Initialize Core services with data from GameConfig
-            serviceLocator.InitializeCoreServices(_gameConfig.PlayerStats);
+            // 1. Initialize Game services with data from GameConfig
+            serviceLocator.InitializeGameServices(_gameConfig.PlayerStats);
 
             // 2. Register all services to the service locator
             RegisterServices(serviceLocator);
@@ -84,8 +84,19 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private void InjectDependencies(IServiceLocator serviceLocator)
         {
             // --- Inject dependencies into GameManager ---
-            // TODO: Select strategy based on game mode
-            IGameModeStrategy strategy = new SinglePlayerStrategy();
+            IGameModeStrategy strategy;
+            // AppManagerからゲームモードを取得
+            string gameMode = AppManager.GameMode;
+
+            if (gameMode == "SinglePlayer")
+            {
+                strategy = new SinglePlayerStrategy();
+            }
+            else // Host, Server, etc.
+            {
+                strategy = new MultiPlayerStrategy();
+            }
+            
             _gameManager.Initialize(
                 _gameState, 
                 strategy,

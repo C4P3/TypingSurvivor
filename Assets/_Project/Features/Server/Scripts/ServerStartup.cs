@@ -1,23 +1,24 @@
 using UnityEngine;
-
+using UnityEngine.SceneManagement;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
+using TypingSurvivor.Features.Core.App; // AppManagerを参照するために追加
 
 public class ServerStartup : MonoBehaviour
 {
-
     private void Start()
     {
-        bool isServer = false;
+        var args = System.Environment.GetCommandLineArgs();
+        bool isDedicatedServer = false;
         ushort serverPort = 7777;
         string externalServerIP = "0.0.0.0";
+        string gameMode = "SinglePlayer"; // Default game mode
 
-        var args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "-dedicatedServer")
             {
-                isServer = true;
+                isDedicatedServer = true;
             }
             else if (args[i] == "-port" && i + 1 < args.Length)
             {
@@ -27,14 +28,26 @@ public class ServerStartup : MonoBehaviour
             {
                 externalServerIP = args[i + 1];
             }
+            else if (args[i] == "-gameMode" && i + 1 < args.Length)
+            {
+                gameMode = args[i + 1];
+            }
         }
-        if (isServer)
+
+        if (isDedicatedServer)
         {
-            StartServer(externalServerIP, serverPort);
+            // Set the game mode for the server
+            AppManager.GameMode = gameMode;
+            
+            // Start the server
+            StartDedicatedServer(externalServerIP, serverPort);
+
+            // Load the game scene directly
+            SceneManager.LoadScene("Game");
         }
     }
 
-    private void StartServer(string ip, ushort port)
+    private void StartDedicatedServer(string ip, ushort port)
     {
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = 60;

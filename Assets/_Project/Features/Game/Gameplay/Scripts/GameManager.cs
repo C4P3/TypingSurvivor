@@ -37,6 +37,14 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 _grid = FindObjectOfType<Grid>();
                 NetworkManager.Singleton.ConnectionApprovalCallback += ConnectionApprovalCheck;
+                
+                // PlayerDatasリストを初期化
+                _gameState.PlayerDatas.Clear();
+                foreach (var clientId in NetworkManager.Singleton.ConnectedClientsIds)
+                {
+                    _gameState.PlayerDatas.Add(new PlayerData { ClientId = clientId, Score = 0, IsGameOver = false });
+                }
+
                 StartCoroutine(ServerGameLoop());
             }
         }
@@ -86,13 +94,19 @@ namespace TypingSurvivor.Features.Game.Gameplay
             yield return new WaitForSeconds(5);
 
             _gameState.CurrentPhase.Value = GamePhase.Playing;
-            while (true)
+            while (!_gameModeStrategy.IsGameOver(_gameState))
             {
-                _gameState.OxygenLevel.Value -= oxygenDecreaseRate * Time.deltaTime;
-                if (_gameModeStrategy.IsGameOver(_gameState))
+                // シングルプレイの場合のみ、共有の酸素レベルを減らす
+                if (_gameModeStrategy is SinglePlayerStrategy)
                 {
-                    break;
+                    _gameState.OxygenLevel.Value -= oxygenDecreaseRate * Time.deltaTime;
+                    if (_gameState.OxygenLevel.Value <= 0)
+                    {
+                        // シングルプレイヤー（ホスト）をゲームオーバーにする
+                        SetPlayerGameOver(NetworkManager.Singleton.LocalClientId);
+                    }
                 }
+                
                 yield return null;
             }
 
@@ -159,7 +173,17 @@ namespace TypingSurvivor.Features.Game.Gameplay
         }
         public void SetPlayerGameOver(ulong clientId)
         {
-            // TODO: 実装
+            if (!IsServer) return;
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    var data = _gameState.PlayerDatas[i];
+                    data.IsGameOver = true;
+                    _gameState.PlayerDatas[i] = data;
+                    return;
+                }
+            }
         }
         
         private void HandlePhaseChanged_Client(GamePhase previousPhase, GamePhase newPhase)

@@ -2,53 +2,50 @@
 
 このドキュメントは、Typing Survivorプロジェクトの未実装の機能や改善点を管理するためのタスクリストです。
 
-## Core System
+---
 
-- [ ] **PlayerStatusSystemの永続化**: `PlayerStatusSystem`に、Unity Gaming ServicesのCloud Saveなどを利用したセーブ/ロード機能を追加する。
+## 🚀 新機能 (Features)
 
-## Typing機能
-
-### 実装待ちタスク
-- [ ] **Builderクラス群のユニットテスト作成**: 今回のリファクタリングで作成した`KanaParser`および`TrieBuilder`の単体テストを作成し、複雑な変換ロ-ジックの品質を保証する。
-- [ ] **(企画担当者向け) 単語リストCSVの編集**: `Assets/Resources/WordLists/default.csv` ファイルをテキストエディタやExcelで開き、タイピングさせたい単語のリストを編集する。その後、Unityエディタで`GameConfig`アセットを選択し、`Word List Csv`フィールドにこの`default.csv`ファイルをアタッチする。
-
-## UI / シーンフロー
-- [ ] **メインメニューの実装**: `QuickGUIConnect`でテストしていたが、本格的なメインメニューシーンと`MainMenuManager`を作成する。
-    - [ ] シングルプレイ開始ボタンを実装する。
-    - [ ] マルチプレイ（ホスト/クライアント）開始ボタンを実装する。
-    - [ ] 上記ボタンに応じたシーン遷移ロジックを実装する。
-
-## Gameplay Logic
-- [ ] **ゲームモード戦略の実装**: `IGameModeStrategy` の具体的なロジックを実装する。
-    - [ ] `GameManager`がゲームモードに応じて`SinglePlayerStrategy`と`MultiPlayerStrategy`を切り替えられるようにする。
-- [ ] **ゲーム終了条件の実装**: 酸素レベル（体力）の概念を導入し、それが0になったらゲームオーバーになるロジックを実装する。
+- [ ] **カメラシステムの導入**:
+    - [ ] **プレイヤー追従カメラ**: シングル・マルチプレイ問わず、自身のプレイヤーキャラクターをカメラが追従するようにする。
+    - [ ] **マルチプレイ用ビュー**: 対戦相手の位置を把握できるよう、画面分割やピクチャーインピクチャー（小窓）機能を追加する。
 - [ ] **ゲーム内UI（HUD）の実装**:
     - [ ] プレイヤーの接続を待つ待機画面を実装する。
     - [ ] ゲーム開始前のカウントダウンUIを実装する。
     - [ ] 酸素レベルやスコアを表示するHUDを実装する。
 - [ ] **連鎖破壊の実装**: ブロックを破壊した際、隣接する同じ色のブロックもまとめて破壊されるようにする。
-
-## Item機能
 - [ ] **全アイテムエフェクトの実装**: `Item-Effect-List.md` に記載されている未実装のアイテム効果（Star, Rocket, 妨害系など）を実装する。
-
-## その他
-
 - [ ] **エフェクトとサウンド**:
     - [ ] ブロック破壊時のパーティクルエフェクトやサウンドを追加する。
     - [ ] タイピング成功/失敗時のサウンドを追加する。
+
+---
+
+## 🛠️ 改善点 (Improvements)
+
+- [ ] **マップシステムの改善**:
+    - [ ] **マップの広さ**: 現在のパーリンノイズマップが有限で狭いため、より広大なマップを生成する手法（無限生成など）を検討・実装する。
+    - [ ] **スポーン位置の安全性**: マップの端にスポーンし、プレイヤーが外に出られてしまう問題を解決するため、スポーン地点計算ロジックを改善する。
+- [ ] **マルチプレイの酸素管理**: 現在、酸素は全プレイヤーで共有されている。`PlayerData`に酸素レベルを追加し、各プレイヤーが個別の酸素を持つように`GameManager`を修正する。
+- [ ] **PlayerStatusSystemの永続化**: `PlayerStatusSystem`に、Unity Gaming ServicesのCloud Saveなどを利用したセーブ/ロード機能を追加する。
 - [ ] **コードクリーンアップ**:
+    - [ ] 不要になった`QuickGUIConnect.cs`をプロジェクトから削除する。
     - [ ] `PlayerInput`の古い設計（`EnableTypingInput`など）を削除し、単一アクションマップの設計思想を徹底させる。
     - [ ] 各クラスにSummaryコメントを追加する。
 
-## 完了済みタスク
+---
+
+## ✅ 完了済みタスク (Completed)
+
+- [x] **サーバー起動フローの改善**: コマンドライン引数でゲームモードを指定し、サーバーを直接起動できるように`ServerStartup.cs`を修正した。
+- [x] **メインメニューのシーン遷移修正**: UIボタンからHost/Client/Serverとして正常にGameシーンへ遷移できるように`MainMenuManager`を修正した。
+- [x] **初期化フローの改善**: `App`シーンですぐに`MainMenu`をロードし、コアサービスの初期化を非同期で行うイベント駆動のフローに修正した。
+- [x] **ゲームモード戦略の実装**: `GameManager`がゲームモードに応じて`SinglePlayerStrategy`と`MultiPlayerStrategy`を切り替えられるようにした。
 - [x] **プレイヤーのスポーン位置修正**: Netcodeの自動スポーンを無効化し、GameManagerがLevelManagerと連携して、グリッド中央に手動でスポーンさせるように修正した。
-- [x] **お題提供クラス(WordProvider)の実装**: `TypingState`内でハードコードされているお題("てすと")を、外部のクラス(CSVやScriptableObjectから単語リストを読み込むWordProviderなど)から動的に取得するように変更した。
-- [x] **依存性注入(DI)の改善**: `AppManager`をサービスロケーターとし、`GameSceneBootstrapper`がシーンの依存性を注入するComposition Rootとして機能するようにリファクタリングした。これにより`FindObjectOfType`への依存が解消された。
+- [x] **お題提供クラス(WordProvider)の実装**: `TypingState`内でハードコードされているお題を、外部のクラスから動的に取得するように変更した。
+- [x] **依存性注入(DI)の改善**: `AppManager`をサービスロケーターとし、`GameSceneBootstrapper`がシーンの依存性を注入するComposition Rootとして機能するようにリファクタリングした。
 - [x] **PlayerStatusSystemの設計と実装の改修**: 循環参照を解消するため、`PlayerStatusSystem`をCore機能に移動し、一時効果を扱えるように再設計・実装した。
-- [x] **ローマ字変換テーブルの読み込み**: `convertTable.json`を起動時に読み込み、`TypingChallenge`で利用可能にする仕組みを実装する（`GameConfig`などでの管理を検討）。
-- [x] **`TypingState`の更新**: `Player/StateMachine/States/TypingState.cs` が新しい `TypingManager` のAPI（`StartChallenge`など）に対応していないため修正する。
-- [x] **`TypingManager`のAPI修正**: `TypingManager.StopTyping()`がprivateになっており`PlayerFacade`から呼び出せずエラーになっている。適切なアクセス修- [x] **`TypingChallenge`クラスの本格実装**:
-    - [x] ローマ字変換テーブル（JSONなど）を読み込む機能を実装する。
-    - [x] ひらがなからローマ字のTrie（トライ木）を構築し、複数のタイピングパターン（例: "shi", "si"）に対応できるようにする。
-- [x] **アイテムシステムの基本実装**: アイテムのScriptableObject定義、取得ロジック、`IItemEffect`ストラテジーパターンの実装を行う。
+- [x] **ローマ字変換テーブルの読み込み**: `convertTable.json`を起動時に読み込み、`TypingChallenge`で利用可能にする仕組みを実装した。
+- [x] **`TypingChallenge`クラスの本格実装**: Trie木を構築し、複数のタイピングパターンに対応できるようにした。
+- [x] **アイテムシステムの基本実装**: アイテムのScriptableObject定義、取得ロジック、`IItemEffect`ストラテジーパターンの実装を行った。
 - [x] **アイテム取得ロジックの実装**: `PlayerFacade`の移動処理に、アイテムタイルを踏んだ際に`IItemService.AcquireItem`を呼び出すロジックを追加した。

@@ -6,61 +6,82 @@
 
 本プロジェクトの初期化は、以下の原則に基づいています。
 
-*   **単一の起動点:** ゲームは必ず `App.unity` シーンから起動され、ゲーム全体で永続する必須サービス (`AppManager`など) を最初に初期化します。これにより、どのシーンでもこれらのサービスが利用可能であることが保証されます。
-*   **責務の分離:**
-    *   `AppManager` は、サービスを保持する汎用的な「箱」（サービスロケーター）としての責務に特化します。
-    *   各シーンの具体的な初期化ロジックは、そのシーンのエントリーポイント（`GameSceneBootstrapper`など）が担当します。これを **Composition Root (構成の起点)** と呼びます。
+*   **単一の起動点:** ゲームは必ず `App.unity` シーンから起動されます。このシーンは、`AppManager`や`NetworkManager`といった、アプリケーション全体で永続する必須オブジェクトを生成する責務を持ちます。
+*   **迅速なUI表示と非同期初期化:** ユーザーを待たせないため、`App`シーンは起動後、即座に`MainMenu.unity`シーンのロードを開始します。Unity Gaming Services (UGS) の認証サービスといった時間のかかる初期化処理は、シーン遷移と並行してバックグラウンドで非同期に実行されます。
+*   **イベント駆動の連携:** `AppManager`は、コアサービスの初期化が完了したことを`OnCoreServicesInitialized`イベントで通知します。`MainMenuManager`のようなUI側のクラスはこのイベントを購読し、準備が整ったタイミングでUIを操作可能な状態に更新します。
 
 ## **2. シーン遷移フロー**
 
-アプリケーションは、以下の順序でシーンを遷移します。
-
 1.  **`App.unity` (初期化シーン):**
-    *   `AppManager` を起動し、`DontDestroyOnLoad` に設定します。
-    *   Unity Gaming Services (UGS) などの低レベルな初期化を行います。
-    *   完了後、自動的に `MainMenu.unity` へ遷移します。
+    *   `AppManager`と`NetworkManager`を起動し、`DontDestroyOnLoad`に設定します。
+    *   **即座に** `MainMenu.unity` へのシーン遷移を開始します。
+    *   **並行して**、UGSや`AuthService`の非同期初期化を開始します。
 
 2.  **`MainMenu.unity` (メインメニュー):**
-    *   プレイヤーの認証やゲーム開始のUIを提供します。
-    *   "Start Game" ボタンなどが押されると、`Game.unity` へ遷移します。
+    *   `MainMenuManager`が起動し、UIを「初期化中...」の状態で表示します。
+    *   `AppManager`からの`OnCoreServicesInitialized`イベントを待ち受けます。
+    *   イベント受信後、UIを更新し、プレイヤーがサインインやゲーム開始を選択できるようになります。
 
 3.  **`Game.unity` (ゲーム本編):**
-    *   実際のゲームプレイが行われるシーンです。
-    *   このシーンがロードされると、`GameSceneBootstrapper` が起動し、ゲームプレイに必要なすべてのサービスを初期化・登録します。
+    *   `MainMenuManager`でゲーム開始が選択されると、このシーンへ遷移します。
+    *   `GameSceneBootstrapper`が起動し、ゲームプレイに必要なサービスを初期化・登録します。
 
-## **3. ゲームシーンの初期化シーケンス**
-
-`Game.unity` がロードされた際の、詳細な初期化フローは以下の通りです。
+## **3. クライアント起動時の初期化シーケンス**
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant SceneLoader
-    participant GameScene as Game.unity
-    participant Bootstrapper as GameSceneBootstrapper
-    participant AppManager as IServiceLocator
-    participant Services as Game Services<br>(LevelManager, TypingManager, etc.)
+    participant AppScene as App.unity
+    participant AppManager
+    participant MainMenuScene as MainMenu.unity
+    participant MainMenuManager
 
-    User->>SceneLoader: "Start Game" をクリック
-    SceneLoader->>GameScene: Game.unity をロード
+    AppScene->>AppManager: Awake()
+    AppManager->>AppManager: DontDestroyOnLoad(this)
+    AppManager->>MainMenuScene: LoadSceneAsync("MainMenu")
+    AppManager-->>AppManager: Start Core Service Init (async)
 
-    activate GameScene
-    note over GameScene: Awake()
-    GameScene->>Bootstrapper: Awake() を呼び出し
-    activate Bootstrapper
+    MainMenuScene->>MainMenuManager: Start()
+    MainMenuManager->>MainMenuManager: Set UI to "Initializing..."
+    MainMenuManager->>AppManager: Subscribe(OnCoreServicesInitialized)
 
-    Bootstrapper->>AppManager: Instance を取得
-    Bootstrapper->>AppManager: InitializeCoreServices(GameConfig)
-    note right of Bootstrapper: Coreサービス (PlayerStatusSystemなど) を初期化
+    AppManager-->>AppManager: Core Service Init Complete
+    AppManager->>MainMenuManager: Invoke OnCoreServicesInitialized event
 
-    Bootstrapper->>Services: new TypingManager() などを生成
-    Bootstrapper->>AppManager: RegisterService(ITypingService, ...)
-    note right of Bootstrapper: Game固有の全サービスを<br>サービスロケーターに登録
-
-    Bootstrapper->>Services: GameManager.Initialize(GameState, ...)
-    note right of Bootstrapper: 各サービスに必要な依存性を注入 (DI)
-
-    deactivate Bootstrapper
-    deactivate GameScene
-    note over User, Services: ✅ これで全てのサービスが利用可能になり、<br>ゲームプレイが開始できる状態になった
+    MainMenuManager->>MainMenuManager: HandleCoreServicesReady()
+    MainMenuManager->>MainMenuManager: Set UI to "Please Sign In"
+    note right of MainMenuManager: ✅ これでUIが操作可能になる
 ```
+
+## **4. 専用サーバー起動時の初期化シーケンス**
+
+専用サーバーは、コマンドライン引数によって `MainMenu` シーンをスキップし、直接 `Game` シーンを起動します。
+
+```mermaid
+sequenceDiagram
+    participant CommandLine as コマンドライン
+    participant AppScene as App.unity
+    participant ServerStartup
+    participant AppManager
+    participant GameScene as Game.unity
+    participant GameSceneBootstrapper
+
+    CommandLine->>AppScene: 起動 (例: -dedicatedServer -gameMode MultiPlayer)
+    
+    AppScene->>AppManager: Awake()
+    AppScene->>ServerStartup: Start()
+
+    ServerStartup->>ServerStartup: 引数を解析 ("MultiPlayer")
+    ServerStartup->>AppManager: AppManager.GameMode = "MultiPlayer"
+    ServerStartup->>NetworkManager: StartServer()
+    ServerStartup->>GameScene: LoadScene("Game")
+
+    note over GameScene, GameSceneBootstrapper: Gameシーンがロードされる
+
+    GameScene->>GameSceneBootstrapper: Awake()
+    GameSceneBootstrapper->>AppManager: AppManager.GameMode を読み取る
+    GameSceneBootstrapper->>GameSceneBootstrapper: new MultiPlayerStrategy() を生成
+    GameSceneBootstrapper->>GameSceneBootstrapper: GameManagerにStrategyを注入
+    
+    note right of GameSceneBootstrapper: ✅ これでサーバーが正しいルールで起動する
+```
+

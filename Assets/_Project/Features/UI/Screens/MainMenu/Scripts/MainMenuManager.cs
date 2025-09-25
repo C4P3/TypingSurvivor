@@ -3,32 +3,73 @@ using UnityEngine.UI;
 using TMPro;
 using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Auth;
+using Unity.Netcode;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
     /// <summary>
-    /// Manages the main menu UI, including the sign-in process.
+    /// Manages the main menu UI, including the sign-in process and game start options.
     /// </summary>
     public class MainMenuManager : MonoBehaviour
     {
+        [Header("Authentication")]
         [SerializeField] private Button _signInButton;
         [SerializeField] private TextMeshProUGUI _statusText;
 
+        [Header("Game Start")]
+        [SerializeField] private GameObject _gameStartPanel; // Panel containing the buttons below
+        [SerializeField] private Button _startSinglePlayerButton;
+        [SerializeField] private Button _startHostButton;
+        [SerializeField] private Button _joinClientButton;
+        [SerializeField] private Button _startServerButton; // For debug
+
         private IAuthenticationService _authService;
+        private const string GameSceneName = "Game";
 
         private void Start()
         {
-            // AppManagerから認証サービスへの参照を取得
-            _authService = AppManager.Instance.AuthService;
-
+            _gameStartPanel.SetActive(false);
             _signInButton.onClick.AddListener(SignInButton_OnClick);
-            _statusText.text = "Please sign in.";
+            _startSinglePlayerButton.onClick.AddListener(StartSinglePlayerButton_OnClick);
+            _startHostButton.onClick.AddListener(StartHostButton_OnClick);
+            _joinClientButton.onClick.AddListener(JoinClientButton_OnClick);
+            _startServerButton.onClick.AddListener(StartServerButton_OnClick);
+
+            // Check-then-Subscribe pattern
+            if (AppManager.Instance.IsCoreServicesInitialized)
+            {
+                HandleCoreServicesInitialized();
+            }
+            else
+            {
+                _signInButton.interactable = false;
+                _statusText.text = "Initializing...";
+                AppManager.Instance.OnCoreServicesInitialized += HandleCoreServicesInitialized;
+            }
         }
 
         private void OnDestroy()
         {
-            // リスナーをクリーンアップ
+            if (AppManager.Instance != null)
+            {
+                AppManager.Instance.OnCoreServicesInitialized -= HandleCoreServicesInitialized;
+            }
+            
             _signInButton.onClick.RemoveListener(SignInButton_OnClick);
+            _startSinglePlayerButton.onClick.RemoveListener(StartSinglePlayerButton_OnClick);
+            _startHostButton.onClick.RemoveListener(StartHostButton_OnClick);
+            _joinClientButton.onClick.RemoveListener(JoinClientButton_OnClick);
+            _startServerButton.onClick.RemoveListener(StartServerButton_OnClick);
+        }
+
+        /// <summary>
+        /// Called when AppManager has finished initializing core services.
+        /// </summary>
+        private void HandleCoreServicesInitialized()
+        {
+            _authService = AppManager.Instance.AuthService;
+            _signInButton.interactable = true;
+            _statusText.text = "Please sign in.";
         }
 
         private async void SignInButton_OnClick()
@@ -41,12 +82,87 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             if (success)
             {
                 _statusText.text = "Sign-in successful!";
-                // TODO: Proceed to the next scene or enable other UI elements
+                _signInButton.gameObject.SetActive(false);
+                _gameStartPanel.SetActive(true); // Show game start options
             }
             else
             {
                 _statusText.text = "Sign-in failed. Please try again.";
                 _signInButton.interactable = true;
+            }
+        }
+
+        private void StartSinglePlayerButton_OnClick()
+        {
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
+            {
+                Debug.LogWarning("Already connected or hosting.");
+                return;
+            }
+            
+            AppManager.GameMode = "SinglePlayer";
+            
+            if (NetworkManager.Singleton.StartHost())
+            {
+                Debug.Log("Host started successfully for Single Player mode.");
+                NetworkManager.Singleton.SceneManager.LoadScene(GameSceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
+            else
+            {
+                Debug.LogError("Failed to start host for Single Player mode.");
+            }
+        }
+
+        private void StartHostButton_OnClick()
+        {
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
+            {
+                Debug.LogWarning("Already connected or hosting.");
+                return;
+            }
+
+            AppManager.GameMode = "Host";
+
+            if (NetworkManager.Singleton.StartHost())
+            {
+                Debug.Log("Host started successfully for Multi Player mode.");
+                NetworkManager.Singleton.SceneManager.LoadScene(GameSceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
+            else
+            {
+                Debug.LogError("Failed to start host for Multi Player mode.");
+            }
+        }
+
+        private void JoinClientButton_OnClick()
+        {
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
+            {
+                Debug.LogWarning("Already connected or hosting.");
+                return;
+            }
+            AppManager.GameMode = "Client";
+            NetworkManager.Singleton.StartClient();
+        }
+
+        private void StartServerButton_OnClick()
+        {
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
+            {
+                Debug.LogWarning("Already connected or hosting.");
+                return;
+            }
+
+            AppManager.GameMode = "Server"; // Set mode for server-specific logic
+
+            if (NetworkManager.Singleton.StartServer())
+            {
+                Debug.Log("Server started successfully for debugging.");
+                NetworkManager.Singleton.SceneManager.LoadScene(GameSceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
+            else
+            {
+                Debug.LogError("Failed to start server for debugging.");
             }
         }
     }
