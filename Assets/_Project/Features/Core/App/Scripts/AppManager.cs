@@ -2,8 +2,10 @@ using UnityEngine;
 using TypingSurvivor.Features.Core.Auth;
 using Unity.Services.Core;
 using System.Threading.Tasks;
-
-using TypingSurvivor.Features.Game.Typing;
+using System;
+using System.Collections.Generic;
+using TypingSurvivor.Features.Core.PlayerStatus;
+using UnityEngine.SceneManagement;
 
 namespace TypingSurvivor.Features.Core.App
 {
@@ -11,18 +13,31 @@ namespace TypingSurvivor.Features.Core.App
     /// The entry point of the application.
     /// Manages the application lifecycle and provides access to core services.
     /// </summary>
-    public class AppManager : MonoBehaviour
+    public class AppManager : MonoBehaviour, IServiceLocator
     {
         public static AppManager Instance { get; private set; }
-        [SerializeField] public GameConfig gameConfig;
+        
         public IAuthenticationService AuthService { get; private set; }
         public IPlayerStatusSystemReader StatusReader { get; private set; }
         public IPlayerStatusSystemWriter StatusWriter { get; private set; }
-        public ILevelService LevelService { get; private set; }
-        public IItemService ItemService { get; private set; }
-        public ITypingService TypingService { get; private set; }
 
         private PlayerStatusSystem _statusSystem; // 実体への参照を保持
+        private readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();
+
+        public T GetService<T>()
+        {
+            if (_services.TryGetValue(typeof(T), out var service))
+            {
+                return (T)service;
+            }
+            Debug.LogError($"Service of type {typeof(T)} not found.");
+            return default;
+        }
+
+        public void RegisterService<T>(T service)
+        {
+            _services[typeof(T)] = service;
+        }
 
         private async void Awake()
         {
@@ -37,14 +52,13 @@ namespace TypingSurvivor.Features.Core.App
 
             await InitializeUgsAsync();
 
-            // TODO: サーバー/クライアントの起動フローを管理するクラスに移動すべき
-            InitializeServices();
+            // Always load the MainMenu scene after initialization
+            SceneManager.LoadScene("MainMenu");
         }
 
         private void Update()
         {
             // サーバーサイドでのみ実行
-            // TODO: NetworkManager.Singleton.IsServer を使うべきだが、依存を避けるため一旦このまま
             _statusSystem?.Update();
         }
 
@@ -61,29 +75,16 @@ namespace TypingSurvivor.Features.Core.App
             }
         }
 
-        private void InitializeServices()
+        public void InitializeCoreServices(PlayerDefaultStats playerStats)
         {
-            Debug.Assert(gameConfig != null, "GameConfig is not assigned in AppManager.");
-            Debug.Assert(gameConfig.PlayerStats != null, "PlayerStats is not assigned in GameConfig.");
+            Debug.Assert(playerStats != null, "PlayerStats is not assigned in GameConfig.");
 
-            // --- Plain C# Services ---
+            // --- Core Services ---
             AuthService = new ClientAuthenticationService();
-            TypingService = new TypingManager();
             
-            _statusSystem = new PlayerStatusSystem(gameConfig.PlayerStats);
+            _statusSystem = new PlayerStatusSystem(playerStats);
             StatusReader = _statusSystem;
             StatusWriter = _statusSystem;
-
-            // --- MonoBehaviour Services (Scene-dependent) ---
-            // TODO: シーンロードのたびに再検索が必要になる可能性がある
-            LevelService = FindObjectOfType<LevelManager>();
-            ItemService = FindObjectOfType<ItemService>();
-
-            // In the future, this method will also be responsible for
-            // initializing other application-wide services like:
-            // - Scene Management
-            // - Sound Management
-            // - etc.
         }
     }
 }

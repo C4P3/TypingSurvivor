@@ -18,7 +18,13 @@ namespace TypingSurvivor.Features.Game.Player
             Debug.Log("Entering Typing State");
             // TODO: 本来はWordProviderのようなクラスからお題を取得する
             // 現状はTypingChallengeを直接生成する仮実装
-            var tempConversionTable = AppManager.Instance.gameConfig.TypingConversionTable.Table; // 仮の変換テーブル
+            var gameConfig = AppManager.Instance.GetService<TypingSurvivor.Features.Game.Settings.GameConfig>();
+            if (gameConfig == null || gameConfig.TypingConversionTable == null)
+            {
+                Debug.LogError("GameConfig or TypingConversionTable is not available.");
+                return;
+            }
+            var tempConversionTable = gameConfig.TypingConversionTable.Table;
             var challenge = new TypingChallenge("てすと", "てすと", tempConversionTable);
             _facade.TypingService?.StartTyping(challenge);
         }

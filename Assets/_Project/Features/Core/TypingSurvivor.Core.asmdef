@@ -1,0 +1,21 @@
+{
+    "name": "TypingSurvivor.Core",
+    "references": [
+        "TypingSurvivor.Settings",
+        "Unity.Services.Core",
+        "Unity.Services.Authentication"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "internalsVisibleTo": [
+        "TypingSurvivor.Tests.PlayMode",
+        "TypingSurvivor.Tests.Editor"
+    ]
+}

@@ -1,0 +1,6 @@
+{
+    "name": "TypingSurvivor.InputSystem",
+    "references": [
+        "Unity.InputSystem"
+    ]
+}

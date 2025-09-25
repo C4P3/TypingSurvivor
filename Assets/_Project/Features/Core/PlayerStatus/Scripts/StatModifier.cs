@@ -1,4 +1,4 @@
-namespace TypingSurvivor.Core.PlayerStatus
+namespace TypingSurvivor.Features.Core.PlayerStatus
 {
     public class StatModifier
     {

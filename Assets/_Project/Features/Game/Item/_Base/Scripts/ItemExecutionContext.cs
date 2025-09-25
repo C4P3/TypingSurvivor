@@ -1,4 +1,5 @@
 using UnityEngine;
+using TypingSurvivor.Features.Core.PlayerStatus;
 
 /// <summary>
 /// アイテム効果を実行するために必要な全ての情報を持つコンテキストオブジェクト。

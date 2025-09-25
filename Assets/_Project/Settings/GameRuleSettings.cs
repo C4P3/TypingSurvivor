@@ -1,4 +1,7 @@
-public class GameRuleSettings
+namespace TypingSurvivor.Settings
 {
-    
+    public class GameRuleSettings
+    {
+
+    }
 }

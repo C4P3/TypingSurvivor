@@ -1,79 +1,80 @@
 using System.Collections.Generic;
 using System.Linq;
-using TypingSurvivor.Core.PlayerStatus;
-using TypingSurvivor.Settings;
 using UnityEngine;
 
-public class PlayerStatusSystem : IPlayerStatusSystemWriter, IPlayerStatusSystemReader
+namespace TypingSurvivor.Features.Core.PlayerStatus
 {
-    private class PlayerStats
+    public class PlayerStatusSystem : IPlayerStatusSystemWriter, IPlayerStatusSystemReader
     {
-        public readonly List<StatModifier> Modifiers = new();
-    }
-
-    private readonly Dictionary<ulong, PlayerStats> _playerStats = new();
-    private readonly PlayerDefaultStats _defaultStats;
-
-    public PlayerStatusSystem(PlayerDefaultStats defaultStats)
-    {
-        Debug.Assert(defaultStats != null, "PlayerDefaultStats cannot be null.");
-        _defaultStats = defaultStats;
-    }
-
-    public void ApplyModifier(ulong clientId, StatModifier modifier)
-    {
-        if (!_playerStats.ContainsKey(clientId))
+        private class PlayerStats
         {
-            _playerStats[clientId] = new PlayerStats();
+            public readonly List<StatModifier> Modifiers = new();
         }
 
-        if (!modifier.IsPermanent)
-        {
-            modifier.SetEndTime(Time.time);
-        }
-        
-        _playerStats[clientId].Modifiers.Add(modifier);
-    }
+        private readonly Dictionary<ulong, PlayerStats> _playerStats = new();
+        private readonly PlayerDefaultStats _defaultStats;
 
-    public float GetStatValue(ulong clientId, PlayerStat stat)
-    {
-        float baseValue = _defaultStats.GetBaseStatValue(stat);
-        
-        if (!_playerStats.ContainsKey(clientId))
+        public PlayerStatusSystem(PlayerDefaultStats defaultStats)
         {
-            return baseValue;
+            Debug.Assert(defaultStats != null, "PlayerDefaultStats cannot be null.");
+            _defaultStats = defaultStats;
         }
 
-        var modifiers = _playerStats[clientId].Modifiers;
-        float additiveBonus = 0f;
-        float multiplicativeBonus = 1.0f;
-
-        // LINQで書くこともできるが、パフォーマンスと可読性のためにループを使用
-        foreach (var mod in modifiers)
+        public void ApplyModifier(ulong clientId, StatModifier modifier)
         {
-            if (mod.Stat != stat) continue;
-
-            if (mod.Type == ModifierType.Additive)
+            if (!_playerStats.ContainsKey(clientId))
             {
-                additiveBonus += mod.Value;
+                _playerStats[clientId] = new PlayerStats();
             }
-            else if (mod.Type == ModifierType.Multiplicative)
+
+            if (!modifier.IsPermanent)
             {
-                multiplicativeBonus *= mod.Value;
+                modifier.SetEndTime(Time.time);
             }
+
+            _playerStats[clientId].Modifiers.Add(modifier);
         }
 
-        // 計算順序: (基本値 + 加算値) * 乗算値
-        return (baseValue + additiveBonus) * multiplicativeBonus;
-    }
-
-    public void Update()
-    {
-        // 期限切れの一時的なModifierを削除する
-        float currentTime = Time.time;
-        foreach (var stats in _playerStats.Values)
+        public float GetStatValue(ulong clientId, PlayerStat stat)
         {
-            stats.Modifiers.RemoveAll(mod => !mod.IsPermanent && currentTime > mod.EndTime);
+            float baseValue = _defaultStats.GetBaseStatValue(stat);
+
+            if (!_playerStats.ContainsKey(clientId))
+            {
+                return baseValue;
+            }
+
+            var modifiers = _playerStats[clientId].Modifiers;
+            float additiveBonus = 0f;
+            float multiplicativeBonus = 1.0f;
+
+            // LINQで書くこともできるが、パフォーマンスと可読性のためにループを使用
+            foreach (var mod in modifiers)
+            {
+                if (mod.Stat != stat) continue;
+
+                if (mod.Type == ModifierType.Additive)
+                {
+                    additiveBonus += mod.Value;
+                }
+                else if (mod.Type == ModifierType.Multiplicative)
+                {
+                    multiplicativeBonus *= mod.Value;
+                }
+            }
+
+            // 計算順序: (基本値 + 加算値) * 乗算値
+            return (baseValue + additiveBonus) * multiplicativeBonus;
+        }
+
+        public void Update()
+        {
+            // 期限切れの一時的なModifierを削除する
+            float currentTime = Time.time;
+            foreach (var stats in _playerStats.Values)
+            {
+                stats.Modifiers.RemoveAll(mod => !mod.IsPermanent && currentTime > mod.EndTime);
+            }
         }
     }
 }

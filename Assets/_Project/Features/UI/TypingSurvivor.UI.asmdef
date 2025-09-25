@@ -1,0 +1,22 @@
+{
+    "name": "TypingSurvivor.UI",
+    "references": [
+        "TypingSurvivor.Core",
+        "TypingSurvivor.Game",
+        "Unity.Netcode.Runtime",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "internalsVisibleTo": [
+        "TypingSurvivor.Tests.PlayMode",
+        "TypingSurvivor.Tests.Editor"
+    ]
+}

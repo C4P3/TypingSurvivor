@@ -1,6 +1,6 @@
 using UnityEngine;
 using TypingSurvivor.Features.Core.App; // AppManager を使うために必要
-using TypingSurvivor.Features.Game.Gameplay;
+using TypingSurvivor.Features.Core.PlayerStatus;
 
 public class ItemService : MonoBehaviour, IItemService
 {
@@ -13,12 +13,17 @@ public class ItemService : MonoBehaviour, IItemService
 
     private void Start()
     {
-        // AppManagerから依存サービスを取得
-        _levelService = AppManager.Instance.LevelService;
-        _playerStatusSystemWriter = AppManager.Instance.StatusWriter;
+        var serviceLocator = AppManager.Instance;
+        if (serviceLocator == null)
+        {
+            Debug.LogError("AppManager instance not found!");
+            return;
+        }
         
-        // TODO: IGameStateWriterもAppManagerに登録する
-        _gameStateWriter = FindObjectOfType<GameManager>(); // 仮
+        // AppManagerから依存サービスを取得
+        _levelService = serviceLocator.GetService<ILevelService>();
+        _gameStateWriter = serviceLocator.GetService<IGameStateWriter>();
+        _playerStatusSystemWriter = serviceLocator.StatusWriter; // Coreサービスは直接参照
     }
 
     public void AcquireItem(ulong clientId, Vector3Int itemGridPosition)

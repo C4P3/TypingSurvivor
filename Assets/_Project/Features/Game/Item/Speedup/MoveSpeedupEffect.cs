@@ -1,5 +1,5 @@
 using UnityEngine;
-using TypingSurvivor.Core.PlayerStatus;
+using TypingSurvivor.Features.Core.PlayerStatus;
 
 /// <summary>
 /// 移動速度を永続的に上昇させるパッシブ効果

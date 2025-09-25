@@ -18,7 +18,7 @@
 
 * **定義**: ゲームのバージョンが変わらない限り、基本的には変化しない設定値やデータベース。  
 * **例**: アイテムの性能、マップ生成のパラメータ、ゲームの基本ルール（酸素減少率など）。  
-* **管理方法**: **ScriptableObject** を全面的に採用します。これらのアセットは、Unityプロジェクトの_Project/Settings/フォルダに配置し、各システムが起動時に読み込んで利用します。
+* **管理方法**: **ScriptableObject** を全面的に採用します。これらのアセットは、それが関連する機能のフォルダ（例: `GameConfig`は`Features/Game/Settings/`、`PlayerDefaultStats`は`Features/Core/PlayerStatus/`）に配置され、`GameSceneBootstrapper`などを通じて各システムに注入されます。
 
 ### **2.2. 動的データ / 永続化データ (Dynamic / Persistent Data)**
 

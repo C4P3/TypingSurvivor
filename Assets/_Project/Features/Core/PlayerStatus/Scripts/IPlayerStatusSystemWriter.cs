@@ -1,6 +1,9 @@
-using TypingSurvivor.Core.PlayerStatus;
+using TypingSurvivor.Features.Core.PlayerStatus;
 
-public interface IPlayerStatusSystemWriter
+namespace TypingSurvivor.Features.Core.PlayerStatus
 {
-    void ApplyModifier(ulong clientId, StatModifier modifier);
+    public interface IPlayerStatusSystemWriter
+    {
+        void ApplyModifier(ulong clientId, StatModifier modifier);
+    }
 }

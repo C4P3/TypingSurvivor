@@ -3,6 +3,7 @@ using UnityEngine;
 using System;
 using System.Collections;
 using TypingSurvivor.Features.Game.Gameplay.Data;
+using TypingSurvivor.Features.Game.Settings;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {

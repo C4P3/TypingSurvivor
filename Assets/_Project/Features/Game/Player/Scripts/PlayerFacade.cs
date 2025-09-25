@@ -7,6 +7,7 @@ using UnityEngine.Tilemaps;
 using TypingSurvivor.Features.Game.Player.Input;
 using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Game.Typing;
+using TypingSurvivor.Features.Core.PlayerStatus;
 
 
 namespace TypingSurvivor.Features.Game.Player
@@ -65,11 +66,18 @@ namespace TypingSurvivor.Features.Game.Player
             _grid = FindObjectOfType<Grid>();
             if (_grid == null) Debug.LogError("Gridが見つかりません。");
 
+            var serviceLocator = AppManager.Instance;
+            if (serviceLocator == null)
+            {
+                Debug.LogError("AppManager instance not found!");
+                return;
+            }
+
             if (IsServer)
             {
-                _levelService = AppManager.Instance.LevelService;
-                _itemService = AppManager.Instance.ItemService;
-                _statusReader = AppManager.Instance.StatusReader;
+                _levelService = serviceLocator.GetService<ILevelService>();
+                _itemService = serviceLocator.GetService<IItemService>();
+                _statusReader = serviceLocator.StatusReader; // Coreサービスは直接参照可能
                 if (_levelService == null) Debug.LogError("ILevelServiceの実装が見つかりません。");
                 if (_itemService == null) Debug.LogError("IItemServiceの実装が見つかりません。");
                 if (_statusReader == null) Debug.LogError("IPlayerStatusSystemReaderの実装が見つかりません。");
@@ -84,8 +92,15 @@ namespace TypingSurvivor.Features.Game.Player
                 _input.OnMovePerformed += HandleMovePerformed;
                 _input.OnMoveCanceled += HandleMoveCanceled;
 
-                _typingService = AppManager.Instance.TypingService;
-                _typingService.OnTypingSuccess += HandleTypingSuccess;
+                _typingService = serviceLocator.GetService<ITypingService>();
+                if (_typingService != null)
+                {
+                    _typingService.OnTypingSuccess += HandleTypingSuccess;
+                }
+                else
+                {
+                    Debug.LogError("ITypingServiceの実装が見つかりません。");
+                }
                 
                 if(IsServer) OnPlayerSpawned_Server?.Invoke(OwnerClientId, transform.position);
                 else RequestSpawnedServerRpc();

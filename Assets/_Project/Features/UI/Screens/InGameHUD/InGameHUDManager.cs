@@ -1,5 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
+using TypingSurvivor.Features.Game.Gameplay;
+using TypingSurvivor.Features.Core.PlayerStatus;
 
 public class InGameHUDManager : NetworkBehaviour
 {

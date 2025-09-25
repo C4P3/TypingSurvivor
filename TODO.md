@@ -4,7 +4,6 @@
 
 ## Core System
 
-- [ ] **依存性注入(DI)の改善**: `AppManager`が`FindObjectOfType`を使ってシーン内のサービス(`ILevelService`など)を取得している現状を改善する。サーバー起動時に、シーン内のサービスを`AppManager`に自動登録する仕組みなどを検討する。
 - [ ] **PlayerStatusSystemの永続化**: `PlayerStatusSystem`に、Unity Gaming ServicesのCloud Saveなどを利用したセーブ/ロード機能を追加する。
 
 ## Typing機能
@@ -17,7 +16,7 @@
 
 - [ ] **プレイヤーのスポーン位置修正**: プレイヤーがグリッドセルの中央に正しくスポーンするように修正する（現在、4マスの間にスポーンし初回の移動が不自然になる問題）。
 - [ ] **連鎖破壊の実装**: ブロックを破壊した際、隣接する同じ色のブロックもまとめて破壊されるようにする。
-- [ ] **アイテム取得ロジックの実装**: `PlayerFacade`の移動処理に、アイテムタイルを踏んだ際に`IItemService.AcquireItem`を呼び出すロジ-ックを追加する。
+- [ ] **アイテム取得ロ-ジックの実装**: `PlayerFacade`の移動処理に、アイテムタイルを踏んだ際に`IItemService.AcquireItem`を呼び出すロ-ジックを追加する。
 
 ## Item機能
 - [ ] **全アイテムエフェクトの実装**: `Item-Effect-List.md` に記載されている未実装のアイテム効果（Star, Rocket, 妨害系など）を実装する。
@@ -32,6 +31,7 @@
     - [ ] 各クラスにSummaryコメントを追加する。
 
 ## 完了済みタスク
+- [x] **依存性注入(DI)の改善**: `AppManager`をサービスロケーターとし、`GameSceneBootstrapper`がシーンの依存性を注入するComposition Rootとして機能するようにリファクタリングした。これにより`FindObjectOfType`への依存が解消された。
 - [x] **PlayerStatusSystemの設計と実装の改修**: 循環参照を解消するため、`PlayerStatusSystem`をCore機能に移動し、一時効果を扱えるように再設計・実装した。
 - [x] **ローマ字変換テーブルの読み込み**: `convertTable.json`を起動時に読み込み、`TypingChallenge`で利用可能にする仕組みを実装する（`GameConfig`などでの管理を検討）。
 - [x] **`TypingState`の更新**: `Player/StateMachine/States/TypingState.cs` が新しい `TypingManager` のAPI（`StartChallenge`など）に対応していないため修正する。

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TypingSurvivor.Settings
+namespace TypingSurvivor.Features.Core.PlayerStatus
 {
     [CreateAssetMenu(fileName = "PlayerDefaultStats", menuName = "Settings/Player Default Stats")]
     public class PlayerDefaultStats : ScriptableObject

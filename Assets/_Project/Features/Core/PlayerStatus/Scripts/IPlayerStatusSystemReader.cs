@@ -1,5 +1,7 @@
-
-public interface IPlayerStatusSystemReader
+namespace TypingSurvivor.Features.Core.PlayerStatus
 {
-    float GetStatValue(ulong userId, PlayerStat stat);
+    public interface IPlayerStatusSystemReader
+    {
+        float GetStatValue(ulong userId, PlayerStat stat);
+    }
 }
