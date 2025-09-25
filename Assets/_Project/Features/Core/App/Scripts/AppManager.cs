@@ -53,7 +53,7 @@ namespace TypingSurvivor.Features.Core.App
             await InitializeUgsAsync();
 
             // Always load the MainMenu scene after initialization
-            SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene("Game");
         }
 
         private void Update()
@@ -85,6 +85,10 @@ namespace TypingSurvivor.Features.Core.App
             _statusSystem = new PlayerStatusSystem(playerStats);
             StatusReader = _statusSystem;
             StatusWriter = _statusSystem;
+
+            // Register the core services so they can be retrieved via GetService<T>
+            RegisterService<IPlayerStatusSystemReader>(_statusSystem);
+            RegisterService<IPlayerStatusSystemWriter>(_statusSystem);
         }
     }
 }

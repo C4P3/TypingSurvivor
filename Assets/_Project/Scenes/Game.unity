@@ -266,7 +266,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1244770685}
-  - component: {fileID: 1244770684}
+  - component: {fileID: 1244770686}
   m_Layer: 0
   m_Name: GameSceneBootstrapper
   m_TagString: Untagged
@@ -274,23 +274,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1244770684
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1244770683}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea219b3b0ed9f3a42899670ce717650e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TypingSurvivor.Game::TypingSurvivor.Features.Game.Gameplay.GameSceneBootstrapper
-  _gameConfig: {fileID: 11400000, guid: c3392abd07a74824c88c899edb761325, type: 2}
-  _gameState: {fileID: 1250543377}
-  _gameManager: {fileID: 2138575203}
-  _levelManager: {fileID: 1870910530}
-  _itemService: {fileID: 1525844321}
 --- !u!4 &1244770685
 Transform:
   m_ObjectHideFlags: 0
@@ -310,6 +293,23 @@ Transform:
   - {fileID: 1525844320}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1244770686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1244770683}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d0ca9b9f0d1e7e479273668a1c485e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TypingSurvivor.Game::TypingSurvivor.Features.Game.Gameplay.GameSceneBootstrapper
+  _gameConfig: {fileID: 11400000, guid: c3392abd07a74824c88c899edb761325, type: 2}
+  _gameState: {fileID: 1250543377}
+  _gameManager: {fileID: 2138575203}
+  _levelManager: {fileID: 1870910530}
+  _itemService: {fileID: 1525844321}
 --- !u!1 &1250543375
 GameObject:
   m_ObjectHideFlags: 0

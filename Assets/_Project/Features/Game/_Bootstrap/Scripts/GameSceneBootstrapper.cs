@@ -2,6 +2,7 @@ using UnityEngine;
 using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Game.Typing;
 using TypingSurvivor.Features.Game.Settings;
+using TypingSurvivor.Features.Core.PlayerStatus;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -61,6 +62,13 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // TODO: Select strategy based on game mode
             IGameModeStrategy strategy = new SinglePlayerStrategy();
             _gameManager.Initialize(_gameState, strategy);
+
+            // --- Inject dependencies into ItemService ---
+            _itemService.Initialize(
+                serviceLocator.GetService<ILevelService>(),
+                serviceLocator.GetService<IGameStateWriter>(),
+                serviceLocator.GetService<IPlayerStatusSystemWriter>()
+            );
 
             // --- Example of injecting dependencies into UI ---
             // if (_hudManager != null)

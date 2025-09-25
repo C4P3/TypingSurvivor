@@ -1,29 +1,20 @@
 using UnityEngine;
-using TypingSurvivor.Features.Core.App; // AppManager を使うために必要
 using TypingSurvivor.Features.Core.PlayerStatus;
 
 public class ItemService : MonoBehaviour, IItemService
 {
     [SerializeField] private ItemRegistry _itemRegistry;
 
-    // --- 依存サービスの参照 ---
+    // --- Dependencies (injected by Bootstrapper) ---
     private ILevelService _levelService;
     private IGameStateWriter _gameStateWriter;
     private IPlayerStatusSystemWriter _playerStatusSystemWriter;
 
-    private void Start()
+    public void Initialize(ILevelService levelService, IGameStateWriter gameStateWriter, IPlayerStatusSystemWriter playerStatusSystemWriter)
     {
-        var serviceLocator = AppManager.Instance;
-        if (serviceLocator == null)
-        {
-            Debug.LogError("AppManager instance not found!");
-            return;
-        }
-        
-        // AppManagerから依存サービスを取得
-        _levelService = serviceLocator.GetService<ILevelService>();
-        _gameStateWriter = serviceLocator.GetService<IGameStateWriter>();
-        _playerStatusSystemWriter = serviceLocator.StatusWriter; // Coreサービスは直接参照
+        _levelService = levelService;
+        _gameStateWriter = gameStateWriter;
+        _playerStatusSystemWriter = playerStatusSystemWriter;
     }
 
     public void AcquireItem(ulong clientId, Vector3Int itemGridPosition)
@@ -31,6 +22,11 @@ public class ItemService : MonoBehaviour, IItemService
         if (_itemRegistry == null)
         {
             Debug.LogError("ItemRegistryが設定されていません。");
+            return;
+        }
+        if (_levelService == null)
+        {
+            Debug.LogError("ItemService has not been initialized correctly.");
             return;
         }
 
