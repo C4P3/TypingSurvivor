@@ -13,7 +13,7 @@
 - [ ] **(企画担当者向け) 単語リストCSVの編集**: `Assets/Resources/WordLists/default.csv` ファイルをテキストエディタやExcelで開き、タイピングさせたい単語のリストを編集する。その後、Unityエディタで`GameConfig`アセットを選択し、`Word List Csv`フィールドにこの`default.csv`ファイルをアタッチする。
 
 ## UI / シーンフロー
-- [ ] **メインメニューの実装**: `QuickGUIConnect`を置き換える、本格的なメインメニューシーンと`MainMenuManager`を作成する。
+- [ ] **メインメニューの実装**: `QuickGUIConnect`でテストしていたが、本格的なメインメニューシーンと`MainMenuManager`を作成する。
     - [ ] シングルプレイ開始ボタンを実装する。
     - [ ] マルチプレイ（ホスト/クライアント）開始ボタンを実装する。
     - [ ] 上記ボタンに応じたシーン遷移ロジックを実装する。
