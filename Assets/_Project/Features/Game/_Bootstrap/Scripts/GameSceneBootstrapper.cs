@@ -3,6 +3,7 @@ using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Game.Typing;
 using TypingSurvivor.Features.Game.Settings;
 using TypingSurvivor.Features.Core.PlayerStatus;
+using System.Collections.Generic;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -47,7 +48,30 @@ namespace TypingSurvivor.Features.Game.Gameplay
             serviceLocator.RegisterService(_gameConfig);
 
             // --- Register Plain C# Services ---
-            serviceLocator.RegisterService<ITypingService>(new TypingManager());
+            // TypingManagerはWordProviderに依存するため、ここで生成して注入する
+            if (_gameConfig.WordListCsv == null)
+            {
+                Debug.LogError("WordListCsv is not assigned in GameConfig.");
+                // CSVがない場合、機能が停止しないように空のWordProviderを登録
+                var emptyTables = new Dictionary<string, TypingConversionTable>();
+                var emptyWordProvider = new WordProvider("", emptyTables);
+                serviceLocator.RegisterService<ITypingService>(new TypingManager(emptyWordProvider));
+            }
+            else
+            {
+                // GameConfigから言語テーブルのリストを辞書に変換
+                var conversionTables = new Dictionary<string, TypingConversionTable>();
+                foreach (var mapping in _gameConfig.LanguageTables)
+                {
+                    if (mapping.ConversionTable != null && !string.IsNullOrEmpty(mapping.LanguageCode))
+                    {
+                        conversionTables[mapping.LanguageCode] = mapping.ConversionTable.Table;
+                    }
+                }
+
+                var wordProvider = new WordProvider(_gameConfig.WordListCsv.text, conversionTables);
+                serviceLocator.RegisterService<ITypingService>(new TypingManager(wordProvider));
+            }
 
             // --- Register MonoBehaviour Services from the scene ---
             serviceLocator.RegisterService<ILevelService>(_levelManager);

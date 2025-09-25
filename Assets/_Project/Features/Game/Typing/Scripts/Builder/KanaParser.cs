@@ -22,20 +22,21 @@ namespace TypingSurvivor.Features.Game.Typing.Builder
             int index = 0;
             while (index < hiragana.Length)
             {
-                string sokuonChar = _conversionTable.Rules.Sokuon.Character;
-                string hatsuonChar = _conversionTable.Rules.Hatsuon.Character;
+                // rulesや、その先のsokuon/hatsuonが存在しない場合(英語テーブルなど)を考慮し、null許容でアクセスする
+                string sokuonChar = _conversionTable.Rules?.Sokuon?.Character;
+                string hatsuonChar = _conversionTable.Rules?.Hatsuon?.Character;
                 string currentChar = hiragana.Substring(index, 1);
 
-                // 1. 促音チェック
-                if (currentChar == sokuonChar)
+                // 1. 促音チェック (ルールが存在する場合のみ)
+                if (!string.IsNullOrEmpty(sokuonChar) && currentChar == sokuonChar)
                 {
                     tokens.Add(new KanaToken(sokuonChar, KanaType.Sokuon));
                     index++;
                     continue;
                 }
 
-                // 2. 撥音チェック
-                if (currentChar == hatsuonChar)
+                // 2. 撥音チェック (ルールが存在する場合のみ)
+                if (!string.IsNullOrEmpty(hatsuonChar) && currentChar == hatsuonChar)
                 {
                     tokens.Add(new KanaToken(hatsuonChar, KanaType.Hatsuon));
                     index++;

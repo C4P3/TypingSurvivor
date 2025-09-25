@@ -28,25 +28,37 @@
 
 ## **3. 詳細設計：静的データの管理戦略**
 
-ScriptableObjectで作成される多数の設定アセットへのアクセスを単純化するため、**設定のハブ**となるGameConfigアセットを導入します。
+静的データの管理は、Unityエディタとの親和性が高い **ScriptableObject** を基本としますが、データの性質に応じて外部のテキストファイル（CSV, JSON）を併用するハイブリッドアプローチを採用します。
 
-#### **3.1. GameConfig.cs (ScriptableObject)**
+#### **3.1. 基本方針: ScriptableObject**
+アイテムの性能やゲームルールなど、主にUnityエディタ内で完結して設定できるデータは、ScriptableObjectとして作成します。
 
-このScriptableObjectは、他の全ての設定ScriptableObjectへの参照を保持します。
+#### **3.2. 大規模データ: 外部ファイル (CSV/JSON) + ScriptableObjectラッパー**
+タイピングの単語リストや、言語ごとの変換ルールのように、データ量が膨大になる可能性があり、かつ非プログラマーが表計算ソフトなどで編集する方が効率的なデータは、CSVやJSONファイルとして管理します。
+
+これらの外部ファイルを直接コードからパスで読み込むのではなく、**ScriptableObjectをラッパーとして利用**します。
+
+*   **`TypingConversionTableSO.cs`の例**:
+    *   このScriptableObjectは、`TextAsset`としてJSONファイルへの参照をインスペクターから設定できます。
+    *   実行時にJSONの内容を読み込み、C#オブジェクト（`TypingConversionTable`）としてキャッシュします。
+*   **`GameConfig.cs`の例**:
+    *   `GameConfig`は、`TextAsset`として単語リストのCSVファイルへの参照や、上記`TypingConversionTableSO`アセットへの参照を保持します。
+
+この「**外部ファイル + SOラッパー**」パターンにより、外部ファイルの編集のしやすさと、ScriptableObjectによるUnityワークフローへの統合（ドラッグ＆ドロップでの設定、依存性注入の容易さ）という両方の利点を享受できます。
+
+#### **3.3. 設定のハブ: GameConfig.cs**
+`GameConfig`アセットは、これらの各種設定アセット（ScriptableObjectやTextAsset）への参照を集約する「ハブ」として機能し、`GameSceneBootstrapper`を通じて各システムに注入されます。
 
 [CreateAssetMenu(fileName = "GameConfig", menuName = "Settings/Game Configuration")]  
 public class GameConfig : ScriptableObject  
 {  
     public GameRuleSettings RuleSettings;  
     public PlayerDefaultStats PlayerStats;  
-    public ItemRegistry ItemRegistry;  
+    public ItemRegistry ItemRegistry;
+    public TextAsset WordListCsv;
+    public List<LanguageTableMapping> LanguageTables;
     // ... 他の全体設定アセット ...  
 }
-
-#### **3.2. MapTheme.cs (ScriptableObject)**
-マップ生成の静的データを管理するScriptableObjectです。`MapGenerator`が生成した抽象的な値（例: ノイズ値）と、実際にシーンに配置されるタイルPrefabとの対応関係を定義します。
-
-これにより、レベルの「見た目」や「テーマ」（例: 洞窟、森、遺跡）をコードから完全に分離し、デザイナーがUnityエディタ上で直感的にレベルデザインを行えるようになります。
 
 ## **4. 詳細設計：動的データの永続化戦略**
 

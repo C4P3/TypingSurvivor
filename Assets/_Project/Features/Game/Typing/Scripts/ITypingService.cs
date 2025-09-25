@@ -14,6 +14,7 @@ namespace TypingSurvivor.Features.Game.Typing
 
         bool IsTyping { get; }
 
+        void StartTyping();
         void StartTyping(TypingChallenge challenge);
         void CancelTyping();
         void StopTyping();

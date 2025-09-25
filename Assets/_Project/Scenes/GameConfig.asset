@@ -14,4 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: TypingSurvivor.Game::TypingSurvivor.Features.Game.Settings.GameConfig
   PlayerStats: {fileID: 11400000, guid: e60e5b38c1e044449a83b7d8b9bfb107, type: 2}
   ItemRegistry: {fileID: 11400000, guid: c42d7c91d9e15164eb975ae5d700f915, type: 2}
-  TypingConversionTable: {fileID: 11400000, guid: 215709fdebbca744597b7d63e8aa88d8, type: 2}
+  WordListCsv: {fileID: 4900000, guid: b886f2d8eba859149ae5d0d13ebba462, type: 3}
+  LanguageTables:
+  - LanguageCode: ja
+    ConversionTable: {fileID: 11400000, guid: 7b0ce86128eecef409af44bbc12cc41f, type: 2}
+  - LanguageCode: en
+    ConversionTable: {fileID: 11400000, guid: b043ace05832fbc459c82cbf8a4cffc4, type: 2}

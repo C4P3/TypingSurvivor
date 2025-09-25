@@ -9,8 +9,8 @@
 ## Typing機能
 
 ### 実装待ちタスク
-- [ ] **お題提供クラス(WordProvider)の実装**: `TypingState`内でハードコードされているお題("てすと")を、外部のクラス(CSVやScriptableObjectから単語リストを読み込むWordProviderなど)から動的に取得するように変更する。
 - [ ] **Builderクラス群のユニットテスト作成**: 今回のリファクタリングで作成した`KanaParser`および`TrieBuilder`の単体テストを作成し、複雑な変換ロ-ジックの品質を保証する。
+- [ ] **(企画担当者向け) 単語リストCSVの編集**: `Assets/Resources/WordLists/default.csv` ファイルをテキストエディタやExcelで開き、タイピングさせたい単語のリストを編集する。その後、Unityエディタで`GameConfig`アセットを選択し、`Word List Csv`フィールドにこの`default.csv`ファイルをアタッチする。
 
 ## Gameplay Logic
 
@@ -31,6 +31,7 @@
     - [ ] 各クラスにSummaryコメントを追加する。
 
 ## 完了済みタスク
+- [x] **お題提供クラス(WordProvider)の実装**: `TypingState`内でハードコードされているお題("てすと")を、外部のクラス(CSVやScriptableObjectから単語リストを読み込むWordProviderなど)から動的に取得するように変更した。
 - [x] **依存性注入(DI)の改善**: `AppManager`をサービスロケーターとし、`GameSceneBootstrapper`がシーンの依存性を注入するComposition Rootとして機能するようにリファクタリングした。これにより`FindObjectOfType`への依存が解消された。
 - [x] **PlayerStatusSystemの設計と実装の改修**: 循環参照を解消するため、`PlayerStatusSystem`をCore機能に移動し、一時効果を扱えるように再設計・実装した。
 - [x] **ローマ字変換テーブルの読み込み**: `convertTable.json`を起動時に読み込み、`TypingChallenge`で利用可能にする仕組みを実装する（`GameConfig`などでの管理を検討）。

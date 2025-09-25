@@ -16,7 +16,12 @@ namespace TypingSurvivor.Features.Game.Typing
             {
                 try
                 {
-                    Table = JsonConvert.DeserializeObject<TypingConversionTable>(_conversionTableJson.text);
+                    var settings = new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore,
+                        MissingMemberHandling = MissingMemberHandling.Ignore
+                    };
+                    Table = JsonConvert.DeserializeObject<TypingConversionTable>(_conversionTableJson.text, settings);
                 }
                 catch (System.Exception e)
                 {
