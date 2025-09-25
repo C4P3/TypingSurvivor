@@ -4,6 +4,7 @@ using TypingSurvivor.Features.Game.Typing;
 using TypingSurvivor.Features.Game.Settings;
 using TypingSurvivor.Features.Core.PlayerStatus;
 using System.Collections.Generic;
+using TypingSurvivor.Features.Game.Level;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -85,7 +86,11 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // --- Inject dependencies into GameManager ---
             // TODO: Select strategy based on game mode
             IGameModeStrategy strategy = new SinglePlayerStrategy();
-            _gameManager.Initialize(_gameState, strategy);
+            _gameManager.Initialize(
+                _gameState, 
+                strategy,
+                serviceLocator.GetService<ILevelService>()
+                );
 
             // --- Inject dependencies into ItemService ---
             _itemService.Initialize(

@@ -20,3 +20,6 @@ MonoBehaviour:
     ConversionTable: {fileID: 11400000, guid: 7b0ce86128eecef409af44bbc12cc41f, type: 2}
   - LanguageCode: en
     ConversionTable: {fileID: 11400000, guid: b043ace05832fbc459c82cbf8a4cffc4, type: 2}
+  PlayerPrefab: {fileID: 3511757227768039307, guid: 3e70346e69855224faddd4636d720091, type: 3}
+  SinglePlayerSpawnStrategy: {fileID: 11400000, guid: 84d7e6d9ef3f72346abd65884e3f570c, type: 2}
+  VersusSpawnStrategy: {fileID: 11400000, guid: d919929893f439444a40dbe04f4b12ae, type: 2}

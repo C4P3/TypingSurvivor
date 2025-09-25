@@ -5,6 +5,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using TypingSurvivor.Features.Game.Player;
+using TypingSurvivor.Features.Game.Level;
 
 /// <summary>
 /// Level (タイルマップ) の状態を管理し、変更ロジックを実行するクラス。
@@ -226,6 +227,78 @@ public class LevelManager : NetworkBehaviour, ILevelService
             return tiles.Any(t => t.Position == gridPosition);
         }
         return false;
+    }
+
+    public List<Vector3Int> GetSpawnPoints(int playerCount, ScriptableObject strategy)
+    {
+        if (!IsServer) return new List<Vector3Int>();
+
+        var spawnStrategy = strategy as ISpawnPointStrategy;
+        if (spawnStrategy == null)
+        {
+            Debug.LogError("渡されたStrategyがISpawnPointStrategyを実装していません。");
+            return new List<Vector3Int>();
+        }
+
+        // マップ全体の歩行可能なタイルと境界を計算
+        var walkableTiles = new List<Vector3Int>();
+        var mapBounds = new BoundsInt();
+        bool firstTile = true;
+
+        foreach (var chunk in _entireBlockMapData_Server.Values)
+        {
+            foreach (var tileData in chunk)
+            {
+                if (firstTile)
+                {
+                    mapBounds.position = tileData.Position;
+                    firstTile = false;
+                }
+                else
+                {
+                    mapBounds.xMin = Mathf.Min(mapBounds.xMin, tileData.Position.x);
+                    mapBounds.yMin = Mathf.Min(mapBounds.yMin, tileData.Position.y);
+                    mapBounds.xMax = Mathf.Max(mapBounds.xMax, tileData.Position.x + 1);
+                    mapBounds.yMax = Mathf.Max(mapBounds.yMax, tileData.Position.y + 1);
+                }
+            }
+        }
+        
+        // 全てのブロックタイルで埋まっている領域を総当たりし、ブロックが存在しない場所を歩行可能とする
+        for (int x = mapBounds.xMin; x < mapBounds.xMax; x++)
+        {
+            for (int y = mapBounds.yMin; y < mapBounds.yMax; y++)
+            {
+                var pos = new Vector3Int(x, y, 0);
+                if (IsWalkable(pos))
+                {
+                    walkableTiles.Add(pos);
+                }
+            }
+        }
+
+        return spawnStrategy.GetSpawnPoints(playerCount, walkableTiles, mapBounds);
+    }
+
+    public void ClearArea(Vector3Int gridPosition, int radius)
+    {
+        if (!IsServer) return;
+
+        for (int x = -radius; x <= radius; x++)
+        {
+            for (int y = -radius; y <= radius; y++)
+            {
+                var targetPos = new Vector3Int(gridPosition.x + x, gridPosition.y + y, gridPosition.z);
+                
+                // 既存のDestroyBlock/RemoveItemはクライアントへの通知も行うため、それを利用する
+                if (GetTile(targetPos) != null)
+                {
+                    // アイテムかブロックかを判定する必要はない。両方削除を試みる。
+                    RemoveItem(targetPos);
+                    DestroyBlock(0, targetPos); // clientIdは破壊者だが、システムによる除去なので0でよい
+                }
+            }
+        }
     }
     #endregion
 

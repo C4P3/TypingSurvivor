@@ -8,6 +8,7 @@ using TypingSurvivor.Features.Game.Player.Input;
 using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Game.Typing;
 using TypingSurvivor.Features.Core.PlayerStatus;
+using TypingSurvivor.Features.Game.Level;
 
 
 namespace TypingSurvivor.Features.Game.Player

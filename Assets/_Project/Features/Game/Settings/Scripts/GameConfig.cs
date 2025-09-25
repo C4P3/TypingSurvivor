@@ -21,6 +21,11 @@ namespace TypingSurvivor.Features.Game.Settings
         public ItemRegistry ItemRegistry;
         public TextAsset WordListCsv;
         public List<LanguageTableMapping> LanguageTables;
+        public GameObject PlayerPrefab;
+        
+        [Header("Spawn Strategies")]
+        public ScriptableObject SinglePlayerSpawnStrategy;
+        public ScriptableObject VersusSpawnStrategy;
         // ... 他の全体設定アセット ...
     }
 }

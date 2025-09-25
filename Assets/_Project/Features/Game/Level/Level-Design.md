@@ -24,6 +24,9 @@ Level機能は、ゲームの舞台となる**世界の物理的な状態**を�
     * `bool HasItemTile(Vector3Int gridPosition)`: 指定座標にアイテムタイルが存在するかを返す。
     * `void RemoveItem(Vector3Int gridPosition)`: 指定座標のアイテムをマップから削除する。
     * `void DestroyBlock(ulong clientId, Vector3Int gridPosition)`: 指定座標のブロックを破壊する。
+    * **スポーン地点の計算と準備**:
+        * `List<Vector3Int> GetSpawnPoints(int playerCount, ScriptableObject strategy)`: `ISpawnPointStrategy` を受け取り、ゲームモードに応じたプレイヤーの初期スポーン地点リストを計算して返す。
+        * `void ClearArea(Vector3Int gridPosition, int radius)`: 指定された座標の周辺を指定された半径分、更地にする。
   * **イベントの発行**: ブロックが破壊された際などに、OnBlockDestroyed_Serverのようなサーバーサイドイベントを発行し、GameManagerなどの他システムに事実を通知する。
 
 ### **2.2. IMapGenerator.cs (Interface / ScriptableObject)**
