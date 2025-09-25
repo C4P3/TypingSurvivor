@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61ef8954a357b9e44b22fd90890e0df2, type: 3}
   m_Name: enTypingConversionTable
   m_EditorClassIdentifier: TypingSurvivor.Game::TypingSurvivor.Features.Game.Typing.TypingConversionTableSO
-  _conversionTableJson: {fileID: 4900000, guid: 719299ef3b490ed4d88d7c10926be5e3, type: 3}
+  _conversionTableJson: {fileID: 4900000, guid: 936f0408208ea65438d0eb53c3c41ee9, type: 3}
