@@ -13,13 +13,7 @@
 ### 実装待ちタスク
 - [ ] **お題提供クラス(WordProvider)の実装**: `TypingState`内でハードコードされているお題("てすと")を、外部のクラス(CSVやScriptableObjectから単語リストを読み込むWordProviderなど)から動的に取得するように変更する。
 - [ ] **Builderクラス群のユニットテスト作成**: 今回のリファクタリングで作成した`KanaParser`および`TrieBuilder`の単体テストを作成し、複雑な変換ロジックの品質を保証する。
-- [ ] **ローマ字変換テーブルの読み込み**: `convertTable.json`を起動時に読み込み、`TypingChallenge`で利用可能にする仕組みを実装する（`GameConfig`などでの管理を検討）。
-- [ ] **お題提供ロジックの実装**: `TypingTextStore`をリファクタリングし、`TypingChallenge`を生成して`TypingManager`に渡す責務を持たせる。
-- [ ] **UIの実装**:
-    - [ ] `TypingManager`のイベントを購読し、タイピングのお題（日本語、入力済み/未入力ローマ字）を表示するUIを作成する。
-    - [ ] `TypingState`の`Enter`/`Exit`で、UIの表示/非表示を制御する。
-
-### 完了済みタスク
+- [x] **ローマ字変換テーブルの読み込み**: `convertTable.json`を起動時に読み込み、`TypingChallenge`で利用可能にする仕組みを実装する（`GameConfig`などでの管理を検討）。
 - [x] **`TypingState`の更新**: `Player/StateMachine/States/TypingState.cs` が新しい `TypingManager` のAPI（`StartChallenge`など）に対応していないため修正する。
 - [x] **`TypingManager`のAPI修正**: `TypingManager.StopTyping()`がprivateになっており`PlayerFacade`から呼び出せずエラーになっている。適切なアクセス修飾子（publicなど）に変更する。
 - [x] **`TypingChallenge`クラスの本格実装**:
