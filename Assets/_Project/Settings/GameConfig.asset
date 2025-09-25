@@ -12,4 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a29c4db62477bec49ad08c34ffe950b4, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: Assembly-CSharp::GameConfig
-  ItemRegistry: {fileID: 0}
+  ItemRegistry: {fileID: 11400000, guid: c42d7c91d9e15164eb975ae5d700f915, type: 2}
+  TypingConversionTable: {fileID: 11400000, guid: fcf7ba280648c0c4eb2d9d207f62fec6, type: 2}

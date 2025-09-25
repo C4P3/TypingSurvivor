@@ -3,6 +3,8 @@ using TypingSurvivor.Features.Core.Auth;
 using Unity.Services.Core;
 using System.Threading.Tasks;
 
+using TypingSurvivor.Features.Game.Typing;
+
 namespace TypingSurvivor.Features.Core.App
 {
     /// <summary>
@@ -12,12 +14,13 @@ namespace TypingSurvivor.Features.Core.App
     public class AppManager : MonoBehaviour
     {
         public static AppManager Instance { get; private set; }
-
+        [SerializeField] public GameConfig gameConfig;
         public IAuthenticationService AuthService { get; private set; }
         public IPlayerStatusSystemReader StatusReader { get; private set; }
         public IPlayerStatusSystemWriter StatusWriter { get; private set; }
         public ILevelService LevelService { get; private set; }
         public IItemService ItemService { get; private set; }
+        public ITypingService TypingService { get; private set; }
 
         private async void Awake()
         {
@@ -53,6 +56,7 @@ namespace TypingSurvivor.Features.Core.App
         {
             // --- Plain C# Services ---
             AuthService = new ClientAuthenticationService();
+            TypingService = new TypingManager();
             
             var statusSystem = new PlayerStatusSystem();
             StatusReader = statusSystem;

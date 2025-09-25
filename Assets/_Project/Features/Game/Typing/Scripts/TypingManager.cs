@@ -1,49 +1,77 @@
 using System;
 using UnityEngine.InputSystem;
 
-// TODO: TypingChallengeクラスが実装されたら、これと差し替える
-public struct TypingChallenge
+namespace TypingSurvivor.Features.Game.Typing
 {
-    public string Word; // e.g., "neko"
-}
-
-public class TypingManager
-{
-    public event Action OnTypingSuccess;
-    
-    private TypingChallenge _currentChallenge;
-    private string _remainingText;
-
-    public void StartTyping(TypingChallenge challenge)
+    /// <summary>
+    /// タイピング機能の全体的な管理を行うクラス。
+    /// InputSystemからの入力を受け取り、現在のタイピングチャレンジ（_currentChallenge）に処理を委譲する。
+    /// </summary>
+    public class TypingManager : ITypingService
     {
-        _currentChallenge = challenge;
-        _remainingText = _currentChallenge.Word;
-        
-        // テキスト入力イベントを購読
-        Keyboard.current.onTextInput += OnTextInput;
-    }
+        public event Action OnTypingSuccess;
+        public event Action OnTypingMiss;
+        public event Action OnTypingCancelled;
+        public event Action OnTypingProgressed; // UI更新用のイベント
 
-    public void StopTyping()
-    {
-        // テキスト入力イベントの購読を解除
-        Keyboard.current.onTextInput -= OnTextInput;
-    }
+        private TypingChallenge _currentChallenge;
 
-    private void OnTextInput(char character)
-    {
-        if (string.IsNullOrEmpty(_remainingText)) return;
+        public bool IsTyping => _currentChallenge != null;
 
-        // 入力された文字が、残りのテキストの先頭と一致するかチェック
-        if (character == _remainingText[0])
+        public void StartTyping(TypingChallenge challenge)
         {
-            _remainingText = _remainingText.Substring(1);
+            _currentChallenge = challenge;
+            
+            // テキスト入力イベントを購読
+            Keyboard.current.onTextInput += OnTextInput;
+            
+            // UIを初期状態に更新
+            OnTypingProgressed?.Invoke();
+        }
 
-            // 全て入力し終えたかチェック
-            if (string.IsNullOrEmpty(_remainingText))
+        public void CancelTyping()
+        {
+            if (!IsTyping) return;
+            
+            StopTyping();
+            OnTypingCancelled?.Invoke();
+        }
+
+        public void StopTyping()
+        {
+            // テキスト入力イベントの購読を解除
+            Keyboard.current.onTextInput -= OnTextInput;
+            _currentChallenge = null;
+        }
+
+        private void OnTextInput(char character)
+        {
+            if (!IsTyping) return;
+
+            // 入力処理をTypingChallengeに委譲
+            var result = _currentChallenge.ProcessInput(character);
+
+            switch (result)
             {
-                OnTypingSuccess?.Invoke();
-                StopTyping();
+                case TypeResult.Correct:
+                    OnTypingProgressed?.Invoke();
+                    break;
+                
+                case TypeResult.Incorrect:
+                    OnTypingMiss?.Invoke();
+                    break;
+                
+                case TypeResult.Finished:
+                    OnTypingProgressed?.Invoke(); // 最後の文字が入力されたことをUIに反映
+                    OnTypingSuccess?.Invoke();
+                    StopTyping();
+                    break;
             }
         }
+
+        // UI表示用の情報を取得するためのゲッター
+        public string GetOriginalText() => _currentChallenge?.OriginalText ?? "";
+        public string GetTypedRomaji() => _currentChallenge?.GetTypedRomaji() ?? "";
+        public string GetRemainingRomaji() => _currentChallenge?.GetRemainingRomaji() ?? "";
     }
 }

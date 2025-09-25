@@ -1,4 +1,5 @@
 using UnityEngine;
+using TypingSurvivor.Features.Game.Typing;
 
 [CreateAssetMenu(fileName = "GameConfig", menuName = "Settings/Game Configuration")]
 public class GameConfig : ScriptableObject
@@ -6,5 +7,6 @@ public class GameConfig : ScriptableObject
     public GameRuleSettings RuleSettings;
     public PlayerDefaultStats PlayerStats;
     public ItemRegistry ItemRegistry;
+    public TypingConversionTableSO TypingConversionTable;
     // ... 他の全体設定アセット ...
 }

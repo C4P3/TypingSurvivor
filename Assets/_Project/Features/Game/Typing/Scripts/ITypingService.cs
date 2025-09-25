@@ -1,9 +1,25 @@
-/// <summary>
-/// タイピング機能を開始するためのサービスインターフェース。
-/// </summary>
-public interface ITypingService
+using System;
+
+namespace TypingSurvivor.Features.Game.Typing
 {
-    // 特定のプレイヤーのためにタイピングセッションを開始する。
-    // 成功/失敗の結果はイベントやコールバックで返す。
-    void StartTypingSession(ulong clientId, TypingChallenge challenge);
+    /// <summary>
+    /// クライアントサイドのタイピング機能を提供するサービスインターフェース。
+    /// </summary>
+    public interface ITypingService
+    {
+        event Action OnTypingSuccess;
+        event Action OnTypingMiss;
+        event Action OnTypingCancelled;
+        event Action OnTypingProgressed;
+
+        bool IsTyping { get; }
+
+        void StartTyping(TypingChallenge challenge);
+        void CancelTyping();
+        void StopTyping();
+
+        string GetOriginalText();
+        string GetTypedRomaji();
+        string GetRemainingRomaji();
+    }
 }

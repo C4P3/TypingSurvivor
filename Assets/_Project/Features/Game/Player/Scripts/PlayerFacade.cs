@@ -6,6 +6,8 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using TypingSurvivor.Features.Game.Player.Input;
 using TypingSurvivor.Features.Core.App;
+using TypingSurvivor.Features.Game.Typing;
+
 
 namespace TypingSurvivor.Features.Game.Player
 {
@@ -23,7 +25,7 @@ namespace TypingSurvivor.Features.Game.Player
         [SerializeField] private PlayerView _view;
 
         // --- クライアントサイドのシステム ---
-        private TypingManager _typingManager;
+        private ITypingService _typingService;
 
         // --- サーバーサイドの依存関係 ---
         private ILevelService _levelService;
@@ -45,7 +47,7 @@ namespace TypingSurvivor.Features.Game.Player
         public Grid Grid => _grid;
         public float MoveDuration => NetworkMoveDuration.Value;
         public PlayerInput PlayerInput => _input;
-        public TypingManager TypingManager => _typingManager;
+        public ITypingService TypingService => _typingService;
         #endregion
 
         #region Unity & Network Callbacks
@@ -82,8 +84,8 @@ namespace TypingSurvivor.Features.Game.Player
                 _input.OnMovePerformed += HandleMovePerformed;
                 _input.OnMoveCanceled += HandleMoveCanceled;
 
-                _typingManager = new TypingManager();
-                _typingManager.OnTypingSuccess += HandleTypingSuccess;
+                _typingService = AppManager.Instance.TypingService;
+                _typingService.OnTypingSuccess += HandleTypingSuccess;
                 
                 if(IsServer) OnPlayerSpawned_Server?.Invoke(OwnerClientId, transform.position);
                 else RequestSpawnedServerRpc();
@@ -103,8 +105,8 @@ namespace TypingSurvivor.Features.Game.Player
                 _input.OnMovePerformed -= HandleMovePerformed;
                 _input.OnMoveCanceled -= HandleMoveCanceled;
 
-                _typingManager.OnTypingSuccess -= HandleTypingSuccess;
-                _typingManager.StopTyping(); // 念のため購読解除
+                _typingService.OnTypingSuccess -= HandleTypingSuccess;
+                _typingService.StopTyping(); // 念のため購読解除
             }
             
             if(IsServer) OnPlayerDespawned_Server?.Invoke(OwnerClientId);
