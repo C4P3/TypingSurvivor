@@ -1,4 +1,33 @@
-public class PlayerDefaultStats
+using UnityEngine;
+
+namespace TypingSurvivor.Settings
 {
-    
+    [CreateAssetMenu(fileName = "PlayerDefaultStats", menuName = "Settings/Player Default Stats")]
+    public class PlayerDefaultStats : ScriptableObject
+    {
+        [Header("Movement")]
+        [Tooltip("Base movement speed in tiles per second.")]
+        public float MoveSpeed = 4.0f;
+
+        [Header("Resources")]
+        [Tooltip("Maximum oxygen level.")]
+        public float MaxOxygen = 100f;
+
+        [Header("Interaction")]
+        [Tooltip("Base range for detecting items or enemies.")]
+        public float RadarRange = 5f;
+
+        public float GetBaseStatValue(PlayerStat stat)
+        {
+            switch (stat)
+            {
+                case PlayerStat.MoveSpeed: return MoveSpeed;
+                case PlayerStat.MaxOxygen: return MaxOxygen;
+                case PlayerStat.RadarRange: return RadarRange;
+                default:
+                    Debug.LogWarning($"Base value for stat '{stat}' not defined in PlayerDefaultStats.");
+                    return 1.0f;
+            }
+        }
+    }
 }

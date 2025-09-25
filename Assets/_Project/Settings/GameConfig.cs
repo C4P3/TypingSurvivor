@@ -1,5 +1,6 @@
 using UnityEngine;
 using TypingSurvivor.Features.Game.Typing;
+using TypingSurvivor.Settings;
 
 [CreateAssetMenu(fileName = "GameConfig", menuName = "Settings/Game Configuration")]
 public class GameConfig : ScriptableObject

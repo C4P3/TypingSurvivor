@@ -22,6 +22,8 @@ namespace TypingSurvivor.Features.Core.App
         public IItemService ItemService { get; private set; }
         public ITypingService TypingService { get; private set; }
 
+        private PlayerStatusSystem _statusSystem; // 実体への参照を保持
+
         private async void Awake()
         {
             if (Instance != null && Instance != this)
@@ -39,6 +41,13 @@ namespace TypingSurvivor.Features.Core.App
             InitializeServices();
         }
 
+        private void Update()
+        {
+            // サーバーサイドでのみ実行
+            // TODO: NetworkManager.Singleton.IsServer を使うべきだが、依存を避けるため一旦このまま
+            _statusSystem?.Update();
+        }
+
         private async Task InitializeUgsAsync()
         {
             try
@@ -54,13 +63,16 @@ namespace TypingSurvivor.Features.Core.App
 
         private void InitializeServices()
         {
+            Debug.Assert(gameConfig != null, "GameConfig is not assigned in AppManager.");
+            Debug.Assert(gameConfig.PlayerStats != null, "PlayerStats is not assigned in GameConfig.");
+
             // --- Plain C# Services ---
             AuthService = new ClientAuthenticationService();
             TypingService = new TypingManager();
             
-            var statusSystem = new PlayerStatusSystem();
-            StatusReader = statusSystem;
-            StatusWriter = statusSystem;
+            _statusSystem = new PlayerStatusSystem(gameConfig.PlayerStats);
+            StatusReader = _statusSystem;
+            StatusWriter = _statusSystem;
 
             // --- MonoBehaviour Services (Scene-dependent) ---
             // TODO: シーンロードのたびに再検索が必要になる可能性がある
