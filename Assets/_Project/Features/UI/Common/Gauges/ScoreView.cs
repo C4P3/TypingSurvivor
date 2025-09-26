@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
 
-public class ScoreView
+public class ScoreView : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI _scoreLabel;
 
