@@ -24,7 +24,9 @@
   * **内容**: このプロジェクトで採用するフォルダ構造の全体像と、その設計意図について詳述します。  
 * [**./Data-Flow.md**](./Data-Flow.md)  
   * **内容**: 「プレイヤーがアイテムを取得し、UIが更新されるまで」といった、複数の機能をまたがる代表的な処理のシーケンス図を掲載し、システム間の連携を視覚的に解説します。
-* [**./Data-Management-Design.md**](./Data-Management-Design.md)  
+* [**./Data-Management-Design.md**](./Data-Management-Design.md)
+* [**./Scene-Transition-Strategy.md**](./Scene-Transition-Strategy.md)  
+  * **内容**: アプリケーションの起動からゲーム終了、再戦に至るまでのシーン遷移とゲームフロー、そして動的な画面分割の戦略について定義します。  
 
 ### **Tier 2: 機能別 詳細設計**
 

@@ -63,6 +63,7 @@ GameManagerは、サーバー上でコルーチンとしてメインゲームル
    * IsGameOver()がtrueを返すと、このフェーズに移行します。  
    * IGameModeStrategy.CalculateResult()を呼び出し、リザルト情報を確定させます。  
    * 確定したリザルトをクライアントに通知し、必要に応じて**Unity Gaming Services (Leaderboards)** などの外部サービスにスコアを送信します。
+   * その後、全プレイヤーからの再戦要求を待ち受けます。全員が合意した場合、サーバーはゲーム状態（マップ、スコア等）をリセットし、**シーンを再読み込みすることなく**`Countdown`フェーズへ戻ります。詳細は `Scene-Transition-Strategy.md` を参照してください。
 
 ### **全体のドキュメント:**　
 [./README.md](../../../README.md)
