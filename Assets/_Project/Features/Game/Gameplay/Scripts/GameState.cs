@@ -26,12 +26,25 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             // NetworkVariableの値が変更されたときにイベントを発火させる
             OxygenLevel.OnValueChanged += (previousValue, newValue) => OnOxygenChanged?.Invoke(newValue);
+            PlayerDatas.OnListChanged += HandlePlayerDatasChanged;
         }
 
         public override void OnNetworkDespawn()
         {
             // 忘れずに購読解除
             OxygenLevel.OnValueChanged -= (previousValue, newValue) => OnOxygenChanged?.Invoke(newValue);
+            PlayerDatas.OnListChanged -= HandlePlayerDatasChanged;
+        }
+
+        private void HandlePlayerDatasChanged(NetworkListEvent<PlayerData> changeEvent)
+        {
+            // とりあえず、リストの何かが変わったら全プレイヤーのスコア更新イベントを飛ばす
+            // TODO: より効率的な方法を検討
+            if (NetworkManager.Singleton.IsClient)
+            {
+                var localPlayerId = NetworkManager.Singleton.LocalClientId;
+                OnScoreChanged?.Invoke(GetPlayerScore(localPlayerId));
+            }
         }
 
         public int GetPlayerScore(ulong clientId)
