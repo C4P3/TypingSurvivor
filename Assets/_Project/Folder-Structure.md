@@ -39,7 +39,8 @@ Features/
 │   └── 📂PlayerStatus/
 │
 ├── 📂Game/                 # ゲームプレイシーンに特化した機能群
-│   ├── 📂_Bootstrap/        # [New] シーンの起動と初期化を担当
+│   ├── 📂_Bootstrap/        # [New] シーンの起動と依存性注入(DI)を担当するComposition Root
+│   │   ├── TypingSurvivor.Features.Game.Bootstrap.asmdef # ★GameとUIを参照する上位アセンブリ
 │   │   └── 📂Scripts/
 │   │       └── GameSceneBootstrapper.cs
 │   │
