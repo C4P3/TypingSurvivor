@@ -94,7 +94,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 strategy = new SinglePlayerStrategy();
             }
-            else // Host, Server, etc.
+            else
             {
                 strategy = new MultiPlayerStrategy();
             }

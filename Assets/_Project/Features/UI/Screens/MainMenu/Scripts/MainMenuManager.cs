@@ -19,7 +19,6 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [Header("Game Start")]
         [SerializeField] private GameObject _gameStartPanel; // Panel containing the buttons below
         [SerializeField] private Button _startSinglePlayerButton;
-        [SerializeField] private Button _startHostButton;
         [SerializeField] private Button _joinClientButton;
         [SerializeField] private Button _startServerButton; // For debug
 
@@ -31,7 +30,6 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _gameStartPanel.SetActive(false);
             _signInButton.onClick.AddListener(SignInButton_OnClick);
             _startSinglePlayerButton.onClick.AddListener(StartSinglePlayerButton_OnClick);
-            _startHostButton.onClick.AddListener(StartHostButton_OnClick);
             _joinClientButton.onClick.AddListener(JoinClientButton_OnClick);
             _startServerButton.onClick.AddListener(StartServerButton_OnClick);
 
@@ -57,7 +55,6 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             
             _signInButton.onClick.RemoveListener(SignInButton_OnClick);
             _startSinglePlayerButton.onClick.RemoveListener(StartSinglePlayerButton_OnClick);
-            _startHostButton.onClick.RemoveListener(StartHostButton_OnClick);
             _joinClientButton.onClick.RemoveListener(JoinClientButton_OnClick);
             _startServerButton.onClick.RemoveListener(StartServerButton_OnClick);
         }
@@ -113,27 +110,6 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             }
         }
 
-        private void StartHostButton_OnClick()
-        {
-            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
-            {
-                Debug.LogWarning("Already connected or hosting.");
-                return;
-            }
-
-            AppManager.GameMode = "Host";
-
-            if (NetworkManager.Singleton.StartHost())
-            {
-                Debug.Log("Host started successfully for Multi Player mode.");
-                NetworkManager.Singleton.SceneManager.LoadScene(GameSceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
-            }
-            else
-            {
-                Debug.LogError("Failed to start host for Multi Player mode.");
-            }
-        }
-
         private void JoinClientButton_OnClick()
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
@@ -141,7 +117,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 Debug.LogWarning("Already connected or hosting.");
                 return;
             }
-            AppManager.GameMode = "Client";
+            AppManager.GameMode = "MultiPlay1vs1";
             NetworkManager.Singleton.StartClient();
         }
 
@@ -153,7 +129,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 return;
             }
 
-            AppManager.GameMode = "Server"; // Set mode for server-specific logic
+            AppManager.GameMode = "MultiPlay1vs1";
 
             if (NetworkManager.Singleton.StartServer())
             {
