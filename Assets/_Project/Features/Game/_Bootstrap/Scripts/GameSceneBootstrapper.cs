@@ -5,6 +5,7 @@ using TypingSurvivor.Features.Game.Settings;
 using TypingSurvivor.Features.Core.PlayerStatus;
 using System.Collections.Generic;
 using TypingSurvivor.Features.Game.Level;
+using TypingSurvivor.Features.Game.Camera;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -22,6 +23,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         [SerializeField] private GameManager _gameManager;
         [SerializeField] private LevelManager _levelManager;
         [SerializeField] private ItemService _itemService;
+        [SerializeField] private CameraManager _cameraManager;
         // [SerializeField] private InGameHUDManager _hudManager; // In the future, UI can also be initialized here
 
         private void Awake()
@@ -98,10 +100,16 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
             
             _gameManager.Initialize(
-                _gameState, 
+                _gameState,
                 strategy,
                 serviceLocator.GetService<ILevelService>()
                 );
+
+            // --- Inject dependencies into CameraManager ---
+            if (_cameraManager != null)
+            {
+                _cameraManager.Initialize(serviceLocator.GetService<IGameStateReader>());
+            }
 
             // --- Inject dependencies into ItemService ---
             _itemService.Initialize(

@@ -145,8 +145,10 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
                 // プレイヤーを生成してスポーン
                 GameObject playerInstance = Instantiate(_gameConfig.PlayerPrefab, spawnPos, Quaternion.identity);
-                playerInstance.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
+                var playerNetworkObject = playerInstance.GetComponent<NetworkObject>();
+                playerNetworkObject.SpawnAsPlayerObject(clientId, true);
             }
+
             yield return null;
         }
 

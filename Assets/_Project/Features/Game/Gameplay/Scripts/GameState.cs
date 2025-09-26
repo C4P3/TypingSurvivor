@@ -17,6 +17,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         public NetworkList<PlayerData> PlayerDatas { get; } = new();
 
         // --- IGameStateReader Implementation ---
+        public NetworkVariable<GamePhase> CurrentPhaseNV => CurrentPhase;
         public float CurrentOxygen => OxygenLevel.Value;
         public event Action<float> OnOxygenChanged;
         public event Action<int> OnScoreChanged; // TODO: NetworkListの変更を検知して発火させる仕組みが必要
