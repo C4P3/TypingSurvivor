@@ -1,5 +1,5 @@
 # 開発の詳細
-[Assets\_Project\README.md](Assets\_Project\README.md)を参照してください。
+[Assets\_Project\README.md](.\Assets\_Project\README.md)を参照してください。
 
 # 実行方法 (How to Run)
 
