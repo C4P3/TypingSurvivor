@@ -3,59 +3,59 @@ using Unity.Netcode;
 using TypingSurvivor.Features.Game.Gameplay;
 using TypingSurvivor.Features.Core.PlayerStatus;
 
-public class InGameHUDManager : NetworkBehaviour
+namespace TypingSurvivor.Features.UI.Screens.InGameHUD
 {
-    // 子オブジェクトなどから参照を設定するUI部品
-    [SerializeField] private OxygenView _oxygenView;
-    [SerializeField] private ScoreView _scoreView;
-
-    // DIコンテナから注入される、読み取り専用のインターフェース
-    private IGameStateReader _gameStateReader;
-    private IPlayerStatusSystemReader _playerStatusReader; // Reader I/Fを分離
-
-
-    // [Inject]の代わりに、外部から呼び出される公開の初期化メソッドを用意
-    public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader)
+    public class InGameHUDManager : NetworkBehaviour
     {
-        _gameStateReader = gameStateReader;
-        _playerStatusReader = playerStatusReader;
+        // 子オブジェクトなどから参照を設定するUI部品
+        [SerializeField] private OxygenView _oxygenView;
+        [SerializeField] private ScoreView _scoreView;
 
-        // イベントの購読など
-        OnEnable();
-    }
+        // DIコンテナから注入される、読み取り専用のインターフェース
+        private IGameStateReader _gameStateReader;
+        private IPlayerStatusSystemReader _playerStatusReader; // Reader I/Fを分離
 
-    private void OnEnable()
-    {
-        // イベントの購読を開始する
-        SubscribeEvents();
-    }
-    private void OnDisable()
-    {
-        // 必ず購読解除
-        UnSubscribeEvents();
-    }
 
-    private void SubscribeEvents()
-    {
-        // 各リーダーが持つイベントを購読する
-        _gameStateReader.OnOxygenChanged += OnOxygenChanged;
-        _gameStateReader.OnScoreChanged += OnScoreChanged;
-    }
-    private void UnSubscribeEvents()
-    {
-        // 購読解除する
-        _gameStateReader.OnOxygenChanged -= OnOxygenChanged;
-        _gameStateReader.OnScoreChanged -= OnScoreChanged;
-    }
+        // [Inject]の代わりに、外部から呼び出される公開の初期化メソッドを用意
+        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader)
+        {
+            _gameStateReader = gameStateReader;
+            _playerStatusReader = playerStatusReader;
 
-    // イベントを受け取ったら、担当のUI部品に更新を指示する
-    private void OnOxygenChanged(float newOxygenValue)
-    {
-        _oxygenView.UpdateView(newOxygenValue, _playerStatusReader.GetStatValue(OwnerClientId, PlayerStat.MaxOxygen));
-    }
+            // 依存関係が注入されたので、イベントの購読を開始する
+            SubscribeEvents();
+        }
 
-    private void OnScoreChanged(int newScoreValue)
-    {
-        _scoreView.UpdateView(newScoreValue);
+        private void OnDisable()
+        {
+            // 必ず購読解除
+            UnSubscribeEvents();
+        }
+
+        private void SubscribeEvents()
+        {
+            if (_gameStateReader == null) return;
+            // 各リーダーが持つイベントを購読する
+            _gameStateReader.OnOxygenChanged += OnOxygenChanged;
+            _gameStateReader.OnScoreChanged += OnScoreChanged;
+        }
+        private void UnSubscribeEvents()
+        {
+            if (_gameStateReader == null) return;
+            // 購読解除する
+            _gameStateReader.OnOxygenChanged -= OnOxygenChanged;
+            _gameStateReader.OnScoreChanged -= OnScoreChanged;
+        }
+
+        // イベントを受け取ったら、担当のUI部品に更新を指示する
+        private void OnOxygenChanged(float newOxygenValue)
+        {
+            _oxygenView.UpdateView(newOxygenValue, _playerStatusReader.GetStatValue(OwnerClientId, PlayerStat.MaxOxygen));
+        }
+
+        private void OnScoreChanged(int newScoreValue)
+        {
+            _scoreView.UpdateView(newScoreValue);
+        }
     }
 }

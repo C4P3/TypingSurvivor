@@ -1,0 +1,19 @@
+{
+    "name": "TypingSurvivor.Features.Game.Bootstrap",
+    "rootNamespace": "",
+    "references": [
+        "TypingSurvivor.Game",
+        "TypingSurvivor.UI",
+        "TypingSurvivor.Core",
+        "Unity.Netcode.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
