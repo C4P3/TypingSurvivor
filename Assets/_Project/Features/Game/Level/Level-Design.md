@@ -4,73 +4,87 @@
 
 Level機能は、ゲームの舞台となる**世界の物理的な状態**を管理します。プレイヤーやアイテムが存在する「空間」そのものに対する全ての責務を持ちます。
 
-* ゲーム開始時に、**地形生成**と**アイテム配置**のアルゴリズムを組み合わせてマップを生成する。  
-* 広大なマップを効率的に扱うため、プレイヤーの周囲の**チャンク**のみをクライアントと同期する。  
-* プレイヤーの移動に応じて、動的にチャンクをロード/アンロードする。  
-* 外部からの要求（DestroyBlockなど）に応じてマップの状態を変更し、その結果を全クライアントに同期させる。
+*   `GameManager`から渡される**「マップ生成リクエスト」**に基づき、地形生成とアイテム配置を組み合わせてワールドを構築する。
+*   広大な、あるいは複数の離れた領域から成るマップを効率的に扱うため、プレイヤーの周囲の**チャンク**のみをクライアントと同期する。
+*   外部からの要求（`DestroyBlock`など）に応じてマップの状態を変更し、その結果を全クライアントに同期させる。
 
-## **2\. 主要コンポーネント**
+## **2. 設計思想: 「マップ生成リクエスト」モデル**
 
-### **2.1. LevelManager.cs**
+本プロジェクトのマップ生成は、将来の多様なゲームモード（シード値共有、協力プレイなど）に柔軟に対応するため、**「マップ生成リクエスト」**という設計思想に基づいています。
 
-* **役割**: ILevelServiceインターフェースを実装する、サーバーサイドのメインクラス。NetworkBehaviourを継承します。マップ生成とアイテム配置のオーケストレーター（指揮者）としても機能します。
-* **責務**:  
-  * **マップ生成の指揮**: `IMapGenerator`と`IItemPlacementStrategy`、`ItemRegistry`への参照を保持し、サーバー起動時にこれらを連携させて完全なマップデータを構築する。
-  * **状態の所有**: NetworkList<TileData>として、現在アクティブな（同期対象の）タイルデータを保持する。  
-  * **チャンク管理**: 全プレイヤーの位置を監視し、どのチャンクをアクティブにすべきかを判断し、NetworkListの内容を更新（ロード/アンロード）する。  
-  * **ロジックの実行**: 外部からの要求に応じてマップの状態を変更したり、情報を返したりする。`ILevelService`インターフェースを通じて以下の機能を提供する。
-    * `TileBase GetTile(Vector3Int gridPosition)`: 指定座標にあるタイル（ブロックまたはアイテム）を返す。
-    * `bool IsWalkable(Vector3Int gridPosition)`: 指定座標が歩行可能かを返す。
-    * `bool HasItemTile(Vector3Int gridPosition)`: 指定座標にアイテムタイルが存在するかを返す。
-    * `void RemoveItem(Vector3Int gridPosition)`: 指定座標のアイテムをマップから削除する。
-    * `void DestroyBlock(ulong clientId, Vector3Int gridPosition)`: 指定座標のブロックを破壊する。
-    * **スポーン地点の計算と準備**:
-        * `List<Vector3Int> GetSpawnPoints(int playerCount, ScriptableObject strategy)`: `ISpawnPointStrategy` を受け取り、ゲームモードに応じたプレイヤーの初期スポーン地点リストを計算して返す。
-        * `void ClearArea(Vector3Int gridPosition, int radius)`: 指定された座標の周辺を指定された半径分、更地にする。
-  * **イベントの発行**: ブロックが破壊された際などに、OnBlockDestroyed_Serverのようなサーバーサイドイベントを発行し、GameManagerなどの他システムに事実を通知する。
+このモデルでは、`GameManager`（司令官）がマップ生成の詳細を知る必要はありません。代わりに、`GameManager`は現在のゲームモードに応じて**「どのようなワールドを作ってほしいか」という設計図 (`MapGenerationRequest`)** を作成し、それを`LevelManager`（建築家）に渡します。`LevelManager`は受け取った設計図通りにワールドを構築することにのみ責任を持ちます。
 
-### **2.2. IMapGenerator.cs (Interface / ScriptableObject)**
+### **2.1. `MapGenerationRequest` モデル**
 
-* **役割**: **地形（ブロックタイル）の生成アルゴリズム**をカapsule化する。**ストラテジーパターン**を採用。  
-* **インターフェース**: `List<TileData> Generate(long seed, Dictionary<TileBase, int> tileIdMap);`  
-* **責務**: 地形の生成にのみ責任を持ち、アイテムの配置については関知しない。
-* **実装例**: PerlinNoiseMapGenerator.csなど。
+この設計の核となるデータ構造です。
 
-### **2.3. IItemPlacementStrategy.cs (Interface / ScriptableObject)**
+```csharp
+// ワールド全体の生成ルールを定義
+public class MapGenerationRequest
+{
+    public long BaseSeed; // 0の場合は完全ランダム
+    public List<SpawnArea> SpawnAreas; // 各プレイヤー/チームの領域定義
+}
 
-* **役割**: **アイテムの配置アルゴリズム**をカプセル化する。**ストラテジーパターン**を採用。
-* **インターフェース**: `List<TileData> PlaceItems(List<TileData> blockTiles, ItemRegistry itemRegistry, System.Random prng, Dictionary<TileBase, int> tileIdMap);`
-* **責務**: 生成済みの地形情報と登録済みのアイテムリストを受け取り、どこにどのアイテムを配置するかのロジックに責任を持つ。
-* **実装例**: `RandomItemPlacementStrategy.cs`（地形の空きスペースに、`ItemRegistry`の重みに基づいてランダムにアイテムを配置する）。
+// 個別のスポーン領域の定義
+public class SpawnArea
+{
+    public List<ulong> PlayerClientIds; // このエリアにスポーンするプレイヤー
+    public Vector2Int WorldOffset;      // このエリアの中心となるワールド座標オフセット
+    public IMapGenerator MapGenerator;  // このエリアの地形を生成するジェネレーター
+    public ISpawnPointStrategy SpawnPointStrategy; // エリア内のスポーン地点を決める戦略
+}
+```
 
-### **2.4. TileData.cs (struct)**
+### **2.2. 多様なゲームモードの実現**
 
-* **役割**: タイルの情報をネットワークで同期するための、カスタムデータ構造体。  
-* **実装要件**:  
-  * **INetworkSerializable**: データをネットワーク送信用にシリアライズ/デシリアライズする方法を定義します。  
-  * **IEquatable\<TileData\>**: NetworkListが内部で要素を比較（検索、削除など）するために必要な、等価判定のルールを定義します。  
-* **保持するデータ**:  
-  * Vector3Int Position: タイルのグリッド座標。  
-  * int TileId: TileBaseアセットを識別するための整数ID。
+このリクエストモデルにより、`GameManager`がリクエストの作り方を変えるだけで、様々なルールを実装できます。
 
-## **3\. チャンクベース同期システムの動作フロー**
+*   **通常対戦（ランダムシード、位置分離）**:
+    *   `BaseSeed = 0` (ランダム)
+    *   `SpawnAreas`に、プレイヤーA用 (`WorldOffset=(0,0)`) とプレイヤーB用 (`WorldOffset=(1000,0)`) の2つの`SpawnArea`を追加する。
+*   **シード値共有マッチ（シード指定、位置分離）**:
+    *   `BaseSeed`にルームIDなどから生成した値を設定。
+    *   他は通常対戦と同じ。
+*   **チーム協力モード（シード指定、位置共有）**:
+    *   `BaseSeed`を指定。
+    *   `SpawnAreas`に、プレイヤーAとBを**同じリスト**に含む単一の`SpawnArea` (`WorldOffset=(0,0)`) を追加する。`SpawnPointStrategy`には、味方同士が近くにスポーンする`CoopSpawnStrategy`を使用する。
 
-1. **サーバー起動時**:  
-   * `LevelManager`はまず`IMapGenerator`を使って**地形（ブロック）**の全データを生成する。
-   * 次に、生成された地形データと`ItemRegistry`を`IItemPlacementStrategy`に渡し、**配置するアイテム**の全データを生成する。
-   * `LevelManager`は、これらのブロックとアイテムのデータをチャンクごとに分割してメモリ上に保持する。
-2. **プレイヤー参加/移動時**:  
-   * LevelManagerは、プレイヤーからのスポーン/移動イベント（PlayerFacadeが発行）を受け取ります。  
-   * 全プレイヤーの位置を基に、「現在アクティブにすべきチャンク」のセットを計算します。  
-   * 現在同期されているチャンクのセットと比較し、差分を求めます。  
-     * **ロード**: 新たに必要になったチャンクのタイルデータを、サーバーの全マップデータからNetworkList\<TileData\>にAddします。  
-     * **アンロード**: 不要になったチャンクのタイルデータを、NetworkList\<TileData\>からRemoveします。  
-3. **クライアント側**:  
-   * クライアントのLevelManagerは、NetworkListのOnListChangedイベントを購読します。  
-   * Addイベントが来たら、対応するタイルをローカルのTilemapに描画（SetTile）します。  
-   * Removeイベントが来たら、対応するタイルをローカルのTilemapから削除します。
+## **3\. 主要コンポーネント**
 
-このイベント駆動のチャンクシステムにより、広大なマップでもクライアントが必要なデータのみを効率的に同期することが可能になります。
+### **3.1. LevelManager.cs**
+
+*   **役割**: `ILevelService`インターフェースを実装する、サーバーサイドのメインクラス。**マップ生成リクエストの実行者**。
+*   **責務**:
+    *   `GenerateWorld(MapGenerationRequest request)`: `GameManager`からリクエストを受け取り、その内容に従ってワールド全体を構築する唯一の公開メソッド。リクエスト内の`SpawnAreas`をループし、各エリアの地形を生成・マージしてチャンクデータとして保持する。
+    *   **状態の所有**: `NetworkList<TileData>`として、現在アクティブな（同期対象の）タイルデータを保持する。
+    *   **チャンク管理**: 全プレイヤーの位置を監視し、どのチャンクをアクティブにすべきかを判断し、`NetworkList`の内容を更新する。
+    *   **ロジックの実行**: `ILevelService`インターフェースを通じて、タイル情報の取得、ブロックの破壊、スポーン地点の計算などの機能を提供する。
+
+### **3.2. IMapGenerator.cs (Interface / ScriptableObject)**
+
+*   **役割**: **地形（ブロックタイル）の生成アルゴリズム**をカプセル化する。
+*   **インターフェース**: `List<TileData> Generate(long seed, Vector2Int offset, ...)`
+*   **責務**: 与えられたシード値と**ワールド座標オフセット**に基づき、特定の領域の地形データを生成する。
+
+### **3.3. ISpawnPointStrategy.cs (Interface / ScriptableObject)**
+
+*   **役割**: 特定のマップ領域内での**スポーン地点を決定するアルゴリズム**をカプセル化する。
+*   **インターフェース**: `List<Vector3Int> GetSpawnPoints(SpawnAreaContext context, ...)`
+*   **責務**: 自身の担当する領域の地形情報に基づき、安全なスポーン地点を計算する。
+
+## **4\. チャンクベース同期システムの動作フロー**
+
+1.  **サーバー起動時**:
+    *   `GameManager`が`MapGenerationRequest`を構築し、`LevelManager.GenerateWorld(request)`を呼び出す。
+    *   `LevelManager`はリクエストに従い、全ての`SpawnArea`のマップデータを生成し、チャンクごとに分割してメモリ上に保持する。
+2.  **プレイヤー参加/移動時**:
+    *   `LevelManager`は、プレイヤーの位置に基づき、アクティブにすべきチャンクを計算する。
+    *   `NetworkList<TileData>`の内容を更新し、クライアントが必要なデータのみを動的に同期させる。
+3.  **クライアント側**:
+    *   クライアントの`LevelManager`は、`NetworkList`の変更イベントを購読し、ローカルの`Tilemap`の表示を更新する。
+
+このイベント駆動のチャンクシステムにより、広大で複雑な構成のマップでも、クライアントが必要なデータのみを効率的に同期することが可能になります。
 
 ### **全体のドキュメント:**　
 [README.md](../../../README.md)
