@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using TypingSurvivor.Features.Game.Player;
 using TypingSurvivor.Features.Game.Level;
+using TypingSurvivor.Features.Game.Level.Data;
 
 /// <summary>
 /// Level (タイルマップ) の状態を管理し、変更ロジックを実行するクラス。
@@ -59,6 +60,9 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
     private void Awake()
     {
+        _entireBlockMapData_Server = new Dictionary<Vector2Int, List<TileData>>();
+        _entireItemMapData_Server = new Dictionary<Vector2Int, List<TileData>>();
+
         _mapGenerator = _mapGeneratorSO as IMapGenerator;
         if (_mapGenerator == null) Debug.LogError("IMapGeneratorがアタッチされていません。");
 
@@ -90,8 +94,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
     {
         if (IsServer)
         {
-            GenerateAndChunkMap();
-
             PlayerFacade.OnPlayerSpawned_Server += HandlePlayerSpawned;
             PlayerFacade.OnPlayerDespawned_Server += HandlePlayerDespawned;
             PlayerFacade.OnPlayerMoved_Server += HandlePlayerMoved;
@@ -127,36 +129,114 @@ public class LevelManager : NetworkBehaviour, ILevelService
     }
     #endregion
     
-    #region ILevelService (Server-side Logic)
+    #region Public API
+
+    public void GenerateWorld(MapGenerationRequest request)
+    {
+        if (!IsServer) return;
+
+        // Clear all previous map data
+        _entireBlockMapData_Server.Clear();
+        _entireItemMapData_Server.Clear();
+        _activeBlockTiles.Clear();
+        _activeItemTiles.Clear();
+        _activeChunks_Server.Clear();
+
+        if (_useRandomSeed && request.BaseSeed == 0)
+        {
+            _mapSeed = System.DateTime.Now.Ticks;
+        }
+        else
+        {
+            _mapSeed = request.BaseSeed;
+        }
+        
+        var prng = new System.Random((int)_mapSeed);
+
+        // Generate each area defined in the request
+        foreach (var area in request.SpawnAreas)
+        {
+            var generatedBlocks = area.MapGenerator.Generate(_mapSeed, area.WorldOffset, _tileToBaseIdMap);
+            
+            // TODO: Item placement needs to be integrated here, per-area
+            // var generatedItems = _itemPlacementStrategy.PlaceItems(generatedBlocks, _itemRegistry, prng, _tileToBaseIdMap);
+
+            ChunkAndStoreMapData(generatedBlocks, _entireBlockMapData_Server);
+            // ChunkAndStoreMapData(generatedItems, _entireItemMapData_Server);
+        }
+        
+        UpdateActiveChunks();
+    }
+
+    public List<Vector3Int> GetSpawnPoints(SpawnArea spawnArea)
+    {
+        if (!IsServer) return new List<Vector3Int>();
+
+        // Extract walkable tiles and calculate bounds for the specific area
+        var areaWalkableTiles = new List<Vector3Int>();
+        var areaBounds = new BoundsInt();
+        bool firstTile = true;
+
+        // This is inefficient, but works for now. A better approach would be to query chunks in the area.
+        foreach (var tileData in _entireBlockMapData_Server.SelectMany(kvp => kvp.Value))
+        {
+            // A simple way to check if a tile is within the conceptual bounds of the spawn area
+            if (Vector2.Distance(new Vector2(tileData.Position.x, tileData.Position.y), spawnArea.WorldOffset) < 100) // Assuming area size is around 100
+            {
+                if (firstTile)
+                {
+                    areaBounds.position = tileData.Position;
+                    firstTile = false;
+                }
+                else
+                {
+                    areaBounds.xMin = Mathf.Min(areaBounds.xMin, tileData.Position.x);
+                    areaBounds.yMin = Mathf.Min(areaBounds.yMin, tileData.Position.y);
+                    areaBounds.xMax = Mathf.Max(areaBounds.xMax, tileData.Position.x + 1);
+                    areaBounds.yMax = Mathf.Max(areaBounds.yMax, tileData.Position.y + 1);
+                }
+            }
+        }
+        
+        // Find all walkable tiles within the calculated bounds
+        for (int x = areaBounds.xMin; x < areaBounds.xMax; x++)
+        {
+            for (int y = areaBounds.yMin; y < areaBounds.yMax; y++)
+            {
+                var pos = new Vector3Int(x, y, 0);
+                if (IsWalkable(pos))
+                {
+                    areaWalkableTiles.Add(pos);
+                }
+            }
+        }
+
+        return spawnArea.SpawnPointStrategy.GetSpawnPoints(spawnArea.PlayerClientIds.Count, areaWalkableTiles, areaBounds, spawnArea.WorldOffset);
+    }
+
+    #endregion
+
+    #region ILevelService Implementation (Server-side Logic)
 
     public TileBase GetTile(Vector3Int gridPosition)
     {
         if (!IsServer) return null;
 
-        // ビュー(Tilemap)ではなく、サーバーが持つ権威データから判定する
         Vector2Int chunkPos = WorldToChunkPos(gridPosition);
         
-        // アイテムを優先的に検索
         if (_entireItemMapData_Server.TryGetValue(chunkPos, out var itemTiles))
         {
             foreach (var tileData in itemTiles)
             {
-                if (tileData.Position == gridPosition)
-                {
-                    return _tileIdMap[tileData.TileId];
-                }
+                if (tileData.Position == gridPosition) return _tileIdMap[tileData.TileId];
             }
         }
         
-        // ブロックを検索
         if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var blockTiles))
         {
             foreach (var tileData in blockTiles)
             {
-                if (tileData.Position == gridPosition)
-                {
-                    return _tileIdMap[tileData.TileId];
-                }
+                if (tileData.Position == gridPosition) return _tileIdMap[tileData.TileId];
             }
         }
 
@@ -220,7 +300,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
     {
         if (!IsServer) return false;
         
-        // ビュー(Tilemap)ではなく、サーバーが持つ権威データから判定する
         Vector2Int chunkPos = WorldToChunkPos(gridPosition);
         if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
         {
@@ -228,58 +307,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
         }
         return false;
     }
-
-    public List<Vector3Int> GetSpawnPoints(int playerCount, ScriptableObject strategy)
-    {
-        if (!IsServer) return new List<Vector3Int>();
-
-        var spawnStrategy = strategy as ISpawnPointStrategy;
-        if (spawnStrategy == null)
-        {
-            Debug.LogError("渡されたStrategyがISpawnPointStrategyを実装していません。");
-            return new List<Vector3Int>();
-        }
-
-        // マップ全体の歩行可能なタイルと境界を計算
-        var walkableTiles = new List<Vector3Int>();
-        var mapBounds = new BoundsInt();
-        bool firstTile = true;
-
-        foreach (var chunk in _entireBlockMapData_Server.Values)
-        {
-            foreach (var tileData in chunk)
-            {
-                if (firstTile)
-                {
-                    mapBounds.position = tileData.Position;
-                    firstTile = false;
-                }
-                else
-                {
-                    mapBounds.xMin = Mathf.Min(mapBounds.xMin, tileData.Position.x);
-                    mapBounds.yMin = Mathf.Min(mapBounds.yMin, tileData.Position.y);
-                    mapBounds.xMax = Mathf.Max(mapBounds.xMax, tileData.Position.x + 1);
-                    mapBounds.yMax = Mathf.Max(mapBounds.yMax, tileData.Position.y + 1);
-                }
-            }
-        }
-        
-        // 全てのブロックタイルで埋まっている領域を総当たりし、ブロックが存在しない場所を歩行可能とする
-        for (int x = mapBounds.xMin; x < mapBounds.xMax; x++)
-        {
-            for (int y = mapBounds.yMin; y < mapBounds.yMax; y++)
-            {
-                var pos = new Vector3Int(x, y, 0);
-                if (IsWalkable(pos))
-                {
-                    walkableTiles.Add(pos);
-                }
-            }
-        }
-
-        return spawnStrategy.GetSpawnPoints(playerCount, walkableTiles, mapBounds);
-    }
-
+    
     public void ClearArea(Vector3Int gridPosition, int radius)
     {
         if (!IsServer) return;
@@ -290,75 +318,29 @@ public class LevelManager : NetworkBehaviour, ILevelService
             {
                 var targetPos = new Vector3Int(gridPosition.x + x, gridPosition.y + y, gridPosition.z);
                 
-                // 既存のDestroyBlock/RemoveItemはクライアントへの通知も行うため、それを利用する
                 if (GetTile(targetPos) != null)
                 {
-                    // アイテムかブロックかを判定する必要はない。両方削除を試みる。
                     RemoveItem(targetPos);
-                    DestroyBlock(0, targetPos); // clientIdは破壊者だが、システムによる除去なので0でよい
+                    DestroyBlock(0, targetPos);
                 }
             }
         }
     }
-    #endregion
 
-
-    #region Public Methods (for GameManager)
-    public void RegenerateMap()
-    {
-        if (!IsServer) return;
-
-        // TODO: Unload all currently active chunks first
-        _activeChunks_Server.Clear();
-        
-        GenerateAndChunkMap();
-
-        // After regenerating, we need to update what clients see
-        UpdateActiveChunks();
-    }
     #endregion
 
     #region Server-Side Chunk Management
 
-    private void GenerateAndChunkMap()
+    private void ChunkAndStoreMapData(List<TileData> tiles, Dictionary<Vector2Int, List<TileData>> targetStorage)
     {
-        if (!IsServer) return;
-
-        // Clear existing data for regeneration
-        _entireBlockMapData_Server?.Clear();
-        _entireItemMapData_Server?.Clear();
-        _activeBlockTiles.Clear();
-        _activeItemTiles.Clear();
-
-        _entireBlockMapData_Server = new Dictionary<Vector2Int, List<TileData>>();
-        _entireItemMapData_Server = new Dictionary<Vector2Int, List<TileData>>();
-
-        if (_useRandomSeed) _mapSeed = System.DateTime.Now.Ticks;
-        var prng = new System.Random((int)_mapSeed);
-
-        // 1. 地形を生成
-        var generatedBlocks = _mapGenerator.Generate(_mapSeed, _tileToBaseIdMap);
-
-        // 2. アイテムを配置
-        var generatedItems = _itemPlacementStrategy.PlaceItems(generatedBlocks, _itemRegistry, prng, _tileToBaseIdMap);
-
-        foreach (var tile in generatedBlocks)
+        foreach (var tile in tiles)
         {
             Vector2Int chunkPos = WorldToChunkPos(tile.Position);
-            if (!_entireBlockMapData_Server.ContainsKey(chunkPos))
+            if (!targetStorage.ContainsKey(chunkPos))
             {
-                _entireBlockMapData_Server[chunkPos] = new List<TileData>();
+                targetStorage[chunkPos] = new List<TileData>();
             }
-            _entireBlockMapData_Server[chunkPos].Add(tile);
-        }
-        foreach (var tile in generatedItems)
-        {
-            Vector2Int chunkPos = WorldToChunkPos(tile.Position);
-            if (!_entireItemMapData_Server.ContainsKey(chunkPos))
-            {
-                _entireItemMapData_Server[chunkPos] = new List<TileData>();
-            }
-            _entireItemMapData_Server[chunkPos].Add(tile);
+            targetStorage[chunkPos].Add(tile);
         }
     }
     

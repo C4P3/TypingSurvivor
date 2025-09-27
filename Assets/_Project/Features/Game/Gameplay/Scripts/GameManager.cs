@@ -1,14 +1,14 @@
-using Unity.Netcode;
-using UnityEngine;
-using System;
 using System.Collections;
+using TypingSurvivor.Features.Game.Level.Data;
+using TypingSurvivor.Features.Game.Settings;
 using System.Collections.Generic;
 using System.Linq;
-using TypingSurvivor.Features.Game.Gameplay.Data;
-using TypingSurvivor.Features.Game.Settings;
+using Unity.Netcode;
+using UnityEngine;
 using TypingSurvivor.Features.Game.Level;
+using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Game.Player;
-using TypingSurvivor.Features.Core.PlayerStatus; // ILevelServiceのために追加
+using TypingSurvivor.Features.Game.Gameplay.Data;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -82,6 +82,22 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             if (!IsServer) return;
 
+            if (_playerInstances.TryGetValue(clientId, out var playerFacade))
+            {
+                // Remove from synced list
+                for (int i = 0; i < _gameState.SpawnedPlayers.Count; i++)
+                {
+                    if (_gameState.SpawnedPlayers[i].TryGet(out var networkObject))
+                    {
+                        if (networkObject == playerFacade.NetworkObject)
+                        {
+                            _gameState.SpawnedPlayers.RemoveAt(i);
+                            break;
+                        }
+                    }
+                }
+            }
+            
             _playerInstances.Remove(clientId);
             for (int i = _gameState.PlayerDatas.Count - 1; i >= 0; i--)
             {
@@ -147,40 +163,134 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
         }
 
+        private IEnumerator InitialSpawnPhase()
+        {
+            // 1. Build the map generation request based on the game mode
+            var request = new MapGenerationRequest();
+            var clientIds = NetworkManager.Singleton.ConnectedClientsIds.ToList();
+
+            // For now, use a simple logic. This can be expanded for different modes.
+            if (_gameModeStrategy is MultiPlayerStrategy)
+            {
+                // Player 1
+                request.SpawnAreas.Add(new SpawnArea
+                {
+                    PlayerClientIds = new List<ulong> { clientIds[0] },
+                    WorldOffset = new Vector2Int(0, 0),
+                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                    SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
+                });
+                // Player 2
+                request.SpawnAreas.Add(new SpawnArea
+                {
+                    PlayerClientIds = new List<ulong> { clientIds[1] },
+                    WorldOffset = new Vector2Int(1000, 0),
+                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                    SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
+                });
+            }
+            else // SinglePlayer
+            {
+                request.SpawnAreas.Add(new SpawnArea
+                {
+                    PlayerClientIds = new List<ulong> { clientIds[0] },
+                    WorldOffset = new Vector2Int(0, 0),
+                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
+                });
+            }
+
+            // 2. Tell LevelManager to build the world
+            _levelService.GenerateWorld(request);
+            yield return null; // Give LevelManager a frame to process
+
+            // 3. Spawn players in their designated areas
+            foreach (var area in request.SpawnAreas)
+            {
+                var spawnPoints = _levelService.GetSpawnPoints(area);
+                for (int i = 0; i < area.PlayerClientIds.Count; i++)
+                {
+                    ulong clientId = area.PlayerClientIds[i];
+                    Vector3Int gridPos = spawnPoints[i];
+                    _levelService.ClearArea(gridPos, 1);
+                    Vector3 spawnPos = _grid.GetCellCenterWorld(gridPos);
+
+                    GameObject playerInstance = Instantiate(_gameConfig.PlayerPrefab, spawnPos, Quaternion.identity);
+                    var playerFacade = playerInstance.GetComponent<TypingSurvivor.Features.Game.Player.PlayerFacade>();
+                    
+                    // Set grid position BEFORE spawning to prevent warp
+                    playerFacade.NetworkGridPosition.Value = gridPos;
+
+                    var playerNetworkObject = playerInstance.GetComponent<NetworkObject>();
+                    playerNetworkObject.SpawnAsPlayerObject(clientId, true);
+
+                    _playerInstances[clientId] = playerFacade;
+                    _gameState.SpawnedPlayers.Add(playerNetworkObject);
+                }
+            }
+        }
+
         private IEnumerator FinishedPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.Finished;
             _rematchRequesters.Clear();
 
-            // Wait for all connected players to request a rematch
             while (_rematchRequesters.Count < _playerInstances.Count)
             {
-                // TODO: Add a timeout here
                 yield return null;
             }
-
+            
             // --- Prepare for the next round ---
-
-            // 1. Reset scores, oxygen, etc.
             ResetPlayersForRematch();
 
-            // 2. Regenerate map
-            _levelService.RegenerateMap();
-
-            // 3. Reposition players
+            // Regenerate world using the same request logic as initial spawn
+            // This assumes the same players and mode for the rematch
+            var request = new MapGenerationRequest();
             var clientIds = _playerInstances.Keys.ToList();
-            var spawnPoints = _levelService.GetSpawnPoints(clientIds.Count, GetCurrentSpawnStrategy());
 
-            for (int i = 0; i < clientIds.Count; i++)
+            if (_gameModeStrategy is MultiPlayerStrategy)
             {
-                var player = _playerInstances[clientIds[i]];
-                var gridPos = spawnPoints[i];
-                _levelService.ClearArea(gridPos, 1);
-                var spawnPos = _grid.GetCellCenterWorld(gridPos);
-                player.RespawnAt(spawnPos);
+                 request.SpawnAreas.Add(new SpawnArea
+                {
+                    PlayerClientIds = new List<ulong> { clientIds[0] },
+                    WorldOffset = new Vector2Int(0, 0),
+                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                    SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
+                });
+                request.SpawnAreas.Add(new SpawnArea
+                {
+                    PlayerClientIds = new List<ulong> { clientIds[1] },
+                    WorldOffset = new Vector2Int(1000, 0),
+                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                    SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
+                });
             }
+            else
+            {
+                 request.SpawnAreas.Add(new SpawnArea
+                {
+                    PlayerClientIds = new List<ulong> { clientIds[0] },
+                    WorldOffset = new Vector2Int(0, 0),
+                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
+                });
+            }
+            _levelService.GenerateWorld(request);
+            yield return null;
 
-            yield return null; // Wait a frame for changes to propagate before starting the next round
+            // Reposition players
+            foreach (var area in request.SpawnAreas)
+            {
+                var spawnPoints = _levelService.GetSpawnPoints(area);
+                for (int i = 0; i < area.PlayerClientIds.Count; i++)
+                {
+                    var player = _playerInstances[area.PlayerClientIds[i]];
+                    var gridPos = spawnPoints[i];
+                    _levelService.ClearArea(gridPos, 1);
+                    var spawnPos = _grid.GetCellCenterWorld(gridPos);
+                    player.RespawnAt(spawnPos);
+                }
+            }
         }
 
         public void ResetPlayersForRematch()
@@ -204,44 +314,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 
                 _gameState.PlayerDatas[i] = data;
             }
-        }
-
-        private IEnumerator InitialSpawnPhase()
-        {
-            var clientIds = NetworkManager.Singleton.ConnectedClientsIds.ToList();
-            int playerCount = clientIds.Count;
-            var spawnPoints = _levelService.GetSpawnPoints(playerCount, GetCurrentSpawnStrategy());
-
-            if (spawnPoints.Count < playerCount)
-            {
-                Debug.LogError("Not enough spawn points for players!");
-                yield break;
-            }
-
-            for (int i = 0; i < playerCount; i++)
-            {
-                ulong clientId = clientIds[i];
-                Vector3Int gridPos = spawnPoints[i];
-                _levelService.ClearArea(gridPos, 1);
-                Vector3 spawnPos = _grid.GetCellCenterWorld(gridPos);
-
-                GameObject playerInstance = Instantiate(_gameConfig.PlayerPrefab, spawnPos, Quaternion.identity);
-                var playerNetworkObject = playerInstance.GetComponent<NetworkObject>();
-                playerNetworkObject.SpawnAsPlayerObject(clientId, true);
-
-                // Register the instance
-                var playerFacade = playerInstance.GetComponent<TypingSurvivor.Features.Game.Player.PlayerFacade>();
-                _playerInstances[clientId] = playerFacade;
-            }
-
-            yield return null;
-        }
-
-        private ScriptableObject GetCurrentSpawnStrategy()
-        {
-            return _gameModeStrategy.PlayerCount > 1
-                ? _gameConfig.VersusSpawnStrategy
-                : _gameConfig.SinglePlayerSpawnStrategy;
         }
 
         // --- IGameStateWriter Implementation ---

@@ -15,21 +15,31 @@ namespace TypingSurvivor.Features.Game.Gameplay
         public NetworkVariable<float> OxygenLevel { get; } = new(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         public NetworkList<PlayerData> PlayerDatas { get; } = new();
+        private readonly NetworkList<NetworkObjectReference> _spawnedPlayers = new();
 
         // --- IGameStateReader Implementation ---
         public NetworkVariable<GamePhase> CurrentPhaseNV => CurrentPhase;
+        public NetworkList<NetworkObjectReference> SpawnedPlayers => _spawnedPlayers;
         public float CurrentOxygen => OxygenLevel.Value; // Kept for single player logic for now
         public event Action<ulong, float> OnOxygenChanged;
         public event Action<int> OnScoreChanged;
 
         public override void OnNetworkSpawn()
         {
+            _spawnedPlayers.OnListChanged += HandleSpawnedPlayersChanged;
             PlayerDatas.OnListChanged += HandlePlayerDatasChanged;
         }
 
         public override void OnNetworkDespawn()
         {
+            _spawnedPlayers.OnListChanged -= HandleSpawnedPlayersChanged;
             PlayerDatas.OnListChanged -= HandlePlayerDatasChanged;
+        }
+
+        private void HandleSpawnedPlayersChanged(NetworkListEvent<NetworkObjectReference> changeEvent)
+        {
+            // This is just a trigger for systems like CameraManager to refresh.
+            // The handler itself doesn't need to do anything.
         }
 
         private void HandlePlayerDatasChanged(NetworkListEvent<PlayerData> changeEvent)

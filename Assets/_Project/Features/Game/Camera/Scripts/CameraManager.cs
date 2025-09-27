@@ -17,7 +17,6 @@ namespace TypingSurvivor.Features.Game.Camera
         [SerializeField] private List<CameraFollow> _cameras;
 
         private IGameStateReader _gameStateReader;
-        private bool _isCameraSetupDone = false;
 
         public void Initialize(IGameStateReader gameStateReader)
         {
@@ -28,9 +27,9 @@ namespace TypingSurvivor.Features.Game.Camera
         {
             if (_gameStateReader != null)
             {
-                _gameStateReader.CurrentPhaseNV.OnValueChanged += HandlePhaseChanged;
-                // 既にゲームが始まっている場合（途中参加など）のために、現在の状態で一度チェック
-                HandlePhaseChanged(_gameStateReader.CurrentPhaseNV.Value, _gameStateReader.CurrentPhaseNV.Value);
+                _gameStateReader.SpawnedPlayers.OnListChanged += HandlePlayersChanged;
+                // Initial setup with current players
+                HandlePlayersChanged(new NetworkListEvent<NetworkObjectReference>());
             }
         }
 
@@ -38,22 +37,24 @@ namespace TypingSurvivor.Features.Game.Camera
         {
             if (_gameStateReader != null)
             {
-                _gameStateReader.CurrentPhaseNV.OnValueChanged -= HandlePhaseChanged;
+                _gameStateReader.SpawnedPlayers.OnListChanged -= HandlePlayersChanged;
             }
         }
 
-        private void HandlePhaseChanged(GamePhase previousPhase, GamePhase newPhase)
+        private void HandlePlayersChanged(NetworkListEvent<NetworkObjectReference> changeEvent)
         {
-            // カメラ設定は一度だけ実行する
-            if (_isCameraSetupDone) return;
-
-            if (newPhase == GamePhase.Countdown || newPhase == GamePhase.Playing)
+            var playerFacades = new List<PlayerFacade>();
+            foreach (var playerRef in _gameStateReader.SpawnedPlayers)
             {
-                // シーン内の全プレイヤーを検索してカメラを設定
-                var players = FindObjectsOfType<PlayerFacade>();
-                SetupCameras(players);
-                _isCameraSetupDone = true;
+                if (playerRef.TryGet(out var networkObject))
+                {
+                    if (networkObject.TryGetComponent<PlayerFacade>(out var playerFacade))
+                    {
+                        playerFacades.Add(playerFacade);
+                    }
+                }
             }
+            SetupCameras(playerFacades);
         }
 
         private void SetupCameras(IReadOnlyList<PlayerFacade> players)

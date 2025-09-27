@@ -1,4 +1,4 @@
-
+using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Tilemaps;
 
@@ -17,7 +17,8 @@ public interface IMapGenerator
     /// 指定されたシード値に基づき、地形のタイルデータを生成する。
     /// </summary>
     /// <param name="seed">マップ生成に使用するシード値。</param>
+    /// <param name="worldOffset">このマップ領域を生成するワールド座標のオフセット。</param>
     /// <param name="tileIdMap">TileBaseからint IDへの変換マップ。</param>
     /// <returns>生成された地形（ブロック）のTileDataリスト。</returns>
-    List<TileData> Generate(long seed, Dictionary<TileBase, int> tileIdMap);
+    List<TileData> Generate(long seed, Vector2Int worldOffset, Dictionary<TileBase, int> tileIdMap);
 }

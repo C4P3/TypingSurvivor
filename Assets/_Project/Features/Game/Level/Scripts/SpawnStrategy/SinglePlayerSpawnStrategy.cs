@@ -15,31 +15,35 @@ namespace TypingSurvivor.Features.Game.Level
         [Range(0.1f, 1.0f)]
         [SerializeField] private float _centerAreaRatio = 0.5f;
 
-        public List<Vector3Int> GetSpawnPoints(int playerCount, List<Vector3Int> walkableTiles, BoundsInt mapBounds)
+        public List<Vector3Int> GetSpawnPoints(int playerCount, List<Vector3Int> areaWalkableTiles, BoundsInt areaBounds, Vector2Int worldOffset)
         {
             var spawnPoints = new List<Vector3Int>();
-            if (walkableTiles == null || !walkableTiles.Any()) return spawnPoints;
+            if (areaWalkableTiles == null || !areaWalkableTiles.Any()) return spawnPoints;
 
             // マップの中心エリアを計算
-            float centerX = mapBounds.center.x;
-            float centerY = mapBounds.center.y;
-            float width = mapBounds.size.x * _centerAreaRatio;
-            float height = mapBounds.size.y * _centerAreaRatio;
+            float centerX = areaBounds.center.x;
+            float centerY = areaBounds.center.y;
+            float width = areaBounds.size.x * _centerAreaRatio;
+            float height = areaBounds.size.y * _centerAreaRatio;
 
             var centerBounds = new Bounds(new Vector3(centerX, centerY, 0), new Vector3(width, height, 0));
 
             // 中心エリア内の歩行可能なタイルを候補とする
-            var candidateTiles = walkableTiles.Where(p => centerBounds.Contains(p)).ToList();
+            var candidateTiles = areaWalkableTiles.Where(p => centerBounds.Contains(p)).ToList();
             if (!candidateTiles.Any())
             {
                 // 候補がない場合は全域から選ぶ
-                candidateTiles = walkableTiles;
+                candidateTiles = areaWalkableTiles;
             }
 
-            // 候補の中からランダムに1点を選択
+            // 候補の中からランダムに必要数を選択
             var prng = new System.Random();
-            var spawnPoint = candidateTiles[prng.Next(candidateTiles.Count)];
-            spawnPoints.Add(spawnPoint);
+            for (int i = 0; i < playerCount && candidateTiles.Any(); i++)
+            {
+                int index = prng.Next(candidateTiles.Count);
+                spawnPoints.Add(candidateTiles[index]);
+                candidateTiles.RemoveAt(index);
+            }
 
             return spawnPoints;
         }

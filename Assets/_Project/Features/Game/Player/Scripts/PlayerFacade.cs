@@ -83,7 +83,6 @@ namespace TypingSurvivor.Features.Game.Player
                 if (_itemService == null) Debug.LogError("IItemServiceの実装が見つかりません。");
                 if (_statusReader == null) Debug.LogError("IPlayerStatusSystemReaderの実装が見つかりません。");
 
-                NetworkGridPosition.Value = _grid.WorldToCell(transform.position);
                 _currentState.Value = PlayerState.Roaming;
             }
 

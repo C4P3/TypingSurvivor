@@ -9,12 +9,13 @@ namespace TypingSurvivor.Features.Game.Level
     public interface ISpawnPointStrategy
     {
         /// <summary>
-        /// 指定された条件に基づいてスポーン地点のリストを生成する
+        /// 指定されたスポーンエリアのコンテキストに基づいてスポーン地点のリストを生成する
         /// </summary>
-        /// <param name="playerCount">プレイヤーの数</param>
-        /// <param name="walkableTiles">歩行可能なタイル座標のリスト</param>
-        /// <param name="mapBounds">マップの境界</param>
+        /// <param name="playerCount">このエリアにスポーンするプレイヤーの数</param>
+        /// <param name="areaWalkableTiles">このエリア内の歩行可能なタイル座標のリスト</param>
+        /// <param name="areaBounds">このエリアの境界</param>
+        /// <param name="worldOffset">このエリアのワールド座標オフセット</param>
         /// <returns>スポーン地点のグリッド座標リスト</returns>
-        List<Vector3Int> GetSpawnPoints(int playerCount, List<Vector3Int> walkableTiles, BoundsInt mapBounds);
+        List<Vector3Int> GetSpawnPoints(int playerCount, List<Vector3Int> areaWalkableTiles, BoundsInt areaBounds, Vector2Int worldOffset);
     }
 }

@@ -5,57 +5,40 @@ using UnityEngine;
 namespace TypingSurvivor.Features.Game.Level
 {
     /// <summary>
-    /// マルチプレイ対戦用のスポーン戦略。
-    /// 各プレイヤーができるだけ遠くなるようにスポーン地点を選ぶ。
-    /// </summary>
-    [CreateAssetMenu(fileName = "VersusSpawnStrategy", menuName = "TypingSurvivor/SpawnStrategy/Versus")]
+    [CreateAssetMenu(fileName = "AreaSpawnStrategy", menuName = "TypingSurvivor/SpawnStrategy/Area Strategy")]
     public class VersusSpawnStrategy : ScriptableObject, ISpawnPointStrategy
     {
-        public List<Vector3Int> GetSpawnPoints(int playerCount, List<Vector3Int> walkableTiles, BoundsInt mapBounds)
+        [Tooltip("エリアの中心からどのくらいの範囲をスポーン候補とするか（パーセンテージ）")]
+        [Range(0.1f, 1.0f)]
+        [SerializeField] private float _centerAreaRatio = 0.8f;
+
+        public List<Vector3Int> GetSpawnPoints(int playerCount, List<Vector3Int> areaWalkableTiles, BoundsInt areaBounds, Vector2Int worldOffset)
         {
             var spawnPoints = new List<Vector3Int>();
-            if (walkableTiles == null || !walkableTiles.Any() || playerCount <= 0) return spawnPoints;
+            if (areaWalkableTiles == null || !areaWalkableTiles.Any() || playerCount <= 0) return spawnPoints;
 
-            var candidates = new List<Vector3Int>(walkableTiles);
-            var prng = new System.Random();
+            // エリアの中心を計算
+            float centerX = areaBounds.center.x;
+            float centerY = areaBounds.center.y;
+            float width = areaBounds.size.x * _centerAreaRatio;
+            float height = areaBounds.size.y * _centerAreaRatio;
+            var centerBounds = new Bounds(new Vector3(centerX, centerY, 0), new Vector3(width, height, 0));
 
-            // 1人目のスポーン地点をランダムに決定
-            int firstIndex = prng.Next(candidates.Count);
-            var firstPoint = candidates[firstIndex];
-            spawnPoints.Add(firstPoint);
-            candidates.RemoveAt(firstIndex);
-
-            // 2人目以降を決定
-            for (int i = 1; i < playerCount; i++)
+            // 中心エリア内の歩行可能なタイルを候補とする
+            var candidateTiles = areaWalkableTiles.Where(p => centerBounds.Contains(p)).ToList();
+            if (candidateTiles.Count < playerCount)
             {
-                if (!candidates.Any()) break;
+                // 候補が足りない場合は全域から選ぶ
+                candidateTiles = new List<Vector3Int>(areaWalkableTiles);
+            }
 
-                Vector3Int bestCandidate = Vector3Int.zero;
-                float maxMinDistance = -1f;
-
-                // 各候補タイルについて、既に確定した全スポーン地点からの最短距離を計算
-                foreach (var candidate in candidates)
-                {
-                    float minDistanceToAnySpawn = float.MaxValue;
-                    foreach (var spawnPoint in spawnPoints)
-                    {
-                        float dist = Vector3Int.Distance(candidate, spawnPoint);
-                        if (dist < minDistanceToAnySpawn)
-                        {
-                            minDistanceToAnySpawn = dist;
-                        }
-                    }
-
-                    // その最短距離が、今までの候補の中で最大なら、この候補を暫定の最適地点とする
-                    if (minDistanceToAnySpawn > maxMinDistance)
-                    {
-                        maxMinDistance = minDistanceToAnySpawn;
-                        bestCandidate = candidate;
-                    }
-                }
-                
-                spawnPoints.Add(bestCandidate);
-                candidates.Remove(bestCandidate);
+            // 候補の中からランダムに必要数を選択
+            var prng = new System.Random();
+            for (int i = 0; i < playerCount && candidateTiles.Any(); i++)
+            {
+                int index = prng.Next(candidateTiles.Count);
+                spawnPoints.Add(candidateTiles[index]);
+                candidateTiles.RemoveAt(index);
             }
 
             return spawnPoints;

@@ -31,7 +31,7 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
 
     public List<TileBase> AllTiles => _blockTypes?.Select(b => b.tile).Where(t => t != null).ToList();
 
-    public List<TileData> Generate(long seed, Dictionary<TileBase, int> tileIdMap)
+    public List<TileData> Generate(long seed, Vector2Int worldOffset, Dictionary<TileBase, int> tileIdMap)
     {
         var blockTiles = new List<TileData>();
         var prng = new System.Random((int)seed);
@@ -40,7 +40,7 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
         {
             for (int y = 0; y < _height; y++)
             {
-                var tilePos = new Vector3Int(x - _width / 2, y - _height / 2, 0);
+                var tilePos = new Vector3Int(x - _width / 2 + worldOffset.x, y - _height / 2 + worldOffset.y, 0);
 
                 // --- ブロック生成ロジック ---
                 BlockTypeSetting chosenBlock = null;

@@ -10,7 +10,7 @@ public class SimpleTestMapGenerator : ScriptableObject, IMapGenerator
     private List<TileBase> _allTiles = new List<TileBase>() { _wallTile };
     public List<TileBase> AllTiles =>  _allTiles;
 
-    public List<TileData> Generate(long seed, Dictionary<TileBase, int> tileIdMap)
+    public List<TileData> Generate(long seed, Vector2Int worldOffset, Dictionary<TileBase, int> tileIdMap)
     {
         var blockTiles = new List<TileData>();
         if (_wallTile == null || !tileIdMap.TryGetValue(_wallTile, out int wallTileId))
@@ -25,7 +25,7 @@ public class SimpleTestMapGenerator : ScriptableObject, IMapGenerator
             {
                 if (Mathf.Abs(x) == _mapSize || Mathf.Abs(y) == _mapSize)
                 {
-                    blockTiles.Add(new TileData { Position = new Vector3Int(x, y, 0), TileId = wallTileId });
+                    blockTiles.Add(new TileData { Position = new Vector3Int(x + worldOffset.x, y + worldOffset.y, 0), TileId = wallTileId });
                 }
             }
         }
