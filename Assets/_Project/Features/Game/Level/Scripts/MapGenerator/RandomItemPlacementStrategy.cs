@@ -11,18 +11,19 @@ public class RandomItemPlacementStrategy : ScriptableObject, IItemPlacementStrat
     [SerializeField] private float _placementChancePerTile = 0.02f;
 
     public List<TileData> PlaceItems(
-        List<TileData> blockTiles, 
+        List<TileData> areaBlockTiles, 
         ItemRegistry itemRegistry, 
         System.Random prng, 
-        Dictionary<TileBase, int> tileIdMap)
+        Dictionary<TileBase, int> tileIdMap,
+        Vector2Int worldOffset)
     {
         var itemTiles = new List<TileData>();
-        if (itemRegistry == null) return itemTiles;
+        if (itemRegistry == null || !areaBlockTiles.Any()) return itemTiles;
 
         // ブロックが存在する座標を高速に検索できるようHashSetに格納
-        var occupiedPositions = new HashSet<Vector3Int>(blockTiles.Select(t => t.Position));
+        var occupiedPositions = new HashSet<Vector3Int>(areaBlockTiles.Select(t => t.Position));
 
-        // マップの範囲を推定（もっと正確な方法があればそれに越したことはない）
+        // エリアの範囲を推定
         int minX = occupiedPositions.Min(p => p.x);
         int maxX = occupiedPositions.Max(p => p.x);
         int minY = occupiedPositions.Min(p => p.y);

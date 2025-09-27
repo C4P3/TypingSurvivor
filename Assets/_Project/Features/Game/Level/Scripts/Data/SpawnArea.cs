@@ -14,5 +14,6 @@ namespace TypingSurvivor.Features.Game.Level.Data
         public Vector2Int WorldOffset;
         public IMapGenerator MapGenerator;
         public ISpawnPointStrategy SpawnPointStrategy;
+        public IItemPlacementStrategy ItemPlacementStrategy;
     }
 }

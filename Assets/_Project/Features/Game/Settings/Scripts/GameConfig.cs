@@ -26,6 +26,7 @@ namespace TypingSurvivor.Features.Game.Settings
         [Header("Spawn Strategies")]
         public ScriptableObject SinglePlayerSpawnStrategy;
         public ScriptableObject VersusSpawnStrategy;
+        public ScriptableObject DefaultItemPlacementStrategy;
 
         [Header("Map Generators")]
         public ScriptableObject DefaultMapGenerator;

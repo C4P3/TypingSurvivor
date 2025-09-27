@@ -156,13 +156,16 @@ public class LevelManager : NetworkBehaviour, ILevelService
         // Generate each area defined in the request
         foreach (var area in request.SpawnAreas)
         {
+            if (area.MapGenerator == null || area.ItemPlacementStrategy == null)
+            {
+                Debug.LogError("A SpawnArea in the MapGenerationRequest has a null MapGenerator or ItemPlacementStrategy. Skipping this area.");
+                continue;
+            }
             var generatedBlocks = area.MapGenerator.Generate(_mapSeed, area.WorldOffset, _tileToBaseIdMap);
-            
-            // TODO: Item placement needs to be integrated here, per-area
-            // var generatedItems = _itemPlacementStrategy.PlaceItems(generatedBlocks, _itemRegistry, prng, _tileToBaseIdMap);
+            var generatedItems = area.ItemPlacementStrategy.PlaceItems(generatedBlocks, _itemRegistry, prng, _tileToBaseIdMap, area.WorldOffset);
 
             ChunkAndStoreMapData(generatedBlocks, _entireBlockMapData_Server);
-            // ChunkAndStoreMapData(generatedItems, _entireItemMapData_Server);
+            ChunkAndStoreMapData(generatedItems, _entireItemMapData_Server);
         }
         
         UpdateActiveChunks();

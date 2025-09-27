@@ -23,4 +23,5 @@ MonoBehaviour:
   PlayerPrefab: {fileID: 3511757227768039307, guid: 3e70346e69855224faddd4636d720091, type: 3}
   SinglePlayerSpawnStrategy: {fileID: 11400000, guid: 84d7e6d9ef3f72346abd65884e3f570c, type: 2}
   VersusSpawnStrategy: {fileID: 11400000, guid: d919929893f439444a40dbe04f4b12ae, type: 2}
+  DefaultItemPlacementStrategy: {fileID: 11400000, guid: 217f2894330b6a4498b32bf3c17d87f6, type: 2}
   DefaultMapGenerator: {fileID: 11400000, guid: d392453bf04131842b85d06e1ca298ac, type: 2}

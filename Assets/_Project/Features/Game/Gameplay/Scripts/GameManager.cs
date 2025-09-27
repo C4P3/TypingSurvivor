@@ -165,6 +165,13 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
         private IEnumerator InitialSpawnPhase()
         {
+            // --- Pre-flight checks for configuration ---
+            if (_gameConfig.DefaultMapGenerator == null || _gameConfig.VersusSpawnStrategy == null || _gameConfig.DefaultItemPlacementStrategy == null)
+            {
+                Debug.LogError("GameConfig is missing one or more required assets (DefaultMapGenerator, VersusSpawnStrategy, or DefaultItemPlacementStrategy). Aborting spawn.");
+                yield break;
+            }
+
             // 1. Build the map generation request based on the game mode
             var request = new MapGenerationRequest();
             var clientIds = NetworkManager.Singleton.ConnectedClientsIds.ToList();
@@ -172,22 +179,17 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // For now, use a simple logic. This can be expanded for different modes.
             if (_gameModeStrategy is MultiPlayerStrategy)
             {
-                // Player 1
-                request.SpawnAreas.Add(new SpawnArea
+                for (int i = 0; i < clientIds.Count; i++)
                 {
-                    PlayerClientIds = new List<ulong> { clientIds[0] },
-                    WorldOffset = new Vector2Int(0, 0),
-                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
-                });
-                // Player 2
-                request.SpawnAreas.Add(new SpawnArea
-                {
-                    PlayerClientIds = new List<ulong> { clientIds[1] },
-                    WorldOffset = new Vector2Int(1000, 0),
-                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
-                });
+                    request.SpawnAreas.Add(new SpawnArea
+                    {
+                        PlayerClientIds = new List<ulong> { clientIds[i] },
+                        WorldOffset = new Vector2Int(i * 1000, 0),
+                        MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy,
+                        ItemPlacementStrategy = _gameConfig.DefaultItemPlacementStrategy as IItemPlacementStrategy
+                    });
+                }
             }
             else // SinglePlayer
             {
@@ -196,7 +198,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     PlayerClientIds = new List<ulong> { clientIds[0] },
                     WorldOffset = new Vector2Int(0, 0),
                     MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
+                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy,
+                    ItemPlacementStrategy = _gameConfig.DefaultItemPlacementStrategy as IItemPlacementStrategy
                 });
             }
 
@@ -244,26 +247,22 @@ namespace TypingSurvivor.Features.Game.Gameplay
             ResetPlayersForRematch();
 
             // Regenerate world using the same request logic as initial spawn
-            // This assumes the same players and mode for the rematch
             var request = new MapGenerationRequest();
             var clientIds = _playerInstances.Keys.ToList();
 
             if (_gameModeStrategy is MultiPlayerStrategy)
             {
-                 request.SpawnAreas.Add(new SpawnArea
+                for (int i = 0; i < clientIds.Count; i++)
                 {
-                    PlayerClientIds = new List<ulong> { clientIds[0] },
-                    WorldOffset = new Vector2Int(0, 0),
-                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
-                });
-                request.SpawnAreas.Add(new SpawnArea
-                {
-                    PlayerClientIds = new List<ulong> { clientIds[1] },
-                    WorldOffset = new Vector2Int(1000, 0),
-                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
-                });
+                    request.SpawnAreas.Add(new SpawnArea
+                    {
+                        PlayerClientIds = new List<ulong> { clientIds[i] },
+                        WorldOffset = new Vector2Int(i * 1000, 0),
+                        MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy,
+                        ItemPlacementStrategy = _gameConfig.DefaultItemPlacementStrategy as IItemPlacementStrategy
+                    });
+                }
             }
             else
             {
@@ -272,7 +271,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     PlayerClientIds = new List<ulong> { clientIds[0] },
                     WorldOffset = new Vector2Int(0, 0),
                     MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
+                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy,
+                    ItemPlacementStrategy = _gameConfig.DefaultItemPlacementStrategy as IItemPlacementStrategy
                 });
             }
             _levelService.GenerateWorld(request);
