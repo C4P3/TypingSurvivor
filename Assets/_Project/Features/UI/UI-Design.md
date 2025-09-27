@@ -10,22 +10,22 @@ UIシステムの設計は\*\*「UIは“愚かな”ビューであるべき」
 
 ## **2\. 主要コンポーネント**
 
-### **2.1. 画面Manager (例: InGameHUDManager.cs)**
+### **2.1. GameUIManager.cs (UIの司令塔)**
 
-* **役割**: UIの「画面」単位（インゲームHUD、メインメニュー、リザルト画面など）の司令塔。  
-* **責務**:  
-  * DI（手動またはコンテナ）を通じて、必要な\*\*Readerインターフェース\*\*（IGameStateReader, IPlayerStatusSystemReaderなど）への参照を受け取ります。  
-  * Readerインターフェースが公開する**イベント**（OnOxygenChangedなど）を購読します。  
-  * イベントを受け取ったら、自身の配下にある具体的なUIコンポーネント（OxygenViewなど）を呼び出し、表示の更新を指示します。  
-  * 画面内のボタンなどがクリックされた際にイベントを受け取り、AppManager（シーン遷移など）やPlayerFacade（入力の通知）に処理を依頼します。
+* **役割**: `Game`シーン全体のUIの状態を管理する唯一の司令塔。
+* **責務**:
+  * `InGameHUD`, `ResultScreen`, `CountdownUI`など、シーンに存在するUIスクリーンへの参照をインスペクターから保持します。
+  * `IGameStateReader`の`CurrentPhaseNV`イベントを購読します。
+  * `GamePhase`の変更を検知し、現在のフェーズに合ったUIスクリーンのみを表示し、他を非表示にする責務を持ちます。
+  * `ResultScreen`のボタンクリックのようなUIからのイベントを購読し、`GameManager`へのRPC呼び出しなど、適切なゲームロジックへの通知に変換します。
 
-### **2.2. 自己完結型コンポーネント (例: OxygenView.cs)**
+### **2.2. UIスクリーン / コンポーネント (例: ResultScreen.cs, OxygenView.cs)**
 
-* **役割**: 酸素ゲージやスコアラベルといった、単一の責務を持つ再利用可能なUI部品。  
-* **責務**:  
-  * 自身の見た目（Slider, Image, TextMeshProUGUIなど）への参照を保持します。  
-  * 外部（画面Manager）から呼び出されるための、単一の公開メソッド（例: UpdateView(float currentValue, float maxValue)）を持ちます。  
-  * 渡されたデータに基づいて、自身の見た目を更新することにのみ責任を持ちます。ゲームのルールや他のUI部品のことは一切関知しません。
+* **役割**: `ResultScreen`のような画面単位のUIや、`OxygenView`のような単一責務のUI部品。これらはもはや`Manager`である必要はありません。
+* **責務**:
+  * 自身の見た目（Slider, Buttonなど）への参照を保持します。
+  * 外部（`GameUIManager`）から呼び出されるための公開メソッド（例: `Show(string message)`, `UpdateView(float value)`)と、外部が購読するためのC#イベント（例: `OnRematchClicked`）を持ちます。
+  * 渡されたデータに基づいて自身の見た目を更新したり、ユーザーの入力をイベントとして通知することにのみ責任を持ちます。
 
 ## **3\. データ更新のフロー**
 

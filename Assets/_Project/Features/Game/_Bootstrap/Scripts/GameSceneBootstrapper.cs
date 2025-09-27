@@ -6,7 +6,7 @@ using TypingSurvivor.Features.Core.PlayerStatus;
 using System.Collections.Generic;
 using TypingSurvivor.Features.Game.Level;
 using TypingSurvivor.Features.Game.Camera;
-using TypingSurvivor.Features.UI.Screens.InGameHUD;
+using TypingSurvivor.Features.UI;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -25,7 +25,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         [SerializeField] private LevelManager _levelManager;
         [SerializeField] private ItemService _itemService;
         [SerializeField] private CameraManager _cameraManager;
-        [SerializeField] private InGameHUDManager _hudManager;
+        [SerializeField] private GameUIManager _gameUIManager;
 
         private void Awake()
         {
@@ -119,12 +119,13 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 serviceLocator.GetService<IPlayerStatusSystemWriter>()
             );
 
-            // --- Example of injecting dependencies into UI ---
-            if (_hudManager != null)
+            // --- Inject dependencies into UI ---
+            if (_gameUIManager != null)
             {
-                _hudManager.Initialize(
+                _gameUIManager.Initialize(
                     serviceLocator.GetService<IGameStateReader>(),
-                    serviceLocator.GetService<IPlayerStatusSystemReader>()
+                    serviceLocator.GetService<IPlayerStatusSystemReader>(),
+                    _gameManager
                 );
             }
         }

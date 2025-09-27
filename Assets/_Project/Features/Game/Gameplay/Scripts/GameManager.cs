@@ -192,5 +192,29 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             Debug.Log($"Game phase changed to: {newPhase}");
         }
+
+        // --- Rematch Logic ---
+        [ServerRpc(RequireOwnership = false)]
+        public void RequestRematchServerRpc(ServerRpcParams rpcParams = default)
+        {
+            // TODO: Add logic to track which players have requested a rematch
+            Debug.Log($"Player {rpcParams.Receive.SenderClientId} requested a rematch.");
+
+            // If all players have requested a rematch, start the process.
+            // For now, we'll just assume one player is enough for testing.
+            StartRematch();
+        }
+
+        public void StartRematch()
+        {
+            if (!IsServer) return;
+
+            Debug.Log("Starting rematch...");
+            // TODO:
+            // 1. Reset all game state (scores, oxygen, etc.)
+            // 2. Tell LevelManager to regenerate the map
+            // 3. Respawn all players
+            // 4. Restart the ServerGameLoop (or transition back to Countdown)
+        }
     }
 }
