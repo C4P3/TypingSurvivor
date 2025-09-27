@@ -23,17 +23,17 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private readonly Dictionary<ulong, PlayerFacade> _playerInstances = new();
         private readonly HashSet<ulong> _rematchRequesters = new();
         private Coroutine _serverGameLoop;
+        private GameConfig _gameConfig;
+        private float oxygenDecreaseRate = 8.0f;
 
-        [SerializeField] private GameConfig _gameConfig;
-        private float oxygenDecreaseRate = 0.9f;
-
-        public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter)
+        public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig)
         {
             _gameState = gameState;
             _gameModeStrategy = gameModeStrategy;
             _levelService = levelService;
             _statusReader = statusReader;
             _statusWriter = statusWriter;
+            _gameConfig = gameConfig;
         }
 
         public override void OnNetworkSpawn()

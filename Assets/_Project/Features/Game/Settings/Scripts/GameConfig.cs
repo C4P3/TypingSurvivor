@@ -2,7 +2,8 @@ using UnityEngine;
 using TypingSurvivor.Features.Game.Typing;
 using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Settings;
-using System.Collections.Generic; // Add this for List<>
+using System.Collections.Generic;
+using TypingSurvivor.Features.Game.Level; // Add this for List<>
 
 namespace TypingSurvivor.Features.Game.Settings
 {
@@ -24,12 +25,18 @@ namespace TypingSurvivor.Features.Game.Settings
         public GameObject PlayerPrefab;
         
         [Header("Spawn Strategies")]
-        public ScriptableObject SinglePlayerSpawnStrategy;
-        public ScriptableObject VersusSpawnStrategy;
-        public ScriptableObject DefaultItemPlacementStrategy;
+        [SerializeField] private ScriptableObject _singlePlayerSpawnStrategy;
+        public ISpawnPointStrategy SinglePlayerSpawnStrategy => _singlePlayerSpawnStrategy as ISpawnPointStrategy;
+        
+        [SerializeField] private ScriptableObject _versusSpawnStrategy;
+        public ISpawnPointStrategy VersusSpawnStrategy => _versusSpawnStrategy as ISpawnPointStrategy;
+
+        [SerializeField] private ScriptableObject _defaultItemPlacementStrategy;
+        public IItemPlacementStrategy DefaultItemPlacementStrategy => _defaultItemPlacementStrategy as IItemPlacementStrategy;
 
         [Header("Map Generators")]
-        public ScriptableObject DefaultMapGenerator;
+        [SerializeField] private ScriptableObject _defaultMapGenerator;
+        public IMapGenerator DefaultMapGenerator => _defaultMapGenerator as IMapGenerator;
         // ... 他の全体設定アセット ...
     }
 }

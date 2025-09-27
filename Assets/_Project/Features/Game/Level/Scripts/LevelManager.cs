@@ -23,12 +23,10 @@ public class LevelManager : NetworkBehaviour, ILevelService
     [SerializeField] private Tilemap _blockTilemap;
     [SerializeField] private Tilemap _itemTilemap;
 
-    [Header("Dependencies")]
-    [SerializeField] private ScriptableObject _mapGeneratorSO;
+    // --- Dependencies (Injected by Bootstrapper) ---
     private IMapGenerator _mapGenerator;
-    [SerializeField] private ScriptableObject _itemPlacementStrategySO;
     private IItemPlacementStrategy _itemPlacementStrategy;
-    [SerializeField] private ItemRegistry _itemRegistry;
+    private ItemRegistry _itemRegistry;
 
     [Header("Map Settings")]
     [SerializeField] private long _mapSeed;
@@ -46,8 +44,8 @@ public class LevelManager : NetworkBehaviour, ILevelService
     private List<TileBase> _tileIdMap;
 
     // --- Server-Side Data ---
-    private Dictionary<Vector2Int, List<TileData>> _entireBlockMapData_Server;
-    private Dictionary<Vector2Int, List<TileData>> _entireItemMapData_Server;
+    private readonly Dictionary<Vector2Int, List<TileData>> _entireBlockMapData_Server = new();
+    private readonly Dictionary<Vector2Int, List<TileData>> _entireItemMapData_Server = new();
     private readonly Dictionary<ulong, Vector2Int> _playerChunkPositions_Server = new();
     private readonly HashSet<Vector2Int> _activeChunks_Server = new();
 
@@ -56,25 +54,19 @@ public class LevelManager : NetworkBehaviour, ILevelService
     private readonly NetworkList<TileData> _activeItemTiles = new();
     #endregion
 
-    #region Unity Lifecycle & Netcode Callbacks
-
-    private void Awake()
+    #region Initialization
+    public void Initialize(IMapGenerator mapGenerator, IItemPlacementStrategy itemPlacementStrategy, ItemRegistry itemRegistry)
     {
-        _entireBlockMapData_Server = new Dictionary<Vector2Int, List<TileData>>();
-        _entireItemMapData_Server = new Dictionary<Vector2Int, List<TileData>>();
-
-        _mapGenerator = _mapGeneratorSO as IMapGenerator;
-        if (_mapGenerator == null) Debug.LogError("IMapGeneratorがアタッチされていません。");
-
-        _itemPlacementStrategy = _itemPlacementStrategySO as IItemPlacementStrategy;
-        if (_itemPlacementStrategy == null) Debug.LogError("IItemPlacementStrategyがアタッチされていません。");
+        _mapGenerator = mapGenerator;
+        _itemPlacementStrategy = itemPlacementStrategy;
+        _itemRegistry = itemRegistry;
 
         // ジェネレーターが使用するブロックタイルと、ItemRegistryにあるアイテムタイルの両方からIDマップを動的に生成
         _tileIdMap = new List<TileBase>();
         _tileToBaseIdMap = new Dictionary<TileBase, int>();
         
         var allTiles = new List<TileBase>();
-        if(_mapGenerator.AllTiles != null) allTiles.AddRange(_mapGenerator.AllTiles);
+        if(_mapGenerator != null && _mapGenerator.AllTiles != null) allTiles.AddRange(_mapGenerator.AllTiles);
         if(_itemRegistry != null && _itemRegistry.AllItems != null)
         {
             allTiles.AddRange(_itemRegistry.AllItems.Select(item => item.itemTile));
@@ -89,7 +81,9 @@ public class LevelManager : NetworkBehaviour, ILevelService
             }
         }
     }
+    #endregion
 
+    #region Unity Lifecycle & Netcode Callbacks
     public override void OnNetworkSpawn()
     {
         if (IsServer)

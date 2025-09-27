@@ -86,9 +86,22 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
         private void InjectDependencies(IServiceLocator serviceLocator)
         {
+            // --- Pre-flight checks for GameConfig assets ---
+            if (_gameConfig.PlayerPrefab == null || _gameConfig.DefaultMapGenerator == null || _gameConfig.SinglePlayerSpawnStrategy == null || _gameConfig.VersusSpawnStrategy == null || _gameConfig.DefaultItemPlacementStrategy == null)
+            {
+                Debug.LogError("GameConfig is missing one or more required asset references. Please check the GameConfig asset in the inspector.");
+                return;
+            }
+
+            // --- Inject dependencies into LevelManager ---
+            _levelManager.Initialize(
+                _gameConfig.DefaultMapGenerator,
+                _gameConfig.DefaultItemPlacementStrategy,
+                _gameConfig.ItemRegistry
+            );
+
             // --- Inject dependencies into GameManager ---
             IGameModeStrategy strategy;
-            // AppManagerからゲームモードを取得
             string gameMode = AppManager.GameMode;
 
             if (gameMode == "SinglePlayer")
@@ -105,7 +118,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 strategy,
                 serviceLocator.GetService<ILevelService>(),
                 serviceLocator.GetService<IPlayerStatusSystemReader>(),
-                serviceLocator.GetService<IPlayerStatusSystemWriter>()
+                serviceLocator.GetService<IPlayerStatusSystemWriter>(),
+                _gameConfig // Pass the whole config for now, can be refined later
                 );
 
             // --- Inject dependencies into CameraManager ---
@@ -118,7 +132,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
             _itemService.Initialize(
                 serviceLocator.GetService<ILevelService>(),
                 serviceLocator.GetService<IGameStateWriter>(),
-                serviceLocator.GetService<IPlayerStatusSystemWriter>()
+                serviceLocator.GetService<IPlayerStatusSystemWriter>(),
+                _gameConfig.ItemRegistry
             );
 
             // --- Inject dependencies into UI ---

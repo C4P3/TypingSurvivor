@@ -4,18 +4,18 @@ using TypingSurvivor.Features.Game.Level;
 
 public class ItemService : MonoBehaviour, IItemService
 {
-    [SerializeField] private ItemRegistry _itemRegistry;
-
     // --- Dependencies (injected by Bootstrapper) ---
+    private ItemRegistry _itemRegistry;
     private ILevelService _levelService;
     private IGameStateWriter _gameStateWriter;
     private IPlayerStatusSystemWriter _playerStatusSystemWriter;
 
-    public void Initialize(ILevelService levelService, IGameStateWriter gameStateWriter, IPlayerStatusSystemWriter playerStatusSystemWriter)
+    public void Initialize(ILevelService levelService, IGameStateWriter gameStateWriter, IPlayerStatusSystemWriter playerStatusSystemWriter, ItemRegistry itemRegistry)
     {
         _levelService = levelService;
         _gameStateWriter = gameStateWriter;
         _playerStatusSystemWriter = playerStatusSystemWriter;
+        _itemRegistry = itemRegistry;
     }
 
     public void AcquireItem(ulong clientId, Vector3Int itemGridPosition)
