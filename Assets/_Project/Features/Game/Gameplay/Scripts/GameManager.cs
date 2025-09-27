@@ -7,7 +7,8 @@ using System.Linq;
 using TypingSurvivor.Features.Game.Gameplay.Data;
 using TypingSurvivor.Features.Game.Settings;
 using TypingSurvivor.Features.Game.Level;
-using TypingSurvivor.Features.Game.Player; // ILevelServiceのために追加
+using TypingSurvivor.Features.Game.Player;
+using TypingSurvivor.Features.Core.PlayerStatus; // ILevelServiceのために追加
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -15,20 +16,24 @@ namespace TypingSurvivor.Features.Game.Gameplay
     {
         private GameState _gameState;
         private IGameModeStrategy _gameModeStrategy;
-        private ILevelService _levelService; // LevelManagerへの参照
+        private ILevelService _levelService;
+        private IPlayerStatusSystemReader _statusReader;
+        private IPlayerStatusSystemWriter _statusWriter;
         private Grid _grid;
         private readonly Dictionary<ulong, PlayerFacade> _playerInstances = new();
         private readonly HashSet<ulong> _rematchRequesters = new();
         private Coroutine _serverGameLoop;
 
         [SerializeField] private GameConfig _gameConfig;
-        private float oxygenDecreaseRate = 5.0f;
+        private float oxygenDecreaseRate = 0.9f;
 
-        public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService)
+        public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter)
         {
             _gameState = gameState;
             _gameModeStrategy = gameModeStrategy;
             _levelService = levelService;
+            _statusReader = statusReader;
+            _statusWriter = statusWriter;
         }
 
         public override void OnNetworkSpawn()
@@ -90,11 +95,13 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
         private IEnumerator ServerGameLoop()
         {
+            // --- Setup Phase (occurs only once) ---
             yield return StartCoroutine(WaitingForPlayersPhase());
+            yield return StartCoroutine(InitialSpawnPhase());
 
-            while (true) // This loop allows for rematches
+            // --- Game Round Loop (repeats for rematches) ---
+            while (true)
             {
-                yield return StartCoroutine(SpawnPlayers());
                 yield return StartCoroutine(CountdownPhase());
                 yield return StartCoroutine(PlayingPhase());
                 yield return StartCoroutine(FinishedPhase());
@@ -145,33 +152,22 @@ namespace TypingSurvivor.Features.Game.Gameplay
             _gameState.CurrentPhase.Value = GamePhase.Finished;
             _rematchRequesters.Clear();
 
-            // Wait for all connected players (who are not game over) to request a rematch
+            // Wait for all connected players to request a rematch
             while (_rematchRequesters.Count < _playerInstances.Count)
             {
-                // Maybe add a timeout here
+                // TODO: Add a timeout here
                 yield return null;
             }
-            
-            // All players agreed to a rematch, proceed to reset
-            yield return StartCoroutine(ResetGameStateForRematch());
-        }
 
-        private IEnumerator ResetGameStateForRematch()
-        {
-            // 1. Reset GameState variables
-            _gameState.OxygenLevel.Value = 100f;
-            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
-            {
-                var data = _gameState.PlayerDatas[i];
-                data.Score = 0;
-                data.IsGameOver = false;
-                _gameState.PlayerDatas[i] = data;
-            }
+            // --- Prepare for the next round ---
+
+            // 1. Reset scores, oxygen, etc.
+            ResetPlayersForRematch();
 
             // 2. Regenerate map
             _levelService.RegenerateMap();
-            
-            // 3. Respawn players
+
+            // 3. Reposition players
             var clientIds = _playerInstances.Keys.ToList();
             var spawnPoints = _levelService.GetSpawnPoints(clientIds.Count, GetCurrentSpawnStrategy());
 
@@ -184,10 +180,33 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 player.RespawnAt(spawnPos);
             }
 
-            yield return null; // Wait a frame for changes to propagate
+            yield return null; // Wait a frame for changes to propagate before starting the next round
         }
 
-        private IEnumerator SpawnPlayers()
+        public void ResetPlayersForRematch()
+        {
+            if (!IsServer) return;
+
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                var data = _gameState.PlayerDatas[i];
+                
+                // Clear temporary buffs from the previous session
+                _statusWriter.ClearSessionModifiers(data.ClientId);
+                
+                // Get the (potentially modified) max oxygen for this player
+                float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
+
+                // Reset runtime stats
+                data.Score = 0;
+                data.IsGameOver = false;
+                data.Oxygen = maxOxygen;
+                
+                _gameState.PlayerDatas[i] = data;
+            }
+        }
+
+        private IEnumerator InitialSpawnPhase()
         {
             var clientIds = NetworkManager.Singleton.ConnectedClientsIds.ToList();
             int playerCount = clientIds.Count;
@@ -226,10 +245,20 @@ namespace TypingSurvivor.Features.Game.Gameplay
         }
 
         // --- IGameStateWriter Implementation ---
-        public void AddOxygen(float amount)
+        public void AddOxygen(ulong clientId, float amount)
         {
             if (!IsServer) return;
-            _gameState.OxygenLevel.Value = Mathf.Clamp(_gameState.OxygenLevel.Value + amount, 0, 100);
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    var data = _gameState.PlayerDatas[i];
+                    float maxOxygen = _statusReader.GetStatValue(clientId, PlayerStat.MaxOxygen);
+                    data.Oxygen = Mathf.Clamp(data.Oxygen + amount, 0, maxOxygen);
+                    _gameState.PlayerDatas[i] = data;
+                    return;
+                }
+            }
         }
 
         public void AddScore(ulong clientId, int amount)

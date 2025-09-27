@@ -3,8 +3,8 @@
 /// </summary>
 public interface IGameStateWriter
 {
-    void AddOxygen(float amount);
     void AddScore(ulong clientId, int amount);
     void SetPlayerGameOver(ulong clientId);
-
+    void AddOxygen(ulong clientId, float amount);
+    void ResetPlayersForRematch();
 }

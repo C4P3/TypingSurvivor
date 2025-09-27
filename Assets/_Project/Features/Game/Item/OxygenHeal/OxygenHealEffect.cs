@@ -11,6 +11,6 @@ public class OxygenHealEffect : ItemEffect
     public override void Execute(ItemExecutionContext context)
     {
         // 必要なサービスは全てコンテキストから取得できる
-        context.GameStateWriter.AddOxygen(_amount);
+        context.GameStateWriter.AddOxygen(context.UserId, _amount);
     }
 }

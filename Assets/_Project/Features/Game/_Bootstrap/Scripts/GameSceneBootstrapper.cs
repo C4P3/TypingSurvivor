@@ -103,7 +103,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
             _gameManager.Initialize(
                 _gameState,
                 strategy,
-                serviceLocator.GetService<ILevelService>()
+                serviceLocator.GetService<ILevelService>(),
+                serviceLocator.GetService<IPlayerStatusSystemReader>(),
+                serviceLocator.GetService<IPlayerStatusSystemWriter>()
                 );
 
             // --- Inject dependencies into CameraManager ---

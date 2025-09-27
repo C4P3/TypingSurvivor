@@ -27,7 +27,7 @@ namespace TypingSurvivor.Features.Core.PlayerStatus
                 _playerStats[clientId] = new PlayerStats();
             }
 
-            if (!modifier.IsPermanent)
+            if (!modifier.IsPermanentDuration)
             {
                 modifier.SetEndTime(Time.time);
             }
@@ -73,7 +73,23 @@ namespace TypingSurvivor.Features.Core.PlayerStatus
             float currentTime = Time.time;
             foreach (var stats in _playerStats.Values)
             {
-                stats.Modifiers.RemoveAll(mod => !mod.IsPermanent && currentTime > mod.EndTime);
+                stats.Modifiers.RemoveAll(mod => !mod.IsPermanentDuration && currentTime > mod.EndTime);
+            }
+        }
+
+        public void ClearSessionModifiers(ulong clientId)
+        {
+            if (_playerStats.TryGetValue(clientId, out var stats))
+            {
+                stats.Modifiers.RemoveAll(mod => mod.Scope == ModifierScope.Session);
+            }
+        }
+
+        public void ClearAllModifiers(ulong clientId)
+        {
+            if (_playerStats.TryGetValue(clientId, out var stats))
+            {
+                stats.Modifiers.Clear();
             }
         }
     }

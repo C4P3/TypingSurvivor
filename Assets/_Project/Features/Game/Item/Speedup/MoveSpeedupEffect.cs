@@ -15,7 +15,9 @@ public class MoveSpeedUpEffect : ItemEffect
         var modifier = new StatModifier(
             PlayerStat.MoveSpeed,
             _increaseMultiplier,
-            ModifierType.Multiplicative
+            ModifierType.Multiplicative,
+            0f, // Duration 0 means permanent for the session
+            ModifierScope.Session
         );
         
         // プレイヤーのステータスを管理する専門のシステムに依頼する
