@@ -117,7 +117,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 Debug.LogWarning("Already connected or hosting.");
                 return;
             }
-            AppManager.GameMode = "MultiPlay1vs1";
+            AppManager.GameMode = "MultiPlayer";
             NetworkManager.Singleton.StartClient();
         }
 
@@ -129,7 +129,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 return;
             }
 
-            AppManager.GameMode = "MultiPlay1vs1";
+            AppManager.GameMode = "MultiPlayer";
 
             if (NetworkManager.Singleton.StartServer())
             {
