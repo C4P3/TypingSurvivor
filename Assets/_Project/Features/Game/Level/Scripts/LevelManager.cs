@@ -303,11 +303,32 @@ public class LevelManager : NetworkBehaviour, ILevelService
     #endregion
 
 
+    #region Public Methods (for GameManager)
+    public void RegenerateMap()
+    {
+        if (!IsServer) return;
+
+        // TODO: Unload all currently active chunks first
+        _activeChunks_Server.Clear();
+        
+        GenerateAndChunkMap();
+
+        // After regenerating, we need to update what clients see
+        UpdateActiveChunks();
+    }
+    #endregion
+
     #region Server-Side Chunk Management
 
     private void GenerateAndChunkMap()
     {
         if (!IsServer) return;
+
+        // Clear existing data for regeneration
+        _entireBlockMapData_Server?.Clear();
+        _entireItemMapData_Server?.Clear();
+        _activeBlockTiles.Clear();
+        _activeItemTiles.Clear();
 
         _entireBlockMapData_Server = new Dictionary<Vector2Int, List<TileData>>();
         _entireItemMapData_Server = new Dictionary<Vector2Int, List<TileData>>();

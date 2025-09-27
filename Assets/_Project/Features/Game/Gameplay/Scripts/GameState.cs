@@ -18,32 +18,44 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
         // --- IGameStateReader Implementation ---
         public NetworkVariable<GamePhase> CurrentPhaseNV => CurrentPhase;
-        public float CurrentOxygen => OxygenLevel.Value;
-        public event Action<float> OnOxygenChanged;
-        public event Action<int> OnScoreChanged; // TODO: NetworkListの変更を検知して発火させる仕組みが必要
+        public float CurrentOxygen => OxygenLevel.Value; // Kept for single player logic for now
+        public event Action<ulong, float> OnOxygenChanged;
+        public event Action<int> OnScoreChanged;
 
         public override void OnNetworkSpawn()
         {
-            // NetworkVariableの値が変更されたときにイベントを発火させる
-            OxygenLevel.OnValueChanged += (previousValue, newValue) => OnOxygenChanged?.Invoke(newValue);
             PlayerDatas.OnListChanged += HandlePlayerDatasChanged;
         }
 
         public override void OnNetworkDespawn()
         {
-            // 忘れずに購読解除
-            OxygenLevel.OnValueChanged -= (previousValue, newValue) => OnOxygenChanged?.Invoke(newValue);
             PlayerDatas.OnListChanged -= HandlePlayerDatasChanged;
         }
 
         private void HandlePlayerDatasChanged(NetworkListEvent<PlayerData> changeEvent)
         {
-            // とりあえず、リストの何かが変わったら全プレイヤーのスコア更新イベントを飛ばす
-            // TODO: より効率的な方法を検討
-            if (NetworkManager.Singleton.IsClient)
+            PlayerData changedData;
+
+            switch (changeEvent.Type)
             {
-                var localPlayerId = NetworkManager.Singleton.LocalClientId;
-                OnScoreChanged?.Invoke(GetPlayerScore(localPlayerId));
+                case NetworkListEvent<PlayerData>.EventType.Add:
+                    changedData = PlayerDatas[changeEvent.Index];
+                    break;
+                case NetworkListEvent<PlayerData>.EventType.Value:
+                    changedData = changeEvent.Value;
+                    break;
+                default:
+                    // For other events like Clear, Remove, etc., we don't need to fire individual updates.
+                    return;
+            }
+
+            // Notify listeners about the specific player data that changed
+            OnOxygenChanged?.Invoke(changedData.ClientId, changedData.Oxygen);
+
+            // Also update score if it's for the local player
+            if (NetworkManager.Singleton.IsClient && changedData.ClientId == NetworkManager.Singleton.LocalClientId)
+            {
+                OnScoreChanged?.Invoke(changedData.Score);
             }
         }
 

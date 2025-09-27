@@ -11,8 +11,9 @@ namespace TypingSurvivor.Features.Game.Level
         bool HasItemTile(Vector3Int gridPosition);
         void RemoveItem(Vector3Int gridPosition);
         void DestroyBlock(ulong clientId, Vector3Int gridPosition);
-        
+
         List<Vector3Int> GetSpawnPoints(int playerCount, ScriptableObject strategy);
         void ClearArea(Vector3Int gridPosition, int radius);
+        void RegenerateMap();
     }
 }

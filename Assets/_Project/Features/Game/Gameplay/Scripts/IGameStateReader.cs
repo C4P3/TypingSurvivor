@@ -8,8 +8,8 @@ public interface IGameStateReader
 {
     NetworkVariable<GamePhase> CurrentPhaseNV { get; }
     NetworkList<PlayerData> PlayerDatas { get; }
-    float CurrentOxygen { get; }
+    float CurrentOxygen { get; } // This might become obsolete or represent local player's oxygen
     int GetPlayerScore(ulong clientId);
-    event System.Action<float> OnOxygenChanged;
+    event System.Action<ulong, float> OnOxygenChanged;
     event System.Action<int> OnScoreChanged;
 }

@@ -6,7 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using TypingSurvivor.Features.Game.Gameplay.Data;
 using TypingSurvivor.Features.Game.Settings;
-using TypingSurvivor.Features.Game.Level; // ILevelServiceのために追加
+using TypingSurvivor.Features.Game.Level;
+using TypingSurvivor.Features.Game.Player; // ILevelServiceのために追加
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -16,9 +17,12 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private IGameModeStrategy _gameModeStrategy;
         private ILevelService _levelService; // LevelManagerへの参照
         private Grid _grid;
+        private readonly Dictionary<ulong, PlayerFacade> _playerInstances = new();
+        private readonly HashSet<ulong> _rematchRequesters = new();
+        private Coroutine _serverGameLoop;
 
         [SerializeField] private GameConfig _gameConfig;
-        private float oxygenDecreaseRate = 0.9f;
+        private float oxygenDecreaseRate = 5.0f;
 
         public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService)
         {
@@ -36,16 +40,16 @@ namespace TypingSurvivor.Features.Game.Gameplay
             if (IsServer)
             {
                 _grid = FindObjectOfType<Grid>();
-                NetworkManager.Singleton.ConnectionApprovalCallback += ConnectionApprovalCheck;
+                NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnected;
+                NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnected;
                 
-                // PlayerDatasリストを初期化
-                _gameState.PlayerDatas.Clear();
+                // Initialize players already connected
                 foreach (var clientId in NetworkManager.Singleton.ConnectedClientsIds)
                 {
-                    _gameState.PlayerDatas.Add(new PlayerData { ClientId = clientId, Score = 0, IsGameOver = false });
+                    HandleClientConnected(clientId);
                 }
 
-                StartCoroutine(ServerGameLoop());
+                _serverGameLoop = StartCoroutine(ServerGameLoop());
             }
         }
 
@@ -57,78 +61,141 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
             if (IsServer && NetworkManager.Singleton != null)
             {
-                NetworkManager.Singleton.ConnectionApprovalCallback -= ConnectionApprovalCheck;
+                NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnected;
+                NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnected;
             }
         }
 
-        private void ConnectionApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+        private void HandleClientConnected(ulong clientId)
         {
-            if (_gameState.CurrentPhase.Value != GamePhase.WaitingForPlayers)
+            if (!IsServer) return;
+            // PlayerDatasリストを初期化
+            _gameState.PlayerDatas.Add(new PlayerData { ClientId = clientId, Score = 0, Oxygen = 100f, IsGameOver = false });
+        }
+
+        private void HandleClientDisconnected(ulong clientId)
+        {
+            if (!IsServer) return;
+
+            _playerInstances.Remove(clientId);
+            for (int i = _gameState.PlayerDatas.Count - 1; i >= 0; i--)
             {
-                response.Approved = false;
-                response.Reason = "Game has already started.";
-                return;
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    _gameState.PlayerDatas.RemoveAt(i);
+                    break;
+                }
             }
-            if (NetworkManager.Singleton.ConnectedClients.Count >= _gameModeStrategy.PlayerCount)
-            {
-                response.Approved = false;
-                response.Reason = "The session is full.";
-                return;
-            }
-            response.Approved = true;
-            response.CreatePlayerObject = false; // 自動スポーンは無効
         }
 
         private IEnumerator ServerGameLoop()
         {
+            yield return StartCoroutine(WaitingForPlayersPhase());
+
+            while (true) // This loop allows for rematches
+            {
+                yield return StartCoroutine(SpawnPlayers());
+                yield return StartCoroutine(CountdownPhase());
+                yield return StartCoroutine(PlayingPhase());
+                yield return StartCoroutine(FinishedPhase());
+            }
+        }
+
+        private IEnumerator WaitingForPlayersPhase()
+        {
             _gameState.CurrentPhase.Value = GamePhase.WaitingForPlayers;
-            while (NetworkManager.Singleton.ConnectedClients.Count < _gameModeStrategy.PlayerCount)
+            while (_gameState.PlayerDatas.Count < _gameModeStrategy.PlayerCount)
             {
                 yield return null;
             }
+        }
 
-            // 全プレイヤーの接続が完了したら、スポーン処理を開始
-            yield return StartCoroutine(SpawnPlayers());
-
+        private IEnumerator CountdownPhase()
+        {
             _gameState.CurrentPhase.Value = GamePhase.Countdown;
-            yield return new WaitForSeconds(5);
+            yield return new WaitForSeconds(5); // Countdown duration
+        }
 
+        private IEnumerator PlayingPhase()
+        {
             _gameState.CurrentPhase.Value = GamePhase.Playing;
             while (!_gameModeStrategy.IsGameOver(_gameState))
             {
-                // シングルプレイの場合のみ、共有の酸素レベルを減らす
-                if (_gameModeStrategy is SinglePlayerStrategy)
+                // Decrease oxygen for all players
+                for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
                 {
-                    _gameState.OxygenLevel.Value -= oxygenDecreaseRate * Time.deltaTime;
-                    if (_gameState.OxygenLevel.Value <= 0)
+                    var data = _gameState.PlayerDatas[i];
+                    if (data.IsGameOver) continue;
+
+                    data.Oxygen -= oxygenDecreaseRate * Time.deltaTime;
+
+                    if (data.Oxygen <= 0)
                     {
-                        // シングルプレイヤー（ホスト）をゲームオーバーにする
-                        SetPlayerGameOver(NetworkManager.Singleton.LocalClientId);
+                        data.Oxygen = 0;
+                        data.IsGameOver = true;
                     }
+                    _gameState.PlayerDatas[i] = data;
                 }
-                
                 yield return null;
             }
+        }
 
+        private IEnumerator FinishedPhase()
+        {
             _gameState.CurrentPhase.Value = GamePhase.Finished;
+            _rematchRequesters.Clear();
+
+            // Wait for all connected players (who are not game over) to request a rematch
+            while (_rematchRequesters.Count < _playerInstances.Count)
+            {
+                // Maybe add a timeout here
+                yield return null;
+            }
+            
+            // All players agreed to a rematch, proceed to reset
+            yield return StartCoroutine(ResetGameStateForRematch());
+        }
+
+        private IEnumerator ResetGameStateForRematch()
+        {
+            // 1. Reset GameState variables
+            _gameState.OxygenLevel.Value = 100f;
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                var data = _gameState.PlayerDatas[i];
+                data.Score = 0;
+                data.IsGameOver = false;
+                _gameState.PlayerDatas[i] = data;
+            }
+
+            // 2. Regenerate map
+            _levelService.RegenerateMap();
+            
+            // 3. Respawn players
+            var clientIds = _playerInstances.Keys.ToList();
+            var spawnPoints = _levelService.GetSpawnPoints(clientIds.Count, GetCurrentSpawnStrategy());
+
+            for (int i = 0; i < clientIds.Count; i++)
+            {
+                var player = _playerInstances[clientIds[i]];
+                var gridPos = spawnPoints[i];
+                _levelService.ClearArea(gridPos, 1);
+                var spawnPos = _grid.GetCellCenterWorld(gridPos);
+                player.RespawnAt(spawnPos);
+            }
+
+            yield return null; // Wait a frame for changes to propagate
         }
 
         private IEnumerator SpawnPlayers()
         {
             var clientIds = NetworkManager.Singleton.ConnectedClientsIds.ToList();
             int playerCount = clientIds.Count;
-
-            // ゲームモードに応じてスポーン戦略を選択
-            ScriptableObject spawnStrategy = _gameModeStrategy.PlayerCount > 1
-                ? _gameConfig.VersusSpawnStrategy
-                : _gameConfig.SinglePlayerSpawnStrategy;
-
-            var spawnPoints = _levelService.GetSpawnPoints(playerCount, spawnStrategy);
+            var spawnPoints = _levelService.GetSpawnPoints(playerCount, GetCurrentSpawnStrategy());
 
             if (spawnPoints.Count < playerCount)
             {
-                Debug.LogError("スポーン地点の数がプレイヤー数に足りません！");
-                // TODO: エラーハンドリング
+                Debug.LogError("Not enough spawn points for players!");
                 yield break;
             }
 
@@ -136,23 +203,29 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 ulong clientId = clientIds[i];
                 Vector3Int gridPos = spawnPoints[i];
-
-                // スポーン地点の周辺を更地にする
-                _levelService.ClearArea(gridPos, 1); // 3x3マス
-
-                // グリッド中央のワールド座標を取得
+                _levelService.ClearArea(gridPos, 1);
                 Vector3 spawnPos = _grid.GetCellCenterWorld(gridPos);
 
-                // プレイヤーを生成してスポーン
                 GameObject playerInstance = Instantiate(_gameConfig.PlayerPrefab, spawnPos, Quaternion.identity);
                 var playerNetworkObject = playerInstance.GetComponent<NetworkObject>();
                 playerNetworkObject.SpawnAsPlayerObject(clientId, true);
+
+                // Register the instance
+                var playerFacade = playerInstance.GetComponent<TypingSurvivor.Features.Game.Player.PlayerFacade>();
+                _playerInstances[clientId] = playerFacade;
             }
 
             yield return null;
         }
 
-        // --- IGameStateWriterの実装 ---
+        private ScriptableObject GetCurrentSpawnStrategy()
+        {
+            return _gameModeStrategy.PlayerCount > 1
+                ? _gameConfig.VersusSpawnStrategy
+                : _gameConfig.SinglePlayerSpawnStrategy;
+        }
+
+        // --- IGameStateWriter Implementation ---
         public void AddOxygen(float amount)
         {
             if (!IsServer) return;
@@ -197,24 +270,14 @@ namespace TypingSurvivor.Features.Game.Gameplay
         [ServerRpc(RequireOwnership = false)]
         public void RequestRematchServerRpc(ServerRpcParams rpcParams = default)
         {
-            // TODO: Add logic to track which players have requested a rematch
-            Debug.Log($"Player {rpcParams.Receive.SenderClientId} requested a rematch.");
+            if (_gameState.CurrentPhase.Value != GamePhase.Finished) return;
 
-            // If all players have requested a rematch, start the process.
-            // For now, we'll just assume one player is enough for testing.
-            StartRematch();
-        }
-
-        public void StartRematch()
-        {
-            if (!IsServer) return;
-
-            Debug.Log("Starting rematch...");
-            // TODO:
-            // 1. Reset all game state (scores, oxygen, etc.)
-            // 2. Tell LevelManager to regenerate the map
-            // 3. Respawn all players
-            // 4. Restart the ServerGameLoop (or transition back to Countdown)
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (_playerInstances.ContainsKey(clientId) && !_rematchRequesters.Contains(clientId))
+            {
+                _rematchRequesters.Add(clientId);
+                Debug.Log($"Player {clientId} requested a rematch. {_rematchRequesters.Count}/{_playerInstances.Count}");
+            }
         }
     }
 }

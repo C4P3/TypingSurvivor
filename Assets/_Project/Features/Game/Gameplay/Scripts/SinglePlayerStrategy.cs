@@ -8,8 +8,13 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
         public bool IsGameOver(IGameStateReader gameState)
         {
-            // 自分の酸素が0になったらゲームオーバー
-            return gameState.CurrentOxygen <= 0;
+            // The game ends when the single player is game over.
+            if (gameState.PlayerDatas.Count > 0)
+            {
+                return gameState.PlayerDatas[0].IsGameOver;
+            }
+            // If no player data exists, the game can't continue.
+            return true;
         }
         // TODO: 実装
         public GameResult CalculateResult(IGameStateReader gameState)

@@ -299,5 +299,23 @@ namespace TypingSurvivor.Features.Game.Player
         }
 
         #endregion
+
+        #region Public Server-Side Methods
+        /// <summary>
+        /// Respawns the player at a new position. Must be called on the server.
+        /// </summary>
+        public void RespawnAt(Vector3 newWorldPosition)
+        {
+            if (!IsServer) return;
+
+            transform.position = newWorldPosition;
+            NetworkGridPosition.Value = _grid.WorldToCell(newWorldPosition);
+            
+            // Reset server-side state
+            _currentState.Value = PlayerState.Roaming;
+            _continuousMoveDirection_Server = Vector3Int.zero;
+            _isMoving_Server = false;
+        }
+        #endregion
     }
 }

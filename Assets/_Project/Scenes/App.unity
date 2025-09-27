@@ -234,7 +234,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 654541005}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c30767e5c2fe07840b36b90a5894cae0, type: 3}
+  m_Script: {fileID: 11500000, guid: 6f5fa369b384972449406b1c9fb7edeb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ServerStartup
 --- !u!1 &910411100

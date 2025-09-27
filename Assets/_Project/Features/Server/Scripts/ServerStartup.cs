@@ -11,8 +11,8 @@ public class ServerStartup : MonoBehaviour
         var args = System.Environment.GetCommandLineArgs();
         bool isDedicatedServer = false;
         ushort serverPort = 7777;
-        string externalServerIP = "0.0.0.0";
-        string gameMode = "SinglePlayer"; // Default game mode
+        string externalServerIP = "127.0.0.1";
+        string gameMode = "MultiPlayer"; // Default game mode
 
         for (int i = 0; i < args.Length; i++)
         {

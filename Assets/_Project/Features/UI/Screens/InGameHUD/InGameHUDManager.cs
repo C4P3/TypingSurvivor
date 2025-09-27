@@ -1,11 +1,10 @@
 using UnityEngine;
 using Unity.Netcode;
-using TypingSurvivor.Features.Game.Gameplay;
 using TypingSurvivor.Features.Core.PlayerStatus;
 
 namespace TypingSurvivor.Features.UI.Screens.InGameHUD
 {
-    public class InGameHUDManager : NetworkBehaviour
+    public class InGameHUDManager : MonoBehaviour
     {
         // 子オブジェクトなどから参照を設定するUI部品
         [SerializeField] private OxygenView _oxygenView;
@@ -26,7 +25,7 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
             SubscribeEvents();
         }
 
-        private void OnDisable()
+        private void OnDestroy()
         {
             // 必ず購読解除
             UnSubscribeEvents();
@@ -48,9 +47,16 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
         }
 
         // イベントを受け取ったら、担当のUI部品に更新を指示する
-        private void OnOxygenChanged(float newOxygenValue)
+        private void OnOxygenChanged(ulong clientId, float newOxygenValue)
         {
-            _oxygenView.UpdateView(newOxygenValue, _playerStatusReader.GetStatValue(OwnerClientId, PlayerStat.MaxOxygen));
+            // Guard against race conditions where events are received before Initialize is called.
+            if (_playerStatusReader == null) return;
+
+            // This HUD should only display the local player's stats.
+            if (clientId == NetworkManager.Singleton.LocalClientId)
+            {
+                _oxygenView.UpdateView(newOxygenValue, _playerStatusReader.GetStatValue(NetworkManager.Singleton.LocalClientId, PlayerStat.MaxOxygen));
+            }
         }
 
         private void OnScoreChanged(int newScoreValue)

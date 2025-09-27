@@ -1654,7 +1654,6 @@ GameObject:
   - component: {fileID: 1271839605}
   - component: {fileID: 1271839607}
   - component: {fileID: 1271839606}
-  - component: {fileID: 1271839608}
   - component: {fileID: 1271839609}
   - component: {fileID: 1271839610}
   m_Layer: 5
@@ -1723,31 +1722,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1271839604}
   m_CullTransparentMesh: 1
---- !u!114 &1271839608
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1271839604}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1374294216
-  InScenePlacedSourceGlobalObjectIdHash: 0
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
 --- !u!114 &1271839609
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1760,7 +1734,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5fbb7862685a08408c6af8db0d48dd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Screens.InGameHUD.InGameHUDManager
-  ShowTopMostFoldoutHeaderGroup: 1
   _oxygenView: {fileID: 1677078726}
   _scoreView: {fileID: 2090668963}
 --- !u!225 &1271839610
