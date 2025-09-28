@@ -26,7 +26,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private GameConfig _gameConfig;
         private float oxygenDecreaseRate = 8.0f;
 
-        public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig)
+        public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig, Grid grid)
         {
             _gameState = gameState;
             _gameModeStrategy = gameModeStrategy;
@@ -34,6 +34,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             _statusReader = statusReader;
             _statusWriter = statusWriter;
             _gameConfig = gameConfig;
+            _grid = grid;
         }
 
         public override void OnNetworkSpawn()
@@ -44,7 +45,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
             if (IsServer)
             {
-                _grid = FindObjectOfType<Grid>();
                 NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnected;
                 NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnected;
                 

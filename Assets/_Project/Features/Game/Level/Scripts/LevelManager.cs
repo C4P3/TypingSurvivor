@@ -24,6 +24,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
     [SerializeField] private Tilemap _itemTilemap;
 
     // --- Dependencies (Injected by Bootstrapper) ---
+    private Grid _grid;
     private IMapGenerator _mapGenerator;
     private IItemPlacementStrategy _itemPlacementStrategy;
     private ItemRegistry _itemRegistry;
@@ -55,11 +56,12 @@ public class LevelManager : NetworkBehaviour, ILevelService
     #endregion
 
     #region Initialization
-    public void Initialize(IMapGenerator mapGenerator, IItemPlacementStrategy itemPlacementStrategy, ItemRegistry itemRegistry)
+    public void Initialize(IMapGenerator mapGenerator, IItemPlacementStrategy itemPlacementStrategy, ItemRegistry itemRegistry, Grid grid)
     {
         _mapGenerator = mapGenerator;
         _itemPlacementStrategy = itemPlacementStrategy;
         _itemRegistry = itemRegistry;
+        _grid = grid;
 
         // ジェネレーターが使用するブロックタイルと、ItemRegistryにあるアイテムタイルの両方からIDマップを動的に生成
         _tileIdMap = new List<TileBase>();
@@ -492,7 +494,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
     
     private Vector2Int WorldToChunkPos(Vector3 worldPos)
     {
-        Vector3Int gridPos = _blockTilemap.WorldToCell(worldPos);
+        Vector3Int gridPos = _grid.WorldToCell(worldPos);
         return new Vector2Int(Mathf.FloorToInt((float)gridPos.x / _chunkSize), Mathf.FloorToInt((float)gridPos.y / _chunkSize));
     }
     

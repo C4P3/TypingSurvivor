@@ -64,15 +64,14 @@ namespace TypingSurvivor.Features.Game.Player
             _currentState.OnValueChanged += OnStateChanged;
             NetworkGridPosition.OnValueChanged += OnGridPositionChanged;
 
-            _grid = FindObjectOfType<Grid>();
-            if (_grid == null) Debug.LogError("Gridが見つかりません。");
-
             var serviceLocator = AppManager.Instance;
             if (serviceLocator == null)
             {
                 Debug.LogError("AppManager instance not found!");
                 return;
             }
+            _grid = serviceLocator.GetService<Grid>();
+            if (_grid == null) Debug.LogError("Grid not found in services.");
 
             if (IsServer)
             {

@@ -20,6 +20,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         [SerializeField] private GameConfig _gameConfig;
 
         [Header("Scene Dependencies")]
+        [SerializeField] private Grid _grid;
         [SerializeField] private GameState _gameState;
         [SerializeField] private GameManager _gameManager;
         [SerializeField] private LevelManager _levelManager;
@@ -78,6 +79,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
 
             // --- Register MonoBehaviour Services from the scene ---
+            serviceLocator.RegisterService(_grid);
             serviceLocator.RegisterService<ILevelService>(_levelManager);
             serviceLocator.RegisterService<IItemService>(_itemService);
             serviceLocator.RegisterService<IGameStateWriter>(_gameManager);
@@ -97,7 +99,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
             _levelManager.Initialize(
                 _gameConfig.DefaultMapGenerator,
                 _gameConfig.DefaultItemPlacementStrategy,
-                _gameConfig.ItemRegistry
+                _gameConfig.ItemRegistry,
+                _grid
             );
 
             // --- Inject dependencies into GameManager ---
@@ -119,7 +122,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 serviceLocator.GetService<ILevelService>(),
                 serviceLocator.GetService<IPlayerStatusSystemReader>(),
                 serviceLocator.GetService<IPlayerStatusSystemWriter>(),
-                _gameConfig // Pass the whole config for now, can be refined later
+                _gameConfig, // Pass the whole config for now, can be refined later
+                _grid
                 );
 
             // --- Inject dependencies into CameraManager ---
