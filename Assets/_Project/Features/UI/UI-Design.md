@@ -53,6 +53,79 @@ sequenceDiagram
 ```
 この一方向のデータフローにより、UIのロジックは非常にシンプルかつ予測可能になり、デバッグや仕様変更が容易になります。
 
+## **4\. 画面レイアウト設計**
+
+各画面の主要な構成要素と、その配置や比率に関する基本的な考え方を記述します。
+
+### **4.1. InGameHUD**
+
+ゲームプレイ中のメイン画面です。プレイヤーに必要な情報を、視線を大きく動かすことなく確認できるように配置します。
+
+```mermaid
+graph TD
+    subgraph InGameHUD
+        direction TB
+        
+        subgraph TopArea [ヘッダーエリア (画面上部)]
+            Player1Status(自プレイヤーのステータス<br>左上) --- Player2Status(他プレイヤーのステータス<br>右上)
+        end
+
+        subgraph CenterArea [ゲームプレイエリア (中央)]
+            TypingUI(タイピングUI<br>中央下部に表示)
+        end
+
+        subgraph BottomArea [フッターエリア (画面下部)]
+            Minimap(ミニマップ<br>左下) --- ItemSlots(所持アイテム<br>右下)
+        end
+    end
+```
+
+*   **Player Status:** 各プレイヤーの酸素ゲージやスコアを表示する領域。画面分割時は、それぞれのカメラ領域の隅に配置されます。
+*   **TypingUI:** タイピング対象のブロックが出現した際に、画面中央下部にモーダル的に表示されるUIです。
+*   **Minimap / ItemSlots:** 補助的な情報を表示する領域です。
+
+### **4.2. ResultScreen**
+
+ゲーム終了後に表示されるリザルト画面です。
+
+```mermaid
+graph TD
+    subgraph ResultScreen
+        direction TB
+        
+        ResultTitle(勝敗結果<br>例: "YOU WIN")
+        PlayerScores(各プレイヤーの最終スコア)
+        ActionButtons(再戦 / メインメニューへ)
+        
+        ResultTitle --> PlayerScores --> ActionButtons
+    end
+```
+
+## **5\. 画面遷移図**
+
+アプリケーション全体の画面フローと状態遷移を示します。
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> MainMenu: アプリ起動
+
+    MainMenu --> Matching: マルチプレイ開始
+    MainMenu --> InGameHUD: シングルプレイ開始
+    
+    Matching --> InGameHUD: マッチング成功
+    Matching --> MainMenu: キャンセル
+
+    InGameHUD --> ResultsScreen: ゲーム終了
+    InGameHUD --> DisconnectPopup: 接続断
+    
+    ResultsScreen --> InGameHUD: 再戦
+    ResultsScreen --> MainMenu: メインメニューへ
+    ResultsScreen --> DisconnectPopup: 接続断
+
+    DisconnectPopup --> MainMenu: 確認ボタン押下
+```
+
 **関連ドキュメント:**
 
 * [../Game/Gameplay/Gameplay-Design.md](../Game/Gameplay/Gameplay-Design.md)  
