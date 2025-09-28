@@ -118,6 +118,12 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 return;
             }
             AppManager.GameMode = "MultiPlayer";
+
+            // Hardcode the connection details for debugging
+            const string ipAddress = "127.0.0.1";
+            const ushort port = 7777;
+
+            NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData(ipAddress, port);
             NetworkManager.Singleton.StartClient();
         }
 

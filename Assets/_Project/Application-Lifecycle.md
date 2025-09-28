@@ -54,13 +54,12 @@ sequenceDiagram
 
 ## **4. 専用サーバー起動時の初期化シーケンス**
 
-専用サーバーは、コマンドライン引数によって `MainMenu` シーンをスキップし、直接 `Game` シーンを起動します。
+専用サーバーの起動ロジックは `AppManager` に集約されています。`AppManager` は、コマンドライン引数を検知することで自身の起動モードを判断し、`MainMenu` シーンをスキップして直接 `Game` シーンを起動します。
 
 ```mermaid
 sequenceDiagram
     participant CommandLine as コマンドライン
     participant AppScene as App.unity
-    participant ServerStartup
     participant AppManager
     participant GameScene as Game.unity
     participant GameSceneBootstrapper
@@ -68,12 +67,13 @@ sequenceDiagram
     CommandLine->>AppScene: 起動 (例: -dedicatedServer -gameMode MultiPlayer)
     
     AppScene->>AppManager: Awake()
-    AppScene->>ServerStartup: Start()
+    AppManager->>AppManager: DontDestroyOnLoad(this)
 
-    ServerStartup->>ServerStartup: 引数を解析 ("MultiPlayer")
-    ServerStartup->>AppManager: AppManager.GameMode = "MultiPlayer"
-    ServerStartup->>NetworkManager: StartServer()
-    ServerStartup->>GameScene: LoadScene("Game")
+    AppScene->>AppManager: Start()
+    AppManager->>AppManager: 引数を解析 ("-dedicatedServer" を検知)
+    AppManager->>AppManager: AppManager.GameMode = "MultiPlayer"
+    AppManager->>NetworkManager: StartServer()
+    AppManager->>GameScene: LoadScene("Game")
 
     note over GameScene, GameSceneBootstrapper: Gameシーンがロードされる
 
