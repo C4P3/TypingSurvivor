@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using TypingSurvivor.Features.Core.PlayerStatus;
+using TypingSurvivor.Features.Game.Typing; // Add this using directive
 
 namespace TypingSurvivor.Features.UI.Screens.InGameHUD
 {
@@ -9,17 +10,20 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
         // 子オブジェクトなどから参照を設定するUI部品
         [SerializeField] private OxygenView _oxygenView;
         [SerializeField] private ScoreView _scoreView;
+        [SerializeField] private TypingView _typingView; // Reference to the new TypingView
 
         // DIコンテナから注入される、読み取り専用のインターフェース
         private IGameStateReader _gameStateReader;
-        private IPlayerStatusSystemReader _playerStatusReader; // Reader I/Fを分離
+        private IPlayerStatusSystemReader _playerStatusReader;
+        private ITypingService _typingService;
 
 
         // [Inject]の代わりに、外部から呼び出される公開の初期化メソッドを用意
-        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader)
+        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader, ITypingService typingService)
         {
             _gameStateReader = gameStateReader;
             _playerStatusReader = playerStatusReader;
+            _typingService = typingService;
 
             // 依存関係が注入されたので、イベントの購読を開始する
             SubscribeEvents();
@@ -33,17 +37,54 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
 
         private void SubscribeEvents()
         {
-            if (_gameStateReader == null) return;
-            // 各リーダーが持つイベントを購読する
-            _gameStateReader.OnOxygenChanged += OnOxygenChanged;
-            _gameStateReader.OnScoreChanged += OnScoreChanged;
+            if (_gameStateReader != null)
+            {
+                _gameStateReader.OnOxygenChanged += OnOxygenChanged;
+                _gameStateReader.OnScoreChanged += OnScoreChanged;
+            }
+            if (_typingService != null)
+            {
+                _typingService.OnTypingProgressed += HandleTypingProgressed;
+                _typingService.OnTypingCancelled += HandleTypingCancelled; // Also handle cancellation
+                _typingService.OnTypingSuccess += HandleTypingCancelled; // Success also hides the UI
+            }
         }
         private void UnSubscribeEvents()
         {
-            if (_gameStateReader == null) return;
-            // 購読解除する
-            _gameStateReader.OnOxygenChanged -= OnOxygenChanged;
-            _gameStateReader.OnScoreChanged -= OnScoreChanged;
+            if (_gameStateReader != null)
+            {
+                _gameStateReader.OnOxygenChanged -= OnOxygenChanged;
+                _gameStateReader.OnScoreChanged -= OnScoreChanged;
+            }
+            if (_typingService != null)
+            {
+                _typingService.OnTypingProgressed -= HandleTypingProgressed;
+                _typingService.OnTypingCancelled -= HandleTypingCancelled;
+                _typingService.OnTypingSuccess -= HandleTypingCancelled;
+            }
+        }
+
+        private void HandleTypingProgressed()
+        {
+            if (_typingView == null) return;
+
+            if (_typingService.IsTyping)
+            {
+                _typingView.Show();
+                _typingView.UpdateView(_typingService.GetTypedRomaji(), _typingService.GetRemainingRomaji());
+            }
+            else
+            {
+                _typingView.Hide();
+            }
+        }
+
+        private void HandleTypingCancelled()
+        {
+            if (_typingView != null)
+            {
+                _typingView.Hide();
+            }
         }
 
         // イベントを受け取ったら、担当のUI部品に更新を指示する

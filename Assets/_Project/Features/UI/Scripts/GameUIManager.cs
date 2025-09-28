@@ -26,14 +26,14 @@ namespace TypingSurvivor.Features.UI
         // --- For Client-Side Disconnection ---
         private bool _showDisconnectGUI = false;
 
-        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader, GameManager gameManager)
+        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader, GameManager gameManager, TypingSurvivor.Features.Game.Typing.ITypingService typingService)
         {
             _gameStateReader = gameStateReader;
             _playerStatusReader = playerStatusReader;
             _gameManager = gameManager;
 
-            // Initialize child UI components
-            _inGameHUD.Initialize(_gameStateReader, _playerStatusReader);
+            // Pass the typing service down to the HUD manager, which is responsible for the typing UI.
+            _inGameHUD.Initialize(gameStateReader, playerStatusReader, typingService);
 
             _gameStateReader.CurrentPhaseNV.OnValueChanged += HandlePhaseChanged;
             _resultScreen.OnRematchClicked += HandleRematchClicked;
