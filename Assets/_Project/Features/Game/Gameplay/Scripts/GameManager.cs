@@ -82,29 +82,50 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             if (!IsServer) return;
 
+            // Netcode automatically despawns the player object. We just need to clean up our game state.
             if (_playerInstances.TryGetValue(clientId, out var playerFacade))
             {
-                // Remove from synced list
+                // Remove from the synced list of spawned players
                 for (int i = 0; i < _gameState.SpawnedPlayers.Count; i++)
                 {
-                    if (_gameState.SpawnedPlayers[i].TryGet(out var networkObject))
+                    if (_gameState.SpawnedPlayers[i].TryGet(out var networkObject) && networkObject == playerFacade.NetworkObject)
                     {
-                        if (networkObject == playerFacade.NetworkObject)
-                        {
-                            _gameState.SpawnedPlayers.RemoveAt(i);
-                            break;
-                        }
+                        _gameState.SpawnedPlayers.RemoveAt(i);
+                        break;
                     }
                 }
             }
-            
+
+            // Clean up server-side tracking
             _playerInstances.Remove(clientId);
+
+            // Clean up GameState data
             for (int i = _gameState.PlayerDatas.Count - 1; i >= 0; i--)
             {
                 if (_gameState.PlayerDatas[i].ClientId == clientId)
                 {
                     _gameState.PlayerDatas.RemoveAt(i);
                     break;
+                }
+            }
+
+            // --- Re-evaluate Game State based on the current phase ---
+            var currentPhase = _gameState.CurrentPhase.Value;
+
+            // Case 1: Did the game end because a player disconnected during gameplay?
+            if (currentPhase == GamePhase.Playing && _gameModeStrategy.IsGameOver(_gameState))
+            {
+                _gameState.CurrentPhase.Value = GamePhase.Finished;
+                return;
+            }
+
+            // Case 2: Did the prerequisites for starting a game break?
+            if (currentPhase == GamePhase.WaitingForPlayers || currentPhase == GamePhase.Countdown)
+            {
+                if (_playerInstances.Count < _gameModeStrategy.PlayerCount)
+                {
+                    Debug.Log("A player disconnected before the game started. Aborting and moving to results.");
+                    _gameState.CurrentPhase.Value = GamePhase.Finished;
                 }
             }
         }
@@ -238,11 +259,26 @@ namespace TypingSurvivor.Features.Game.Gameplay
             _gameState.CurrentPhase.Value = GamePhase.Finished;
             _rematchRequesters.Clear();
 
+            // This loop will naturally terminate if all players request a rematch OR if a player disconnects
+            // (because _playerInstances.Count will decrease).
             while (_rematchRequesters.Count < _playerInstances.Count)
             {
                 yield return null;
             }
+
+            // FINAL GATEKEEPER: After the loop, check if we have enough players to start a rematch.
+            // This prevents a rematch if the loop was exited due to a disconnection.
+            if (_playerInstances.Count < _gameModeStrategy.PlayerCount)
+            {
+                Debug.Log("A player disconnected while waiting for rematch. Rematch is cancelled.");
+                // Wait indefinitely on the results screen.
+                while (true)
+                {
+                    yield return null;
+                }
+            }
             
+            // If we passed the check, it means everyone requested a rematch. Proceed.
             // --- Prepare for the next round ---
             ResetPlayersForRematch();
 

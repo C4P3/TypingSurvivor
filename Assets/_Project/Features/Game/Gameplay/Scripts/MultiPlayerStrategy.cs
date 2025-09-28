@@ -16,13 +16,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 }
             }
 
-            // For a standard multiplayer game (2+ players), the game ends when 1 or 0 players are left.
-            // For a game that might have started with 1 player (e.g. debug), it ends when 0 are left.
-            if (gameState.PlayerDatas.Count < 2)
-            {
-                return alivePlayers == 0;
-            }
-            
+            // A multiplayer game is over when only one or zero players are left alive.
             return alivePlayers <= 1;
         }
         // ... CalculateResultの実装 ...
