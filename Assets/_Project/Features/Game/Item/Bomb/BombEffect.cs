@@ -23,7 +23,7 @@ public class BombEffect : ItemEffect
                 {
                     var targetPos = center + new Vector3Int(x, y, 0);
                     // LevelServiceにブロック破壊を依頼
-                    levelService.DestroyBlock(context.UserId, targetPos);
+                    levelService.DestroyBlockAt(context.UserId, targetPos);
                 }
             }
         }

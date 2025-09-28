@@ -17,7 +17,8 @@ namespace TypingSurvivor.Features.Game.Level
         bool IsWalkable(Vector3Int gridPosition);
         bool HasItemTile(Vector3Int gridPosition);
         void RemoveItem(Vector3Int gridPosition);
-        void DestroyBlock(ulong clientId, Vector3Int gridPosition);
+        void DestroyConnectedBlocks(ulong clientId, Vector3Int gridPosition);
+        void DestroyBlockAt(ulong clientId, Vector3Int gridPosition);
         void ClearArea(Vector3Int gridPosition, int radius);
         void ForceChunkUpdateForPlayer(ulong clientId, Vector3 newPosition);
     }

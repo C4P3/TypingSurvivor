@@ -242,90 +242,130 @@ public class LevelManager : NetworkBehaviour, ILevelService
         return null;
     }
 
-    public void DestroyBlock(ulong clientId, Vector3Int gridPosition)
-    {
-        if (!IsServer) return;
-
-        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
-        if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
+        public void DestroyConnectedBlocks(ulong clientId, Vector3Int gridPosition)
         {
-            tiles.RemoveAll(t => t.Position == gridPosition);
-        }
-
-        for(int i = _activeBlockTiles.Count - 1; i >= 0; i--)
-        {
-            if(_activeBlockTiles[i].Position == gridPosition)
-            {
-                _activeBlockTiles.RemoveAt(i);
-                break;
-            }
-        }
-        OnBlockDestroyed_Server?.Invoke(clientId, gridPosition);
-    }
-
-    public void RemoveItem(Vector3Int gridPosition)
-    {
-        if (!IsServer) return;
-
-        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
-        if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
-        {
-            tiles.RemoveAll(t => t.Position == gridPosition);
-        }
-
-        for (int i = _activeItemTiles.Count - 1; i >= 0; i--)
-        {
-            if (_activeItemTiles[i].Position == gridPosition)
-            {
-                _activeItemTiles.RemoveAt(i);
-                break;
-            }
-        }
-    }
-
-    public bool IsWalkable(Vector3Int gridPosition)
-    {
-        if (!IsServer) return true;
-
-        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
-        if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
-        {
-            return !tiles.Any(t => t.Position == gridPosition);
-        }
-        return true;
-    }
-
-    public bool HasItemTile(Vector3Int gridPosition)
-    {
-        if (!IsServer) return false;
-        
-        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
-        if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
-        {
-            return tiles.Any(t => t.Position == gridPosition);
-        }
-        return false;
-    }
+            if (!IsServer) return;
     
-    public void ClearArea(Vector3Int gridPosition, int radius)
-    {
-        if (!IsServer) return;
-
-        for (int x = -radius; x <= radius; x++)
-        {
-            for (int y = -radius; y <= radius; y++)
+            var originalTile = GetTile(gridPosition);
+            if (originalTile == null) return;
+    
+            var queue = new Queue<Vector3Int>();
+            var visited = new HashSet<Vector3Int>();
+    
+            queue.Enqueue(gridPosition);
+            visited.Add(gridPosition);
+    
+            while (queue.Count > 0)
             {
-                var targetPos = new Vector3Int(gridPosition.x + x, gridPosition.y + y, gridPosition.z);
-
-                if (GetTile(targetPos) != null)
+                var currentPos = queue.Dequeue();
+                RemoveBlockDataAt(currentPos, clientId);
+    
+                var neighbors = new Vector3Int[]
                 {
-                    RemoveItem(targetPos);
-                    DestroyBlock(0, targetPos);
+                    currentPos + Vector3Int.up,
+                    currentPos + Vector3Int.down,
+                    currentPos + Vector3Int.left,
+                    currentPos + Vector3Int.right
+                };
+    
+                foreach (var neighborPos in neighbors)
+                {
+                    if (!visited.Contains(neighborPos) && GetTile(neighborPos) == originalTile)
+                    {
+                        visited.Add(neighborPos);
+                        queue.Enqueue(neighborPos);
+                    }
                 }
             }
         }
-    }
-
+    
+        public void DestroyBlockAt(ulong clientId, Vector3Int gridPosition)
+        {
+            if (!IsServer) return;
+            RemoveBlockDataAt(gridPosition, clientId);
+        }
+    
+        private void RemoveBlockDataAt(Vector3Int gridPosition, ulong clientId)
+        {
+            Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+            if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
+            {
+                tiles.RemoveAll(t => t.Position == gridPosition);
+            }
+    
+            for (int i = _activeBlockTiles.Count - 1; i >= 0; i--)
+            {
+                if (_activeBlockTiles[i].Position == gridPosition)
+                {
+                    _activeBlockTiles.RemoveAt(i);
+                    break;
+                }
+            }
+            OnBlockDestroyed_Server?.Invoke(clientId, gridPosition);
+        }
+    
+        public void RemoveItem(Vector3Int gridPosition)
+        {
+            if (!IsServer) return;
+    
+            Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+            if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
+            {
+                tiles.RemoveAll(t => t.Position == gridPosition);
+            }
+    
+            for (int i = _activeItemTiles.Count - 1; i >= 0; i--)
+            {
+                if (_activeItemTiles[i].Position == gridPosition)
+                {
+                    _activeItemTiles.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+    
+        public bool IsWalkable(Vector3Int gridPosition)
+        {
+            if (!IsServer) return true;
+    
+            Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+            if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
+            {
+                return !tiles.Any(t => t.Position == gridPosition);
+            }
+            return true;
+        }
+    
+        public bool HasItemTile(Vector3Int gridPosition)
+        {
+            if (!IsServer) return false;
+            
+            Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+            if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
+            {
+                return tiles.Any(t => t.Position == gridPosition);
+            }
+            return false;
+        }
+        
+        public void ClearArea(Vector3Int gridPosition, int radius)
+        {
+            if (!IsServer) return;
+    
+            for (int x = -radius; x <= radius; x++)
+            {
+                for (int y = -radius; y <= radius; y++)
+                {
+                    var targetPos = new Vector3Int(gridPosition.x + x, gridPosition.y + y, gridPosition.z);
+                    
+                    if (GetTile(targetPos) != null)
+                    {
+                        RemoveItem(targetPos);
+                        DestroyBlockAt(0, targetPos); // Use the new single-block destruction method
+                    }
+                }
+            }
+        }
     public void ForceChunkUpdateForPlayer(ulong clientId, Vector3 newPosition)
     {
         if (!IsServer) return;

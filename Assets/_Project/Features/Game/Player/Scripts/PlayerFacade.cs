@@ -228,7 +228,7 @@ namespace TypingSurvivor.Features.Game.Player
         {
             // TODO: 破壊権限のチェックなど
             
-            _levelService?.DestroyBlock(OwnerClientId, blockPosition);
+            _levelService?.DestroyConnectedBlocks(OwnerClientId, blockPosition);
             
             // 破壊後はRoaming状態に戻る
             _currentState.Value = PlayerState.Roaming;
