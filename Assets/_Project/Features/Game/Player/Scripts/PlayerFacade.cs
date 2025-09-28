@@ -240,12 +240,20 @@ namespace TypingSurvivor.Features.Game.Player
 
             while (_continuousMoveDirection_Server != Vector3Int.zero)
             {
+                // Check for stun status at the beginning of each potential move.
+                float currentMoveSpeed = _statusReader.GetStatValue(OwnerClientId, PlayerStat.MoveSpeed);
+                if (currentMoveSpeed <= 0f)
+                {
+                    // Player is stunned, wait a frame and re-evaluate.
+                    yield return null;
+                    continue;
+                }
+
                 if (_levelService == null || _grid == null || _statusReader == null || _itemService == null)
                 {
                     _isMoving_Server = false;
                     yield break;
                 }
-
                 Vector3Int targetGridPos = NetworkGridPosition.Value + _continuousMoveDirection_Server;
 
                 // 移動先にアイテムがあれば取得する

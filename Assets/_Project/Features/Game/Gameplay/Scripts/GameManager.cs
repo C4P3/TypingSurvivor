@@ -24,7 +24,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private readonly HashSet<ulong> _rematchRequesters = new();
         private Coroutine _serverGameLoop;
         private GameConfig _gameConfig;
-        private float oxygenDecreaseRate = 8.0f;
+        private float oxygenDecreaseRate = 1.0f;
 
         public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig, Grid grid)
         {

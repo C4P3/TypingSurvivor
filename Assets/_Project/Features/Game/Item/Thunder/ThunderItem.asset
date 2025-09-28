@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0d63513fadb0db419563c929aa2ffb0, type: 3}
+  m_Name: ThunderItem
+  m_EditorClassIdentifier: TypingSurvivor.Game::ItemData
+  itemName: Thunder
+  icon: {fileID: 21300000, guid: 91559978a948c1d458004d11fa2cd52d, type: 3}
+  itemTile: {fileID: 11400000, guid: da92b5009bc06424aadb19fd736c0981, type: 2}
+  Effects:
+  - {fileID: 11400000, guid: f65fb2843835d634494c2c8218cff1b8, type: 2}
