@@ -56,7 +56,8 @@ public class SpawnArea
 
 *   **役割**: `ILevelService`インターフェースを実装する、サーバーサイドのメインクラス。**マップ生成リクエストの実行者**。
 *   **責務**:
-    *   `GenerateWorld(MapGenerationRequest request)`: `GameManager`からリクエストを受け取り、その内容に従ってワールド全体を構築する唯一の公開メソッド。リクエスト内の`SpawnAreas`をループし、各エリアの地形を生成・マージしてチャンクデータとして保持する。
+    *   **初期化**: `GameSceneBootstrapper`から、現在のゲームモードに応じた`IMapGenerator`や`IItemPlacementStrategy`を受け取る。
+    *   `GenerateWorld(MapGenerationRequest request)`: `GameManager`からリクエストを受け取り、その内容に従ってワールド全体を構築する。このメソッドの内部で、受け取っていた`IItemPlacementStrategy`を初期化し、アイテム配置に使用する。
     *   **状態の所有**: `NetworkList<TileData>`として、現在アクティブな（同期対象の）タイルデータを保持する。
     *   **チャンク管理**: 全プレイヤーの位置を監視し、どのチャンクをアクティブにすべきかを判断し、`NetworkList`の内容を更新する。
     *   **ロジックの実行**: `ILevelService`インターフェースを通じて、タイル情報の取得、ブロックの破壊、スポーン地点の計算などの機能を提供する。
