@@ -1,6 +1,7 @@
 using UnityEngine;
 using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Game.Level;
+using System.Collections.Generic;
 
 /// <summary>
 /// アイテム効果を実行するために必要な全ての情報を持つコンテキストオブジェクト。
@@ -10,6 +11,8 @@ public class ItemExecutionContext
 {
     public ulong UserId { get; } // 効果を発動したプレイヤーのID
     public Vector3Int ItemPosition { get; } // アイテムがあった座標
+    public Vector3Int UserLastMoveDirection { get; } // Rocket用: アイテムを拾ったプレイヤーの最後の移動方向
+    public IReadOnlyList<ulong> OpponentClientIds { get; } // 妨害系用: 相手プレイヤーのIDリスト
 
     // DIで注入される各種サービスへの参照
     public IGameStateWriter GameStateWriter { get; }
@@ -19,15 +22,19 @@ public class ItemExecutionContext
     public ItemExecutionContext(
         ulong userId,
         Vector3Int itemPosition,
+        Vector3Int userLastMoveDirection,
+        IReadOnlyList<ulong> opponentClientIds,
         IGameStateWriter gameStateWriter,
         ILevelService levelService,
         IPlayerStatusSystemWriter playerStatusSystem
     )
     {
-        this.UserId = userId;
-        this.ItemPosition = itemPosition;
-        this.GameStateWriter = gameStateWriter;
-        this.LevelService = levelService;
-        this.PlayerStatusSystem = playerStatusSystem;
+        UserId = userId;
+        ItemPosition = itemPosition;
+        UserLastMoveDirection = userLastMoveDirection;
+        OpponentClientIds = opponentClientIds;
+        GameStateWriter = gameStateWriter;
+        LevelService = levelService;
+        PlayerStatusSystem = playerStatusSystem;
     }
 }

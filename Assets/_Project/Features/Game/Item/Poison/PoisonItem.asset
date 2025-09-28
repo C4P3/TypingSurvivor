@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0d63513fadb0db419563c929aa2ffb0, type: 3}
+  m_Name: PoisonItem
+  m_EditorClassIdentifier: TypingSurvivor.Game::ItemData
+  itemName: Poison
+  icon: {fileID: 21300000, guid: 1698ab574f72c05458c945a5605dea36, type: 3}
+  itemTile: {fileID: 11400000, guid: 9bdb0bb86ed8f124cab10511bf7a69bf, type: 2}
+  Effects:
+  - {fileID: 11400000, guid: 5884fc6a89de7894a8c12b978a8d1c74, type: 2}

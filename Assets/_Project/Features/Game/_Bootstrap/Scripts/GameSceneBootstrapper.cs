@@ -144,6 +144,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // --- Inject dependencies into ItemService ---
             _itemService.Initialize(
                 serviceLocator.GetService<ILevelService>(),
+                serviceLocator.GetService<IGameStateReader>(),
                 serviceLocator.GetService<IGameStateWriter>(),
                 serviceLocator.GetService<IPlayerStatusSystemWriter>(),
                 _gameConfig.ItemRegistry

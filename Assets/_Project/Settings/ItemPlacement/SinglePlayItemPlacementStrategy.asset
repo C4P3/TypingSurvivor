@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: TypingSurvivor.Game::RandomItemPlacementStrategy
   _spawnableItems:
   - itemName: OxygenHeal
-    weight: 1
+    weight: 2
   - itemName: Bomb
     weight: 1
   - itemName: SpeedUp

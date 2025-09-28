@@ -7,5 +7,6 @@ public interface IItemService
     /// </summary>
     /// <param name="clientId">アイテムを取得したプレイヤーのID</param>
     /// <param name="itemGridPosition">アイテムが存在したグリッド座標</param>
-    void AcquireItem(ulong clientId, Vector3Int itemGridPosition);
+    /// <param name="lastMoveDirection">アイテムを取得したプレイヤーの最後の移動方向</param>
+    void AcquireItem(ulong clientId, Vector3Int itemGridPosition, Vector3Int lastMoveDirection);
 }

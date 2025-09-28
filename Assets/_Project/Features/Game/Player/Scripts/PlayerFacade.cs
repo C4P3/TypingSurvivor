@@ -251,7 +251,7 @@ namespace TypingSurvivor.Features.Game.Player
                 // 移動先にアイテムがあれば取得する
                 if (_levelService.HasItemTile(targetGridPos))
                 {
-                    _itemService.AcquireItem(OwnerClientId, targetGridPos);
+                    _itemService.AcquireItem(OwnerClientId, targetGridPos, _continuousMoveDirection_Server);
                 }
 
                 if (_levelService.IsWalkable(targetGridPos))

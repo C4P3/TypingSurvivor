@@ -14,11 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: TypingSurvivor.Game::RandomItemPlacementStrategy
   _spawnableItems:
   - itemName: OxygenHeal
-    weight: 1
+    weight: 2
   - itemName: Bomb
     weight: 1
   - itemName: SpeedUp
     weight: 1
   - itemName: Star
+    weight: 1
+  - itemName: Poison
     weight: 1
   _placementChancePerTile: 0.2
