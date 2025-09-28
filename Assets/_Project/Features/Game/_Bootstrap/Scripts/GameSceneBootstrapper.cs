@@ -96,9 +96,12 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
 
             // --- Inject dependencies into LevelManager ---
+            var itemPlacementStrategy = _gameConfig.DefaultItemPlacementStrategy;
+            itemPlacementStrategy.Initialize(_gameConfig.ItemRegistry);
+
             _levelManager.Initialize(
                 _gameConfig.DefaultMapGenerator,
-                _gameConfig.DefaultItemPlacementStrategy,
+                itemPlacementStrategy,
                 _gameConfig.ItemRegistry,
                 _grid
             );

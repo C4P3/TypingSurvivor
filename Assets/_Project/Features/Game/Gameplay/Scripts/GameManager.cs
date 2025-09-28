@@ -171,7 +171,13 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     var data = _gameState.PlayerDatas[i];
                     if (data.IsGameOver) continue;
 
-                    data.Oxygen -= oxygenDecreaseRate * Time.deltaTime;
+                    // Get the current damage reduction for the player
+                    float damageReduction = _statusReader.GetStatValue(data.ClientId, PlayerStat.DamageReduction);
+                    damageReduction = Mathf.Clamp01(damageReduction); // Ensure it's between 0 and 1
+
+                    // Calculate the actual oxygen decrease
+                    float actualDecrease = oxygenDecreaseRate * (1.0f - damageReduction);
+                    data.Oxygen -= actualDecrease * Time.deltaTime;
 
                     if (data.Oxygen <= 0)
                     {

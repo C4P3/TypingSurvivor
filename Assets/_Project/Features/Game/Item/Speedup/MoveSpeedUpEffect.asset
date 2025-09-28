@@ -9,9 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa8df6a5db85825429898e7181ee7bdd, type: 3}
-  m_Name: PlayerDefaultStats
-  m_EditorClassIdentifier: Assembly-CSharp::TypingSurvivor.Settings.PlayerDefaultStats
-  MoveSpeed: 4
-  MaxOxygen: 100
-  RadarRange: 5
+  m_Script: {fileID: 11500000, guid: 2861ef800e07605468299a9e5b142406, type: 3}
+  m_Name: MoveSpeedUpEffect
+  m_EditorClassIdentifier: Assembly-CSharp::MoveSpeedUpEffect
+  _percentageIncrease: 0

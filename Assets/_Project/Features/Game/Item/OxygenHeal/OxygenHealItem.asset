@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c0d63513fadb0db419563c929aa2ffb0, type: 3}
-  m_Name: BombItem
-  m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Bomb
-  icon: {fileID: 1321716245, guid: 9d56ab279ca57a24c990771f11189337, type: 3}
-  itemTile: {fileID: 11400000, guid: 46a4b1748cb47c94caae08e725bdfb1f, type: 2}
+  m_Name: OxygenHealItem
+  m_EditorClassIdentifier: TypingSurvivor.Game::ItemData
+  itemName: OxygenHeal
+  icon: {fileID: 21300000, guid: 8e080d3c443f8004482e58d43113d02d, type: 3}
+  itemTile: {fileID: 11400000, guid: b82793dc74e4c62489268000676d5479, type: 2}
   Effects:
-  - {fileID: 11400000, guid: de59847840c21f7478a661f972a4c23a, type: 2}
+  - {fileID: 11400000, guid: 91a8ce96a2d2aa74798650d353c4f42d, type: 2}

@@ -17,6 +17,11 @@ namespace TypingSurvivor.Features.Core.PlayerStatus
         [Tooltip("Base range for detecting items or enemies.")]
         public float RadarRange = 5f;
 
+        [Header("Combat")]
+        [Tooltip("Base damage reduction percentage (0.0 = 0%, 1.0 = 100%).")]
+        [Range(0.0f, 1.0f)]
+        public float DamageReduction = 0.0f;
+
         public float GetBaseStatValue(PlayerStat stat)
         {
             switch (stat)
@@ -24,6 +29,7 @@ namespace TypingSurvivor.Features.Core.PlayerStatus
                 case PlayerStat.MoveSpeed: return MoveSpeed;
                 case PlayerStat.MaxOxygen: return MaxOxygen;
                 case PlayerStat.RadarRange: return RadarRange;
+                case PlayerStat.DamageReduction: return DamageReduction;
                 default:
                     Debug.LogWarning($"Base value for stat '{stat}' not defined in PlayerDefaultStats.");
                     return 1.0f;

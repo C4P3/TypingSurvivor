@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2861ef800e07605468299a9e5b142406, type: 3}
-  m_Name: Move Speed Up Effect
-  m_EditorClassIdentifier: Assembly-CSharp::MoveSpeedUpEffect
-  _percentageIncrease: 0
+  m_Script: {fileID: 11500000, guid: 05d4d56fda6c36d498b805d21fc30501, type: 3}
+  m_Name: StarEffect
+  m_EditorClassIdentifier: TypingSurvivor.Game::TypingSurvivor.Features.Game.Items.Effects.StarEffect
+  _duration: 7

@@ -8,6 +8,11 @@ using UnityEngine.Tilemaps;
 public interface IItemPlacementStrategy
 {
     /// <summary>
+    /// Initializes the strategy with the game's item registry.
+    /// </summary>
+    void Initialize(ItemRegistry itemRegistry);
+
+    /// <summary>
     /// 指定された地形情報とアイテムリストに基づき、アイテムを配置した結果を返す。
     /// </summary>
     /// <param name="areaBlockTiles">アイテムを配置する対象となる、特定のエリアの地形タイルリスト。</param>
