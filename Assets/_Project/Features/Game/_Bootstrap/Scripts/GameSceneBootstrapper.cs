@@ -102,9 +102,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
             // --- Inject dependencies into GameManager ---
             IGameModeStrategy strategy;
-            string gameMode = AppManager.GameMode;
+            GameModeType gameMode = AppManager.Instance.GameMode;
 
-            if (gameMode == "SinglePlayer")
+            if (gameMode == GameModeType.SinglePlayer)
             {
                 strategy = new SinglePlayerStrategy();
             }

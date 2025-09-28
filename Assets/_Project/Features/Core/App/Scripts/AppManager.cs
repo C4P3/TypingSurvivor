@@ -17,7 +17,12 @@ namespace TypingSurvivor.Features.Core.App
     public class AppManager : MonoBehaviour, IServiceLocator
     {
         public static AppManager Instance { get; private set; }
-        public static string GameMode { get; set; } = "SinglePlayer"; // To carry game mode selection across scenes
+        public GameModeType GameMode { get; private set; } = GameModeType.SinglePlayer;
+
+        public void SetGameMode(GameModeType mode)
+        {
+            GameMode = mode;
+        }
         
         public IAuthenticationService AuthService { get; private set; }
         public IPlayerStatusSystemReader StatusReader { get; private set; }
@@ -59,7 +64,7 @@ namespace TypingSurvivor.Features.Core.App
                 // --- Dedicated Server Path ---
                 ushort serverPort = 7777;
                 string externalServerIP = "0.0.0.0"; // Listen on all available network interfaces
-                string gameMode = "MultiPlayer";
+                GameModeType gameMode = GameModeType.MultiPlayer;
 
                 for (int i = 0; i < args.Length; i++)
                 {
@@ -73,13 +78,16 @@ namespace TypingSurvivor.Features.Core.App
                     }
                     else if (args[i] == "-gameMode" && i + 1 < args.Length)
                     {
-                        gameMode = args[i + 1];
+                        if (Enum.TryParse<GameModeType>(args[i + 1], true, out var parsedMode))
+                        {
+                            gameMode = parsedMode;
+                        }
                     }
                 }
                 
-                GameMode = gameMode;
+                SetGameMode(gameMode);
                 StartDedicatedServer(externalServerIP, serverPort);
-                NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
+                NetworkManager.Singleton.SceneManager.LoadScene("Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
             }
             else
             {

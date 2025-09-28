@@ -97,7 +97,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 return;
             }
             
-            AppManager.GameMode = "SinglePlayer";
+            AppManager.Instance.SetGameMode(GameModeType.SinglePlayer);
             
             if (NetworkManager.Singleton.StartHost())
             {
@@ -117,7 +117,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 Debug.LogWarning("Already connected or hosting.");
                 return;
             }
-            AppManager.GameMode = "MultiPlayer";
+            AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
 
             // Hardcode the connection details for debugging
             const string ipAddress = "127.0.0.1";
@@ -135,7 +135,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 return;
             }
 
-            AppManager.GameMode = "MultiPlayer";
+            AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
 
             if (NetworkManager.Singleton.StartServer())
             {
