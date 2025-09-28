@@ -55,50 +55,57 @@ sequenceDiagram
 
 ## **4\. 画面レイアウト設計**
 
-各画面の主要な構成要素と、その配置や比率に関する基本的な考え方を記述します。
+### **4.1. 基本原則**
 
-### **4.1. InGameHUD**
+*   **情報の優先度:** 最も重要な情報（酸素、タイピングUI）は、画面中央や視線の動きが少ない場所に配置する。補助的な情報（ミニマップ、スコア）は画面の四隅に配置する。
+*   **アンカーとマージン:** 全てのUI要素は、画面の四隅や辺を基準（アンカー）として配置する。これにより、異なる画面アスペクト比でもある程度レイアウトが保たれる。
+*   **画面分割への対応:** UI要素は、`Screen Space - Camera`モードを基本とし、各プレイヤー専用のカメラに追従する。これにより、画面が分割されても、各プレイヤーの領域内にUIが正しく表示される。
 
-ゲームプレイ中のメイン画面です。プレイヤーに必要な情報を、視線を大きく動かすことなく確認できるように配置します。
+### **4.2. 主要画面のレイアウト**
+
+**4.2.1. InGameHUD**
+
+ゲームプレイ中のメイン画面です。
+
+*   **ヘッダーエリア（画面上部）:**
+    *   **自プレイヤーのステータス (酸素/スコア):** 左上に配置。
+    *   **他プレイヤーのステータス:** 右上に配置。
+*   **ゲームプレイエリア（中央）:**
+    *   **タイピングUI:** プレイヤーがタイピング状態に入った際、画面中央下部にモーダル的に表示される。ゲームプレイの視界を極力妨げないサイズと位置を維持する。
+*   **フッターエリア（画面下部）:**
+    *   **ミニマップ:** 左下に配置。（将来実装）
+    *   **所持アイテム:** 右下に配置。（将来実装）
 
 ```mermaid
 graph TD
     subgraph InGameHUD
         direction TB
         
-        subgraph TopArea [ヘッダーエリア (画面上部)]
-            Player1Status(自プレイヤーのステータス<br>左上) --- Player2Status(他プレイヤーのステータス<br>右上)
+        subgraph TopArea [ヘッダーエリア]
+            Player1Status("自ステータス @左上") --- Player2Status("他ステータス @右上")
         end
 
-        subgraph CenterArea [ゲームプレイエリア (中央)]
-            TypingUI(タイピングUI<br>中央下部に表示)
+        subgraph CenterArea [ゲームプレイエリア]
+            TypingUI("タイピングUI @中央下部")
         end
 
-        subgraph BottomArea [フッターエリア (画面下部)]
-            Minimap(ミニマップ<br>左下) --- ItemSlots(所持アイテム<br>右下)
+        subgraph BottomArea [フッターエリア]
+            Minimap("ミニマップ @左下") --- ItemSlots("アイテム @右下")
         end
     end
 ```
 
-*   **Player Status:** 各プレイヤーの酸素ゲージやスコアを表示する領域。画面分割時は、それぞれのカメラ領域の隅に配置されます。
-*   **TypingUI:** タイピング対象のブロックが出現した際に、画面中央下部にモーダル的に表示されるUIです。
-*   **Minimap / ItemSlots:** 補助的な情報を表示する領域です。
-
-### **4.2. ResultScreen**
+**4.2.2. ResultScreen**
 
 ゲーム終了後に表示されるリザルト画面です。
 
 ```mermaid
 graph TD
-    subgraph ResultScreen
-        direction TB
-        
-        ResultTitle(勝敗結果<br>例: "YOU WIN")
-        PlayerScores(各プレイヤーの最終スコア)
-        ActionButtons(再戦 / メインメニューへ)
-        
-        ResultTitle --> PlayerScores --> ActionButtons
-    end
+    ResultTitle("勝敗結果<br>例: 'YOU WIN'")
+    PlayerScores("各プレイヤーの最終スコア")
+    ActionButtons("再戦 / メインメニューへ")
+    
+    ResultTitle --> PlayerScores --> ActionButtons
 ```
 
 ## **5\. 画面遷移図**
