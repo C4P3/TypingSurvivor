@@ -21,4 +21,6 @@ MonoBehaviour:
     weight: 1
   - itemName: Star
     weight: 1
+  - itemName: Rocket
+    weight: 1
   _placementChancePerTile: 0.2
