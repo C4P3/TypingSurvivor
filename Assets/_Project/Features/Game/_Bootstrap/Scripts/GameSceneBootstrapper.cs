@@ -96,8 +96,14 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
 
             // --- Inject dependencies into LevelManager ---
-            var itemPlacementStrategy = _gameConfig.DefaultItemPlacementStrategy;
-            itemPlacementStrategy.Initialize(_gameConfig.ItemRegistry);
+            var itemPlacementStrategy = AppManager.Instance.GameMode == Core.App.GameModeType.SinglePlayer
+                ? _gameConfig.SinglePlayerItemStrategy
+                : _gameConfig.MultiPlayerItemStrategy;
+            
+            if (itemPlacementStrategy == null)
+            {
+                Debug.LogError($"ItemPlacementStrategy for GameMode '{AppManager.Instance.GameMode}' is not set in GameConfig.");
+            }
 
             _levelManager.Initialize(
                 _gameConfig.DefaultMapGenerator,

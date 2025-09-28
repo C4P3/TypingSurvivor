@@ -31,8 +31,14 @@ namespace TypingSurvivor.Features.Game.Settings
         [SerializeField] private ScriptableObject _versusSpawnStrategy;
         public ISpawnPointStrategy VersusSpawnStrategy => _versusSpawnStrategy as ISpawnPointStrategy;
 
+        [Header("Item Placement Strategies")]
         [SerializeField] private ScriptableObject _defaultItemPlacementStrategy;
         public IItemPlacementStrategy DefaultItemPlacementStrategy => _defaultItemPlacementStrategy as IItemPlacementStrategy;
+        [SerializeField] private ScriptableObject _singlePlayerItemStrategy;
+        public IItemPlacementStrategy SinglePlayerItemStrategy => _singlePlayerItemStrategy as IItemPlacementStrategy;
+
+        [SerializeField] private ScriptableObject _multiPlayerItemStrategy;
+        public IItemPlacementStrategy MultiPlayerItemStrategy => _multiPlayerItemStrategy as IItemPlacementStrategy;
 
         [Header("Map Generators")]
         [SerializeField] private ScriptableObject _defaultMapGenerator;

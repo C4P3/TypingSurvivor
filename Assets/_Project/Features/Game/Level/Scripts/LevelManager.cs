@@ -131,6 +131,17 @@ public class LevelManager : NetworkBehaviour, ILevelService
     {
         if (!IsServer) return;
 
+        // Ensure the strategy is initialized right before it's used.
+        // This is the safest place to guarantee it's ready for both initial generation and rematches.
+        if (_itemPlacementStrategy != null)
+        {
+            _itemPlacementStrategy.Initialize(_itemRegistry);
+        }
+        else
+        {
+            Debug.LogError("ItemPlacementStrategy is null. Cannot generate items.");
+        }
+
         // Clear all previous map data
         _entireBlockMapData_Server.Clear();
         _entireItemMapData_Server.Clear();
@@ -152,13 +163,13 @@ public class LevelManager : NetworkBehaviour, ILevelService
         // Generate each area defined in the request
         foreach (var area in request.SpawnAreas)
         {
-            if (area.MapGenerator == null || area.ItemPlacementStrategy == null)
+            if (area.MapGenerator == null)
             {
-                Debug.LogError("A SpawnArea in the MapGenerationRequest has a null MapGenerator or ItemPlacementStrategy. Skipping this area.");
+                Debug.LogError("A SpawnArea in the MapGenerationRequest has a null MapGenerator. Skipping this area.");
                 continue;
             }
             var generatedBlocks = area.MapGenerator.Generate(_mapSeed, area.WorldOffset, _tileToBaseIdMap);
-            var generatedItems = area.ItemPlacementStrategy.PlaceItems(generatedBlocks, _itemRegistry, prng, _tileToBaseIdMap, area.WorldOffset);
+            var generatedItems = _itemPlacementStrategy.PlaceItems(generatedBlocks, _itemRegistry, prng, _tileToBaseIdMap, area.WorldOffset);
 
             ChunkAndStoreMapData(generatedBlocks, _entireBlockMapData_Server);
             ChunkAndStoreMapData(generatedItems, _entireItemMapData_Server);

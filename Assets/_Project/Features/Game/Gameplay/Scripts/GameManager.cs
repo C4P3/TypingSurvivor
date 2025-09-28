@@ -213,8 +213,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                         PlayerClientIds = new List<ulong> { clientIds[i] },
                         WorldOffset = new Vector2Int(i * 1000, 0),
                         MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy,
-                        ItemPlacementStrategy = _gameConfig.DefaultItemPlacementStrategy as IItemPlacementStrategy
+                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
                     });
                 }
             }
@@ -225,8 +224,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     PlayerClientIds = new List<ulong> { clientIds[0] },
                     WorldOffset = new Vector2Int(0, 0),
                     MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy,
-                    ItemPlacementStrategy = _gameConfig.DefaultItemPlacementStrategy as IItemPlacementStrategy
+                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
                 });
             }
 
@@ -299,8 +297,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                         PlayerClientIds = new List<ulong> { clientIds[i] },
                         WorldOffset = new Vector2Int(i * 1000, 0),
                         MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy,
-                        ItemPlacementStrategy = _gameConfig.DefaultItemPlacementStrategy as IItemPlacementStrategy
+                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
                     });
                 }
             }
@@ -311,8 +308,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     PlayerClientIds = new List<ulong> { clientIds[0] },
                     WorldOffset = new Vector2Int(0, 0),
                     MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy,
-                    ItemPlacementStrategy = _gameConfig.DefaultItemPlacementStrategy as IItemPlacementStrategy
+                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
                 });
             }
             _levelService.GenerateWorld(request);
