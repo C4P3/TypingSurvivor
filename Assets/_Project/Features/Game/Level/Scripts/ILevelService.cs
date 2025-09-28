@@ -19,5 +19,6 @@ namespace TypingSurvivor.Features.Game.Level
         void RemoveItem(Vector3Int gridPosition);
         void DestroyBlock(ulong clientId, Vector3Int gridPosition);
         void ClearArea(Vector3Int gridPosition, int radius);
+        void ForceChunkUpdateForPlayer(ulong clientId, Vector3 newPosition);
     }
 }

@@ -240,13 +240,11 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     Vector3 spawnPos = _grid.GetCellCenterWorld(gridPos);
 
                     GameObject playerInstance = Instantiate(_gameConfig.PlayerPrefab, spawnPos, Quaternion.identity);
-                    var playerFacade = playerInstance.GetComponent<TypingSurvivor.Features.Game.Player.PlayerFacade>();
-                    
-                    // Set grid position BEFORE spawning to prevent warp
-                    playerFacade.NetworkGridPosition.Value = gridPos;
-
                     var playerNetworkObject = playerInstance.GetComponent<NetworkObject>();
                     playerNetworkObject.SpawnAsPlayerObject(clientId, true);
+
+                    var playerFacade = playerInstance.GetComponent<PlayerFacade>();
+                    playerFacade.NetworkGridPosition.Value = gridPos;
 
                     _playerInstances[clientId] = playerFacade;
                     _gameState.SpawnedPlayers.Add(playerNetworkObject);
@@ -320,11 +318,14 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 var spawnPoints = _levelService.GetSpawnPoints(area);
                 for (int i = 0; i < area.PlayerClientIds.Count; i++)
                 {
-                    var player = _playerInstances[area.PlayerClientIds[i]];
+                    ulong clientId = area.PlayerClientIds[i];
+                    var player = _playerInstances[clientId];
                     var gridPos = spawnPoints[i];
                     _levelService.ClearArea(gridPos, 1);
                     var spawnPos = _grid.GetCellCenterWorld(gridPos);
                     player.RespawnAt(spawnPos);
+                    // After teleporting the player, force a chunk update to ensure the client sees the new map.
+                    _levelService.ForceChunkUpdateForPlayer(clientId, spawnPos);
                 }
             }
         }

@@ -316,7 +316,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
             for (int y = -radius; y <= radius; y++)
             {
                 var targetPos = new Vector3Int(gridPosition.x + x, gridPosition.y + y, gridPosition.z);
-                
+
                 if (GetTile(targetPos) != null)
                 {
                     RemoveItem(targetPos);
@@ -324,6 +324,14 @@ public class LevelManager : NetworkBehaviour, ILevelService
                 }
             }
         }
+    }
+
+    public void ForceChunkUpdateForPlayer(ulong clientId, Vector3 newPosition)
+    {
+        if (!IsServer) return;
+        // This method provides a public entry point to the existing chunk update logic,
+        // which is useful for events like respawning where a player teleports instead of moves.
+        HandlePlayerMoved(clientId, newPosition);
     }
 
     #endregion

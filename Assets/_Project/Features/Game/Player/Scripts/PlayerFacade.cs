@@ -290,10 +290,23 @@ namespace TypingSurvivor.Features.Game.Player
 
         private void OnGridPositionChanged(Vector3Int previousValue, Vector3Int newValue)
         {
-            if (_stateMachine.CurrentStateEnum == PlayerState.Moving)
+            // This callback is triggered on clients when the server updates the position.
+            // We use a distance heuristic to differentiate between a short-distance "move" and a long-distance "teleport" (spawn/respawn).
+            // This avoids the race condition of checking the player's state, which might not have been updated yet.
+            if (IsClient)
             {
-                _stateMachine.CurrentIPlayerState?.OnTargetPositionChanged();
+                // If the distance is greater than a normal move (e.g., > sqrt(2) for diagonals), it's a teleport.
+                if (Vector3Int.Distance(previousValue, newValue) > 1.5f)
+                {
+                    // Snap the position instantly for spawns and respawns.
+                    transform.position = _grid.GetCellCenterWorld(newValue);
+                }
             }
+
+            // Always notify the state machine.
+            // - For a move, it will start the Lerp from the current position.
+            // - For a teleport, it will start the Lerp from the newly snapped position (resulting in no movement, which is correct).
+            _stateMachine.CurrentIPlayerState?.OnTargetPositionChanged();
         }
 
         #endregion
