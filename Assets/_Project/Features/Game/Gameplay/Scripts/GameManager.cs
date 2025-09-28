@@ -247,8 +247,11 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     var playerNetworkObject = playerInstance.GetComponent<NetworkObject>();
                     playerNetworkObject.SpawnAsPlayerObject(clientId, true);
 
-                    var playerFacade = playerInstance.GetComponent<PlayerFacade>();
+                    var playerFacade = playerInstance.GetComponent<TypingSurvivor.Features.Game.Player.PlayerFacade>();
                     playerFacade.NetworkGridPosition.Value = gridPos;
+
+                    // Register initial position in the GameState
+                    UpdatePlayerPosition(clientId, gridPos);
 
                     _playerInstances[clientId] = playerFacade;
                     _gameState.SpawnedPlayers.Add(playerNetworkObject);
@@ -326,7 +329,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     _levelService.ClearArea(gridPos, 1);
                     var spawnPos = _grid.GetCellCenterWorld(gridPos);
                     player.RespawnAt(spawnPos);
-                    // After teleporting the player, force a chunk update to ensure the client sees the new map.
+                    // After teleporting the player, update their position in the GameState and force a chunk update.
+                    UpdatePlayerPosition(clientId, gridPos);
                     _levelService.ForceChunkUpdateForPlayer(clientId, spawnPos);
                 }
             }
