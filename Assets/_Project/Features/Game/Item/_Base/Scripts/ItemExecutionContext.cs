@@ -15,6 +15,7 @@ public class ItemExecutionContext
     public IReadOnlyList<ulong> OpponentClientIds { get; } // 妨害系用: 相手プレイヤーのIDリスト
 
     // DIで注入される各種サービスへの参照
+    public IGameStateReader GameStateReader { get; }
     public IGameStateWriter GameStateWriter { get; }
     public ILevelService LevelService { get; }
     public IPlayerStatusSystemWriter PlayerStatusSystem { get; } // プレイヤーの永続ステータスを管理する新しいシステム
@@ -24,6 +25,7 @@ public class ItemExecutionContext
         Vector3Int itemPosition,
         Vector3Int userLastMoveDirection,
         IReadOnlyList<ulong> opponentClientIds,
+        IGameStateReader gameStateReader,
         IGameStateWriter gameStateWriter,
         ILevelService levelService,
         IPlayerStatusSystemWriter playerStatusSystem
@@ -33,6 +35,7 @@ public class ItemExecutionContext
         ItemPosition = itemPosition;
         UserLastMoveDirection = userLastMoveDirection;
         OpponentClientIds = opponentClientIds;
+        GameStateReader = gameStateReader;
         GameStateWriter = gameStateWriter;
         LevelService = levelService;
         PlayerStatusSystem = playerStatusSystem;

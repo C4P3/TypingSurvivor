@@ -109,7 +109,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 _gameConfig.DefaultMapGenerator,
                 itemPlacementStrategy,
                 _gameConfig.ItemRegistry,
-                _grid
+                _grid,
+                _gameConfig
             );
 
             // --- Inject dependencies into GameManager ---

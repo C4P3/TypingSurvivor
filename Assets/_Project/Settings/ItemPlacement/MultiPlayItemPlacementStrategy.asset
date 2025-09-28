@@ -27,4 +27,6 @@ MonoBehaviour:
     weight: 1
   - itemName: Poison
     weight: 1
+  - itemName: Unchi
+    weight: 1
   _placementChancePerTile: 0.2

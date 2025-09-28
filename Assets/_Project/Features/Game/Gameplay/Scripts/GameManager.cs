@@ -386,6 +386,20 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 }
             }
         }
+        public void UpdatePlayerPosition(ulong clientId, Vector3Int gridPosition)
+        {
+            if (!IsServer) return;
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    var data = _gameState.PlayerDatas[i];
+                    data.GridPosition = gridPosition;
+                    _gameState.PlayerDatas[i] = data;
+                    return;
+                }
+            }
+        }
         public void SetPlayerGameOver(ulong clientId)
         {
             if (!IsServer) return;

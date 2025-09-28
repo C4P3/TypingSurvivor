@@ -33,6 +33,7 @@ namespace TypingSurvivor.Features.Game.Player
         private ILevelService _levelService;
         private IItemService _itemService;
         private IPlayerStatusSystemReader _statusReader;
+        private IGameStateWriter _gameStateWriter;
         private Grid _grid;
 
         // --- 同期変数 ---
@@ -77,10 +78,12 @@ namespace TypingSurvivor.Features.Game.Player
             {
                 _levelService = serviceLocator.GetService<ILevelService>();
                 _itemService = serviceLocator.GetService<IItemService>();
-                _statusReader = serviceLocator.StatusReader; // Coreサービスは直接参照可能
+                _statusReader = serviceLocator.StatusReader;
+                _gameStateWriter = serviceLocator.GetService<IGameStateWriter>();
                 if (_levelService == null) Debug.LogError("ILevelServiceの実装が見つかりません。");
                 if (_itemService == null) Debug.LogError("IItemServiceの実装が見つかりません。");
                 if (_statusReader == null) Debug.LogError("IPlayerStatusSystemReaderの実装が見つかりません。");
+                if (_gameStateWriter == null) Debug.LogError("IGameStateWriterの実装が見つかりません。");
 
                 _currentState.Value = PlayerState.Roaming;
             }
@@ -119,8 +122,11 @@ namespace TypingSurvivor.Features.Game.Player
                 _input.OnMovePerformed -= HandleMovePerformed;
                 _input.OnMoveCanceled -= HandleMoveCanceled;
 
-                _typingService.OnTypingSuccess -= HandleTypingSuccess;
-                _typingService.StopTyping(); // 念のため購読解除
+                if (_typingService != null)
+                {
+                    _typingService.OnTypingSuccess -= HandleTypingSuccess;
+                    _typingService.StopTyping(); // 念のため購読解除
+                }
             }
             
             if(IsServer) OnPlayerDespawned_Server?.Invoke(OwnerClientId);
@@ -274,6 +280,7 @@ namespace TypingSurvivor.Features.Game.Player
                     yield return new WaitForSeconds(duration);
 
                     transform.position = _grid.GetCellCenterWorld(NetworkGridPosition.Value);
+                    _gameStateWriter.UpdatePlayerPosition(OwnerClientId, NetworkGridPosition.Value);
                     OnPlayerMoved_Server?.Invoke(OwnerClientId, transform.position);
                 }
                 else

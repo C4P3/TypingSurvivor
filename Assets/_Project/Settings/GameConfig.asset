@@ -21,6 +21,16 @@ MonoBehaviour:
   - LanguageCode: en
     ConversionTable: {fileID: 11400000, guid: b043ace05832fbc459c82cbf8a4cffc4, type: 2}
   PlayerPrefab: {fileID: 3511757227768039307, guid: 3e70346e69855224faddd4636d720091, type: 3}
+  WorldTiles:
+  - {fileID: 11400000, guid: 5d465524561049943baaba4ac6f319a7, type: 2}
+  - {fileID: 11400000, guid: 46a4b1748cb47c94caae08e725bdfb1f, type: 2}
+  - {fileID: 11400000, guid: 0f971df2f76c7bb4da6163ead279bbdc, type: 2}
+  - {fileID: 11400000, guid: 301ecb1ef9eee864f8f843c6e198351e, type: 2}
+  - {fileID: 11400000, guid: c0a2d122df21a2e4f9a8f0f2cf9fa4c0, type: 2}
+  - {fileID: 11400000, guid: a208d6c3c91ce71439dcba762f96185d, type: 2}
+  - {fileID: 11400000, guid: 6241e9ff7ea5a764a9341be9c5662c95, type: 2}
+  - {fileID: 11400000, guid: 6e58dd38dc12db345a226bc45a4c7d90, type: 2}
+  - {fileID: 11400000, guid: c39b81533a3f35e4a83a2157cba5c32d, type: 2}
   _singlePlayerSpawnStrategy: {fileID: 11400000, guid: 84d7e6d9ef3f72346abd65884e3f570c, type: 2}
   _versusSpawnStrategy: {fileID: 11400000, guid: d919929893f439444a40dbe04f4b12ae, type: 2}
   _defaultItemPlacementStrategy: {fileID: 11400000, guid: 9578854241a4310409ea6f626152eea1, type: 2}

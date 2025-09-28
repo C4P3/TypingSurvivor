@@ -2,12 +2,38 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using TypingSurvivor.Features.Game.Items.Effects; // Required for IBlockProvider
+
+// A new interface to identify effects that can provide a block tile.
+public interface IBlockProvider
+{
+    TileBase GetTile();
+}
 
 [CreateAssetMenu(fileName = "ItemRegistry", menuName = "Items/Item Registry")]
 public class ItemRegistry : ScriptableObject
 {
     [SerializeField] private List<ItemData> _itemDataList;
     public IReadOnlyList<ItemData> AllItems => _itemDataList;
+
+    public IEnumerable<TileBase> AllEffectTiles
+    {
+        get
+        {
+            if (_itemDataList == null) yield break;
+            foreach (var itemData in _itemDataList)
+            {
+                if (itemData.Effects == null) continue;
+                foreach (var effect in itemData.Effects)
+                {
+                    if (effect is IBlockProvider blockProvider)
+                    {
+                        yield return blockProvider.GetTile();
+                    }
+                }
+            }
+        }
+    }
 
     private Dictionary<TileBase, ItemData> _tileToItemData;
 

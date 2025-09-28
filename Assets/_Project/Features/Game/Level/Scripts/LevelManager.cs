@@ -7,6 +7,8 @@ using UnityEngine.Tilemaps;
 using TypingSurvivor.Features.Game.Player;
 using TypingSurvivor.Features.Game.Level;
 using TypingSurvivor.Features.Game.Level.Data;
+using TypingSurvivor.Features.Game.Settings;
+using TypingSurvivor.Features.Game.Level.Tiles;
 
 /// <summary>
 /// Level (タイルマップ) の状態を管理し、変更ロジックを実行するクラス。
@@ -28,6 +30,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
     private IMapGenerator _mapGenerator;
     private IItemPlacementStrategy _itemPlacementStrategy;
     private ItemRegistry _itemRegistry;
+    private GameConfig _gameConfig;
 
     [Header("Map Settings")]
     [SerializeField] private long _mapSeed;
@@ -43,6 +46,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
     // --- Tile ID Management ---
     private Dictionary<TileBase, int> _tileToBaseIdMap;
     private List<TileBase> _tileIdMap;
+    private Dictionary<string, TileBase> _tileNameToTileMap;
 
     // --- Server-Side Data ---
     private readonly Dictionary<Vector2Int, List<TileData>> _entireBlockMapData_Server = new();
@@ -56,30 +60,45 @@ public class LevelManager : NetworkBehaviour, ILevelService
     #endregion
 
     #region Initialization
-    public void Initialize(IMapGenerator mapGenerator, IItemPlacementStrategy itemPlacementStrategy, ItemRegistry itemRegistry, Grid grid)
+    public void Initialize(IMapGenerator mapGenerator, IItemPlacementStrategy itemPlacementStrategy, ItemRegistry itemRegistry, Grid grid, GameConfig gameConfig)
     {
         _mapGenerator = mapGenerator;
         _itemPlacementStrategy = itemPlacementStrategy;
         _itemRegistry = itemRegistry;
         _grid = grid;
+        _gameConfig = gameConfig;
 
-        // ジェネレーターが使用するブロックタイルと、ItemRegistryにあるアイテムタイルの両方からIDマップを動的に生成
+        // --- Build the comprehensive Tile ID Map from all sources ---
         _tileIdMap = new List<TileBase>();
         _tileToBaseIdMap = new Dictionary<TileBase, int>();
         
         var allTiles = new List<TileBase>();
-        if(_mapGenerator != null && _mapGenerator.AllTiles != null) allTiles.AddRange(_mapGenerator.AllTiles);
-        if(_itemRegistry != null && _itemRegistry.AllItems != null)
+        if(_gameConfig.WorldTiles != null) allTiles.AddRange(_gameConfig.WorldTiles);
+        if(_itemRegistry != null)
         {
-            allTiles.AddRange(_itemRegistry.AllItems.Select(item => item.itemTile));
+            if (_itemRegistry.AllItems != null) allTiles.AddRange(_itemRegistry.AllItems.Select(item => item.itemTile));
+            if (_itemRegistry.AllEffectTiles != null) allTiles.AddRange(_itemRegistry.AllEffectTiles);
         }
 
-        foreach (var tile in allTiles.Distinct())
+        foreach (var tile in allTiles.Distinct().Where(t => t != null))
         {
-            if (tile != null && !_tileToBaseIdMap.ContainsKey(tile))
+            if (!_tileToBaseIdMap.ContainsKey(tile))
             {
                 _tileToBaseIdMap[tile] = _tileIdMap.Count;
                 _tileIdMap.Add(tile);
+            }
+        }
+
+        // --- Build the TileName-to-TileBase dictionary for the map generator ---
+        _tileNameToTileMap = new Dictionary<string, TileBase>();
+        if (_gameConfig.WorldTiles != null)
+        {
+            foreach (var tile in _gameConfig.WorldTiles)
+            {
+                if (tile != null && !_tileNameToTileMap.ContainsKey(tile.name))
+                {
+                    _tileNameToTileMap.Add(tile.name, tile);
+                }
             }
         }
     }
@@ -131,8 +150,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
     {
         if (!IsServer) return;
 
-        // Ensure the strategy is initialized right before it's used.
-        // This is the safest place to guarantee it's ready for both initial generation and rematches.
         if (_itemPlacementStrategy != null)
         {
             _itemPlacementStrategy.Initialize(_itemRegistry);
@@ -142,7 +159,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
             Debug.LogError("ItemPlacementStrategy is null. Cannot generate items.");
         }
 
-        // Clear all previous map data
         _entireBlockMapData_Server.Clear();
         _entireItemMapData_Server.Clear();
         _activeBlockTiles.Clear();
@@ -160,7 +176,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
         
         var prng = new System.Random((int)_mapSeed);
 
-        // Generate each area defined in the request
         foreach (var area in request.SpawnAreas)
         {
             if (area.MapGenerator == null)
@@ -168,7 +183,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
                 Debug.LogError("A SpawnArea in the MapGenerationRequest has a null MapGenerator. Skipping this area.");
                 continue;
             }
-            var generatedBlocks = area.MapGenerator.Generate(_mapSeed, area.WorldOffset, _tileToBaseIdMap);
+            var generatedBlocks = area.MapGenerator.Generate(_mapSeed, area.WorldOffset, _tileToBaseIdMap, _tileNameToTileMap);
             var generatedItems = _itemPlacementStrategy.PlaceItems(generatedBlocks, _itemRegistry, prng, _tileToBaseIdMap, area.WorldOffset);
 
             ChunkAndStoreMapData(generatedBlocks, _entireBlockMapData_Server);
@@ -182,16 +197,13 @@ public class LevelManager : NetworkBehaviour, ILevelService
     {
         if (!IsServer) return new List<Vector3Int>();
 
-        // Extract walkable tiles and calculate bounds for the specific area
         var areaWalkableTiles = new List<Vector3Int>();
         var areaBounds = new BoundsInt();
         bool firstTile = true;
 
-        // This is inefficient, but works for now. A better approach would be to query chunks in the area.
         foreach (var tileData in _entireBlockMapData_Server.SelectMany(kvp => kvp.Value))
         {
-            // A simple way to check if a tile is within the conceptual bounds of the spawn area
-            if (Vector2.Distance(new Vector2(tileData.Position.x, tileData.Position.y), spawnArea.WorldOffset) < 100) // Assuming area size is around 100
+            if (Vector2.Distance(new Vector2(tileData.Position.x, tileData.Position.y), spawnArea.WorldOffset) < 100)
             {
                 if (firstTile)
                 {
@@ -208,7 +220,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
             }
         }
         
-        // Find all walkable tiles within the calculated bounds
         for (int x = areaBounds.xMin; x < areaBounds.xMax; x++)
         {
             for (int y = areaBounds.yMin; y < areaBounds.yMax; y++)
@@ -231,17 +242,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
     public TileBase GetTile(Vector3Int gridPosition)
     {
         if (!IsServer) return null;
-
         Vector2Int chunkPos = WorldToChunkPos(gridPosition);
-        
-        if (_entireItemMapData_Server.TryGetValue(chunkPos, out var itemTiles))
-        {
-            foreach (var tileData in itemTiles)
-            {
-                if (tileData.Position == gridPosition) return _tileIdMap[tileData.TileId];
-            }
-        }
-        
         if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var blockTiles))
         {
             foreach (var tileData in blockTiles)
@@ -249,139 +250,161 @@ public class LevelManager : NetworkBehaviour, ILevelService
                 if (tileData.Position == gridPosition) return _tileIdMap[tileData.TileId];
             }
         }
-
+        if (_entireItemMapData_Server.TryGetValue(chunkPos, out var itemTiles))
+        {
+            foreach (var tileData in itemTiles)
+            {
+                if (tileData.Position == gridPosition) return _tileIdMap[tileData.TileId];
+            }
+        }
         return null;
     }
 
-        public void DestroyConnectedBlocks(ulong clientId, Vector3Int gridPosition)
+    public void DestroyConnectedBlocks(ulong clientId, Vector3Int gridPosition)
+    {
+        if (!IsServer) return;
+        var originalTile = GetTile(gridPosition);
+        if (originalTile == null) return;
+        var queue = new Queue<Vector3Int>();
+        var visited = new HashSet<Vector3Int>();
+        queue.Enqueue(gridPosition);
+        visited.Add(gridPosition);
+        while (queue.Count > 0)
         {
-            if (!IsServer) return;
-    
-            var originalTile = GetTile(gridPosition);
-            if (originalTile == null) return;
-    
-            var queue = new Queue<Vector3Int>();
-            var visited = new HashSet<Vector3Int>();
-    
-            queue.Enqueue(gridPosition);
-            visited.Add(gridPosition);
-    
-            while (queue.Count > 0)
+            var currentPos = queue.Dequeue();
+            RemoveBlockDataAt(currentPos, clientId);
+            var neighbors = new Vector3Int[] { currentPos + Vector3Int.up, currentPos + Vector3Int.down, currentPos + Vector3Int.left, currentPos + Vector3Int.right };
+            foreach (var neighborPos in neighbors)
             {
-                var currentPos = queue.Dequeue();
-                RemoveBlockDataAt(currentPos, clientId);
-    
-                var neighbors = new Vector3Int[]
+                if (!visited.Contains(neighborPos) && GetTile(neighborPos) == originalTile)
                 {
-                    currentPos + Vector3Int.up,
-                    currentPos + Vector3Int.down,
-                    currentPos + Vector3Int.left,
-                    currentPos + Vector3Int.right
-                };
-    
-                foreach (var neighborPos in neighbors)
-                {
-                    if (!visited.Contains(neighborPos) && GetTile(neighborPos) == originalTile)
-                    {
-                        visited.Add(neighborPos);
-                        queue.Enqueue(neighborPos);
-                    }
+                    visited.Add(neighborPos);
+                    queue.Enqueue(neighborPos);
                 }
             }
         }
-    
-        public void DestroyBlockAt(ulong clientId, Vector3Int gridPosition)
+    }
+
+    public void DestroyBlockAt(ulong clientId, Vector3Int gridPosition)
+    {
+        if (!IsServer) return;
+        RemoveBlockDataAt(gridPosition, clientId);
+    }
+
+    private void RemoveBlockDataAt(Vector3Int gridPosition, ulong clientId)
+    {
+        var tile = GetTile(gridPosition);
+        if (tile is IndestructibleTile) return;
+
+        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+        if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
         {
-            if (!IsServer) return;
-            RemoveBlockDataAt(gridPosition, clientId);
+            tiles.RemoveAll(t => t.Position == gridPosition);
         }
-    
-        private void RemoveBlockDataAt(Vector3Int gridPosition, ulong clientId)
+        for (int i = _activeBlockTiles.Count - 1; i >= 0; i--)
         {
-            Vector2Int chunkPos = WorldToChunkPos(gridPosition);
-            if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
+            if (_activeBlockTiles[i].Position == gridPosition)
             {
-                tiles.RemoveAll(t => t.Position == gridPosition);
+                _activeBlockTiles.RemoveAt(i);
+                break;
             }
-    
-            for (int i = _activeBlockTiles.Count - 1; i >= 0; i--)
+        }
+        OnBlockDestroyed_Server?.Invoke(clientId, gridPosition);
+    }
+
+    public void PlaceBlock(Vector3Int gridPosition, TileBase tile)
+    {
+        if (!IsServer) return;
+        if (tile == null) return;
+
+        if (!_tileToBaseIdMap.TryGetValue(tile, out int tileId))
+        {
+            tileId = _tileIdMap.Count;
+            _tileIdMap.Add(tile);
+            _tileToBaseIdMap.Add(tile, tileId);
+        }
+
+        var tileData = new TileData { Position = gridPosition, TileId = tileId };
+        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+
+        if (!_entireBlockMapData_Server.ContainsKey(chunkPos))
+        {
+            _entireBlockMapData_Server[chunkPos] = new List<TileData>();
+        }
+        _entireBlockMapData_Server[chunkPos].RemoveAll(t => t.Position == gridPosition);
+        _entireBlockMapData_Server[chunkPos].Add(tileData);
+
+        for (int i = _activeBlockTiles.Count - 1; i >= 0; i--)
+        {
+            if (_activeBlockTiles[i].Position == gridPosition)
             {
-                if (_activeBlockTiles[i].Position == gridPosition)
+                _activeBlockTiles.RemoveAt(i);
+                break;
+            }
+        }
+        _activeBlockTiles.Add(tileData);
+    }
+
+    public void RemoveItem(Vector3Int gridPosition)
+    {
+        if (!IsServer) return;
+        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+        if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
+        {
+            tiles.RemoveAll(t => t.Position == gridPosition);
+        }
+        for (int i = _activeItemTiles.Count - 1; i >= 0; i--)
+        {
+            if (_activeItemTiles[i].Position == gridPosition)
+            {
+                _activeItemTiles.RemoveAt(i);
+                break;
+            }
+        }
+    }
+
+    public bool IsWalkable(Vector3Int gridPosition)
+    {
+        if (!IsServer) return true;
+        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+        if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
+        {
+            return !tiles.Any(t => t.Position == gridPosition);
+        }
+        return true;
+    }
+
+    public bool HasItemTile(Vector3Int gridPosition)
+    {
+        if (!IsServer) return false;
+        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+        if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
+        {
+            return tiles.Any(t => t.Position == gridPosition);
+        }
+        return false;
+    }
+    
+    public void ClearArea(Vector3Int gridPosition, int radius)
+    {
+        if (!IsServer) return;
+        for (int x = -radius; x <= radius; x++)
+        {
+            for (int y = -radius; y <= radius; y++)
+            {
+                var targetPos = new Vector3Int(gridPosition.x + x, gridPosition.y + y, gridPosition.z);
+                if (GetTile(targetPos) != null)
                 {
-                    _activeBlockTiles.RemoveAt(i);
-                    break;
+                    RemoveItem(targetPos);
+                    DestroyBlockAt(0, targetPos);
                 }
             }
-            OnBlockDestroyed_Server?.Invoke(clientId, gridPosition);
         }
-    
-        public void RemoveItem(Vector3Int gridPosition)
-        {
-            if (!IsServer) return;
-    
-            Vector2Int chunkPos = WorldToChunkPos(gridPosition);
-            if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
-            {
-                tiles.RemoveAll(t => t.Position == gridPosition);
-            }
-    
-            for (int i = _activeItemTiles.Count - 1; i >= 0; i--)
-            {
-                if (_activeItemTiles[i].Position == gridPosition)
-                {
-                    _activeItemTiles.RemoveAt(i);
-                    break;
-                }
-            }
-        }
-    
-        public bool IsWalkable(Vector3Int gridPosition)
-        {
-            if (!IsServer) return true;
-    
-            Vector2Int chunkPos = WorldToChunkPos(gridPosition);
-            if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
-            {
-                return !tiles.Any(t => t.Position == gridPosition);
-            }
-            return true;
-        }
-    
-        public bool HasItemTile(Vector3Int gridPosition)
-        {
-            if (!IsServer) return false;
-            
-            Vector2Int chunkPos = WorldToChunkPos(gridPosition);
-            if (_entireItemMapData_Server.TryGetValue(chunkPos, out var tiles))
-            {
-                return tiles.Any(t => t.Position == gridPosition);
-            }
-            return false;
-        }
-        
-        public void ClearArea(Vector3Int gridPosition, int radius)
-        {
-            if (!IsServer) return;
-    
-            for (int x = -radius; x <= radius; x++)
-            {
-                for (int y = -radius; y <= radius; y++)
-                {
-                    var targetPos = new Vector3Int(gridPosition.x + x, gridPosition.y + y, gridPosition.z);
-                    
-                    if (GetTile(targetPos) != null)
-                    {
-                        RemoveItem(targetPos);
-                        DestroyBlockAt(0, targetPos); // Use the new single-block destruction method
-                    }
-                }
-            }
-        }
+    }
+
     public void ForceChunkUpdateForPlayer(ulong clientId, Vector3 newPosition)
     {
         if (!IsServer) return;
-        // This method provides a public entry point to the existing chunk update logic,
-        // which is useful for events like respawning where a player teleports instead of moves.
         HandlePlayerMoved(clientId, newPosition);
     }
 

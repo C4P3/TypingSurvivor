@@ -1,5 +1,6 @@
 using System;
 using Unity.Netcode;
+using UnityEngine;
 
 namespace TypingSurvivor.Features.Game.Gameplay.Data
 {
@@ -12,6 +13,7 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
         public int Score;
         public float Oxygen;
         public bool IsGameOver;
+        public Vector3Int GridPosition;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -19,6 +21,7 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
             serializer.SerializeValue(ref Score);
             serializer.SerializeValue(ref Oxygen);
             serializer.SerializeValue(ref IsGameOver);
+            serializer.SerializeValue(ref GridPosition);
         }
 
         public bool Equals(PlayerData other)
@@ -26,7 +29,8 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
             return ClientId == other.ClientId 
                 && Score == other.Score 
                 && Oxygen.Equals(other.Oxygen) 
-                && IsGameOver == other.IsGameOver;
+                && IsGameOver == other.IsGameOver
+                && GridPosition.Equals(other.GridPosition);
         }
     }
 }

@@ -9,9 +9,9 @@ using UnityEngine.Tilemaps;
 [System.Serializable]
 public class BlockTypeSetting
 {
-    public string name;
-    public TileBase tile;
-    [Tooltip("このブロックの出現しやすさ。値が大きいほど優先して選ばれやすくなる。")]
+    [Tooltip("The name of the tile to be used, which must correspond to a tile in GameConfig's WorldTiles list.")]
+    public string tileName;
+    [Tooltip("The probability weight for this block type. Higher values are more likely to be chosen.")]
     public float probabilityWeight = 1.0f;
 }
 
@@ -29,9 +29,7 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
     [Tooltip("この値よりノイズが大きい場所だけにブロックを生成します。値を上げると空間が増えます。")]
     [Range(0, 1)] [SerializeField] private float _blockThreshold = 0.6f;
 
-    public List<TileBase> AllTiles => _blockTypes?.Select(b => b.tile).Where(t => t != null).ToList();
-
-    public List<TileData> Generate(long seed, Vector2Int worldOffset, Dictionary<TileBase, int> tileIdMap)
+    public List<TileData> Generate(long seed, Vector2Int worldOffset, Dictionary<TileBase, int> tileIdMap, Dictionary<string, TileBase> tileNameToTileMap)
     {
         var blockTiles = new List<TileData>();
         var prng = new System.Random((int)seed);
@@ -43,27 +41,34 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
                 var tilePos = new Vector3Int(x - _width / 2 + worldOffset.x, y - _height / 2 + worldOffset.y, 0);
 
                 // --- ブロック生成ロジック ---
-                BlockTypeSetting chosenBlock = null;
+                BlockTypeSetting chosenBlockSetting = null;
                 float maxNoiseValue = -1f;
 
-                for (int i = 0; i < _blockTypes.Length; i++)
+                foreach (var blockSetting in _blockTypes)
                 {
                     float noiseX = (tilePos.x + prng.Next(-1000, 1000)) * _noiseScale;
                     float noiseY = (tilePos.y + prng.Next(-1000, 1000)) * _noiseScale;
-                    float currentNoise = Mathf.PerlinNoise(noiseX, noiseY) * _blockTypes[i].probabilityWeight;
+                    float currentNoise = Mathf.PerlinNoise(noiseX, noiseY) * blockSetting.probabilityWeight;
 
                     if (currentNoise > maxNoiseValue)
                     {
                         maxNoiseValue = currentNoise;
-                        chosenBlock = _blockTypes[i];
+                        chosenBlockSetting = blockSetting;
                     }
                 }
 
-                if (chosenBlock != null && chosenBlock.tile != null && maxNoiseValue > _blockThreshold)
+                if (chosenBlockSetting != null && maxNoiseValue > _blockThreshold)
                 {
-                    if (tileIdMap.TryGetValue(chosenBlock.tile, out int tileId))
+                    if (tileNameToTileMap.TryGetValue(chosenBlockSetting.tileName, out var tileAsset))
                     {
-                        blockTiles.Add(new TileData { Position = tilePos, TileId = tileId });
+                        if (tileIdMap.TryGetValue(tileAsset, out int tileId))
+                        {
+                            blockTiles.Add(new TileData { Position = tilePos, TileId = tileId });
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[PerlinNoiseMapGenerator] Tile with name '{chosenBlockSetting.tileName}' not found in the provided tile map.");
                     }
                 }
             }

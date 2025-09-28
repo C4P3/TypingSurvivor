@@ -24,6 +24,10 @@ namespace TypingSurvivor.Features.Game.Settings
         public List<LanguageTableMapping> LanguageTables;
         public GameObject PlayerPrefab;
         
+        [Header("World Generation Tiles")]
+        [Tooltip("List of all non-item block tiles that can be used by map generators.")]
+        public List<UnityEngine.Tilemaps.TileBase> WorldTiles;
+
         [Header("Spawn Strategies")]
         [SerializeField] private ScriptableObject _singlePlayerSpawnStrategy;
         public ISpawnPointStrategy SinglePlayerSpawnStrategy => _singlePlayerSpawnStrategy as ISpawnPointStrategy;

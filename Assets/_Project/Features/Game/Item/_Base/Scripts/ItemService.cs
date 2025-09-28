@@ -61,6 +61,7 @@ public class ItemService : MonoBehaviour, IItemService
             itemGridPosition,
             lastMoveDirection,
             opponentClientIds,
+            _gameStateReader,
             _gameStateWriter,
             _levelService,
             _playerStatusSystemWriter
