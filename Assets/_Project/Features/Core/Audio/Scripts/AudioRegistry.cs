@@ -19,7 +19,10 @@ namespace TypingSurvivor.Features.Core.Audio
         // BGM
         MainMenuBGM,
         GameBGM,
-        ResultsBGM
+        ResultsBGM,
+        // Jingles
+        WinJingle,
+        LoseJingle
     }
 
     [System.Serializable]

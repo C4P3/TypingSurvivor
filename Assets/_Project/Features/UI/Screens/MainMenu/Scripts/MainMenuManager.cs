@@ -98,35 +98,24 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         private void StartSinglePlayerButton_OnClick()
         {
-            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
-            {
-                Debug.LogWarning("Already connected or hosting.");
-                return;
-            }
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
             
+            AudioManager.Instance.FadeOutBGM(0.5f);
             AppManager.Instance.SetGameMode(GameModeType.SinglePlayer);
             
             if (NetworkManager.Singleton.StartHost())
             {
-                Debug.Log("Host started successfully for Single Player mode.");
                 NetworkManager.Singleton.SceneManager.LoadScene(GameSceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
-            }
-            else
-            {
-                Debug.LogError("Failed to start host for Single Player mode.");
             }
         }
 
         private void JoinClientButton_OnClick()
         {
-            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
-            {
-                Debug.LogWarning("Already connected or hosting.");
-                return;
-            }
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
+
+            AudioManager.Instance.FadeOutBGM(0.5f);
             AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
 
-            // Hardcode the connection details for debugging
             const string ipAddress = "127.0.0.1";
             const ushort port = 7777;
 
@@ -136,22 +125,14 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         private void StartServerButton_OnClick()
         {
-            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
-            {
-                Debug.LogWarning("Already connected or hosting.");
-                return;
-            }
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
 
+            AudioManager.Instance.FadeOutBGM(0.5f);
             AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
 
             if (NetworkManager.Singleton.StartServer())
             {
-                Debug.Log("Server started successfully for debugging.");
                 NetworkManager.Singleton.SceneManager.LoadScene(GameSceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
-            }
-            else
-            {
-                Debug.LogError("Failed to start server for debugging.");
             }
         }
     }

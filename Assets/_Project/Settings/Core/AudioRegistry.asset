@@ -20,4 +20,8 @@ MonoBehaviour:
   - Id: 8
     Clip: {fileID: 8300000, guid: cd69e663571b51d43b22d3112b65afbf, type: 3}
   - Id: 10
-    Clip: {fileID: 8300000, guid: 96f74c33fa586a24f9c4e7d2f7bd703a, type: 3}
+    Clip: {fileID: 8300000, guid: 1d39fc48a53392d489c4e97b41d52266, type: 3}
+  - Id: 12
+    Clip: {fileID: 8300000, guid: dde214fe616960941baf5af506e86a52, type: 3}
+  - Id: 11
+    Clip: {fileID: 8300000, guid: e54fde73bff743143a54579e08d21a40, type: 3}

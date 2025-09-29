@@ -1,3 +1,4 @@
+using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -13,7 +14,9 @@ namespace TypingSurvivor.Features.Core.Audio
 
         private AudioRegistry _registry;
         private AudioSource _bgmSource;
-        private float _defaultBgmPitch;
+        private AudioSource _sfxSource; // For one-shot sounds like jingles
+        private float _defaultBgmVolume;
+        private Coroutine _fadeCoroutine;
 
         public void Initialize(AudioRegistry registry)
         {
@@ -34,23 +37,96 @@ namespace TypingSurvivor.Features.Core.Audio
             // Create and configure the BGM AudioSource
             _bgmSource = gameObject.AddComponent<AudioSource>();
             _bgmSource.loop = true;
-            _defaultBgmPitch = _bgmSource.pitch;
+            _defaultBgmVolume = _bgmSource.volume;
+
+            // Create and configure the SFX AudioSource
+            _sfxSource = gameObject.AddComponent<AudioSource>();
+            _sfxSource.loop = false;
         }
 
         /// <summary>
-        /// Plays a background music track.
+        /// Plays a background music track, avoiding re-playing the same track.
         /// </summary>
         public void PlayBGM(SoundId bgmId)
         {
             var clip = _registry.GetClip(bgmId);
             if (clip != null)
             {
+                if (_bgmSource.clip == clip && _bgmSource.isPlaying)
+                {
+                    return; // Already playing this clip
+                }
                 _bgmSource.clip = clip;
+                _bgmSource.volume = _defaultBgmVolume;
                 _bgmSource.Play();
             }
-            else
+        }
+
+        public void StopBGM()
+        {
+            _bgmSource.Stop();
+            _bgmSource.clip = null;
+        }
+
+        public void PlayJingle(SoundId jingleId, System.Action onComplete = null)
+        {
+            var clip = _registry.GetClip(jingleId);
+            if (clip != null)
             {
-                Debug.LogWarning($"[AudioManager] BGM clip for ID '{bgmId}' not found in registry.");
+                StartCoroutine(JingleCoroutine(clip, onComplete));
+            }
+        }
+        private IEnumerator JingleCoroutine(AudioClip clip, System.Action onComplete)
+        {
+            _bgmSource.volume *= 0.3f; // Lower BGM volume
+            _sfxSource.PlayOneShot(clip);
+            yield return new WaitForSeconds(clip.length);
+            _bgmSource.volume = _defaultBgmVolume; // Restore BGM volume
+            onComplete?.Invoke();
+        }
+
+        public void FadeInBGM(SoundId bgmId, float duration)
+        {
+            var clip = _registry.GetClip(bgmId);
+            if (clip != null)
+            {
+                if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
+                _fadeCoroutine = StartCoroutine(FadeBGM(clip, duration, true));
+            }
+        }
+
+        public void FadeOutBGM(float duration)
+        {
+            if (!_bgmSource.isPlaying) return;
+            if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
+            _fadeCoroutine = StartCoroutine(FadeBGM(null, duration, false));
+        }
+
+        private IEnumerator FadeBGM(AudioClip clip, float duration, bool fadeIn)
+        {
+            if (fadeIn)
+            {
+                _bgmSource.clip = clip;
+                _bgmSource.volume = 0;
+                _bgmSource.Play();
+            }
+
+            float startVolume = _bgmSource.volume;
+            float targetVolume = fadeIn ? _defaultBgmVolume : 0;
+            float time = 0;
+
+            while (time < duration)
+            {
+                time += Time.deltaTime;
+                _bgmSource.volume = Mathf.Lerp(startVolume, targetVolume, time / duration);
+                yield return null;
+            }
+
+            _bgmSource.volume = targetVolume;
+            if (!fadeIn)
+            {
+                _bgmSource.Stop();
+                _bgmSource.clip = null;
             }
         }
 
@@ -67,7 +143,7 @@ namespace TypingSurvivor.Features.Core.Audio
         /// </summary>
         public void ResetBgmPitch()
         {
-            _bgmSource.pitch = _defaultBgmPitch;
+            _bgmSource.pitch = 1.0f;
         }
 
         /// <summary>

@@ -160,28 +160,42 @@ namespace TypingSurvivor.Features.UI
                     AudioManager.Instance.PlayBGM(SoundId.GameBGM);
                     break;
                 case GamePhase.Finished:
-                    _resultScreen.Show("Game Over!");
-                    AudioManager.Instance.PlayBGM(SoundId.ResultsBGM);
                     // --- Reset all low oxygen effects ---
-                    // Stop all running coroutines
-                    foreach (var coroutine in _blinkingCoroutines.Values)
-                    {
-                        StopCoroutine(coroutine);
-                    }
+                    foreach (var coroutine in _blinkingCoroutines.Values) StopCoroutine(coroutine);
                     _blinkingCoroutines.Clear();
+                    foreach (var effect in _activeLowHealthEffects.Values) if (effect != null) effect.SetOpacity(0f);
+                    _activeLowHealthEffects.Clear();
+                    AudioManager.Instance.ResetBgmPitch();
+                    
+                    // --- Play Jingle and Fade in Results BGM ---
+                    _resultScreen.Show("Game Over!");
+                    
+                    // Determine win/loss for the local player
+                    bool localPlayerWon = false;
+                    PlayerData localPlayerData = default;
+                    bool localPlayerFound = false;
 
-                    // Reset the opacity of any active effects
-                    foreach (var effect in _activeLowHealthEffects.Values)
+                    foreach(var playerData in _gameStateReader.PlayerDatas)
                     {
-                        if (effect != null)
+                        if (playerData.ClientId == NetworkManager.Singleton.LocalClientId)
                         {
-                            effect.SetOpacity(0f);
+                            localPlayerData = playerData;
+                            localPlayerFound = true;
+                            break;
                         }
                     }
-                    _activeLowHealthEffects.Clear();
+
+                    if (localPlayerFound && !localPlayerData.IsGameOver)
+                    {
+                        localPlayerWon = true;
+                    }
+
+                    var jingleId = localPlayerWon ? SoundId.WinJingle : SoundId.LoseJingle;
                     
-                    // Reset BGM pitch
-                    AudioManager.Instance.ResetBgmPitch();
+                    AudioManager.Instance.PlayJingle(jingleId, () =>
+                    {
+                        AudioManager.Instance.FadeInBGM(SoundId.ResultsBGM, 1.0f);
+                    });
                     break;
             }
         }
