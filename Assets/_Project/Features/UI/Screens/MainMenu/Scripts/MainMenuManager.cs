@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Auth;
+using TypingSurvivor.Features.Core.Audio;
 using Unity.Netcode;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
@@ -32,6 +33,12 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _startSinglePlayerButton.onClick.AddListener(StartSinglePlayerButton_OnClick);
             _joinClientButton.onClick.AddListener(JoinClientButton_OnClick);
             _startServerButton.onClick.AddListener(StartServerButton_OnClick);
+
+            // Play BGM
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayBGM(SoundId.MainMenuBGM);
+            }
 
             // Check-then-Subscribe pattern
             if (AppManager.Instance.IsCoreServicesInitialized)

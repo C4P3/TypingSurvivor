@@ -161,6 +161,7 @@ namespace TypingSurvivor.Features.UI
                     break;
                 case GamePhase.Finished:
                     _resultScreen.Show("Game Over!");
+                    AudioManager.Instance.PlayBGM(SoundId.ResultsBGM);
                     // --- Reset all low oxygen effects ---
                     // Stop all running coroutines
                     foreach (var coroutine in _blinkingCoroutines.Values)

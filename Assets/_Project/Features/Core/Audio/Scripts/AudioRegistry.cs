@@ -18,7 +18,8 @@ namespace TypingSurvivor.Features.Core.Audio
         BombExplosion,
         // BGM
         MainMenuBGM,
-        GameBGM
+        GameBGM,
+        ResultsBGM
     }
 
     [System.Serializable]
