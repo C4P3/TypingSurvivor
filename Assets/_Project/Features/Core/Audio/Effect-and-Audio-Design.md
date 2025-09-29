@@ -90,15 +90,15 @@ sequenceDiagram
 ```
 
 ### **フロー②：低酸素状態 (クライアントローカル)**
-```mermaid
-sequenceDiagram
-    participant GameState as GameState (Client)
-    participant HUD as InGameHUDManager (Client)
-    participant AudioMgr as AudioManager (Client)
-    participant EffectMgr as EffectManager (Client)
+## **7. AudioListener戦略: ローカルプレイヤー追従**
 
-    GameState->>HUD: OnOxygenChanged(newOxygenValue)
-    HUD->>HUD: if (newOxygenValue < THRESHOLD)
-    HUD->>AudioMgr: SetBgmPitch(1.2f)
-    HUD->>EffectMgr: StartScreenBlinkEffect()
-```
+2D画面分割ゲームにおける3Dオーディオの複雑さを回避しつつ、Unityの「複数のAudioListenerが存在します」という警告を解決するため、以下の戦略を採用します。
+
+-   **設計思想**: 各クライアント（プレイヤー）は、「自分が見ている画面」に対応した音を聞くべきである。
+-   **実装**:
+    -   **`CameraManager`の責務**: `CameraManager`は、カメラのレイアウトを設定する際に、各カメラが追従している`PlayerFacade`がローカルプレイヤー（`IsOwner`が`true`）か否かを判定します。
+    -   **動的な有効化**: ローカルプレイヤーを写すカメラの`AudioListener`コンポーネントのみを有効化（`enabled = true`）し、他の全プレイヤーのカメラのリスナーは無効化（`enabled = false`）します。
+-   **効果**:
+    -   各クライアントのシーン内では、常に単一の`AudioListener`のみが有効になるため、警告が解消されます。
+    -   プレイヤーは、自分自身の画面（ビューポート）を基準とした、直感的で正しいサウンド（左右のパンニングなど）を体験できます。
+    -   `WorldOffset`によるプレイヤー間の大きな物理的距離を気にする必要がなくなります。
