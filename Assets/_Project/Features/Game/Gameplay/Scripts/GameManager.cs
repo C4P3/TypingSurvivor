@@ -290,17 +290,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
         }
 
-        [ClientRpc]
-        private void PlayJingleClientRpc(SoundId jingleId)
-        {
-            AudioManager.Instance.PlayJingle(jingleId);
-        }
-
-        [ClientRpc]
-        private void FadeInBgmClientRpc(SoundId bgmId, float duration)
-        {
-            AudioManager.Instance.FadeInBGM(bgmId, duration);
-        }
 
         private IEnumerator FinishedPhase()
         {
@@ -519,12 +508,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private void PlayBgmClientRpc(SoundId bgmId)
         {
             AudioManager.Instance.PlayBGM(bgmId);
-        }
-
-        [ClientRpc]
-        private void StopBgmClientRpc()
-        {
-            AudioManager.Instance.StopBGM();
         }
 
         [ClientRpc]
