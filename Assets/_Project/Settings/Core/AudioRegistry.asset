@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 77201566502c8af4399f1b2fb335203e, type: 3}
   m_Name: AudioRegistry
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.AudioRegistry
-  _sounds: []
+  _sounds:
+  - Id: 7
+    Clip: {fileID: 8300000, guid: 460b5b24ab78dc941ac010d9be4f320f, type: 3}

@@ -16,7 +16,7 @@ MonoBehaviour:
   - itemName: OxygenHeal
     weight: 2
   - itemName: Bomb
-    weight: 1
+    weight: 100
   - itemName: SpeedUp
     weight: 1
   - itemName: Star

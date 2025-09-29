@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 389931ad4fecca347a46bce744e4765a, type: 3}
   m_Name: VFXRegistry
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.VFX.VFXRegistry
-  _vfx: []
+  _vfx:
+  - Id: 1
+    Prefab: {fileID: 6818130971660275517, guid: 4ebbd175f6a731543bb48164803cdf20, type: 3}

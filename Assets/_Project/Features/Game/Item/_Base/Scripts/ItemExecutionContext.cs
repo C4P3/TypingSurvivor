@@ -3,6 +3,9 @@ using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Game.Level;
 using System.Collections.Generic;
 
+using TypingSurvivor.Features.Core.Audio;
+using TypingSurvivor.Features.Core.VFX;
+
 /// <summary>
 /// アイテム効果を実行するために必要な全ての情報を持つコンテキストオブジェクト。
 /// ItemServiceがこのオブジェクトを構築し、IItemEffectに渡す。
@@ -11,6 +14,7 @@ public class ItemExecutionContext
 {
     public ulong UserId { get; } // 効果を発動したプレイヤーのID
     public Vector3Int ItemPosition { get; } // アイテムがあった座標
+    public Vector3 WorldPosition { get; } // アイテムがあったワールド座標
     public Vector3Int UserLastMoveDirection { get; } // Rocket用: アイテムを拾ったプレイヤーの最後の移動方向
     public IReadOnlyList<ulong> OpponentClientIds { get; } // 妨害系用: 相手プレイヤーのIDリスト
 
@@ -18,26 +22,34 @@ public class ItemExecutionContext
     public IGameStateReader GameStateReader { get; }
     public IGameStateWriter GameStateWriter { get; }
     public ILevelService LevelService { get; }
-    public IPlayerStatusSystemWriter PlayerStatusSystem { get; } // プレイヤーの永続ステータスを管理する新しいシステム
+    public IPlayerStatusSystemWriter PlayerStatusSystem { get; }
+    public AudioManager AudioManager { get; }
+    public EffectManager EffectManager { get; }
 
     public ItemExecutionContext(
         ulong userId,
         Vector3Int itemPosition,
+        Vector3 worldPosition,
         Vector3Int userLastMoveDirection,
         IReadOnlyList<ulong> opponentClientIds,
         IGameStateReader gameStateReader,
         IGameStateWriter gameStateWriter,
         ILevelService levelService,
-        IPlayerStatusSystemWriter playerStatusSystem
+        IPlayerStatusSystemWriter playerStatusSystem,
+        AudioManager audioManager,
+        EffectManager effectManager
     )
     {
         UserId = userId;
         ItemPosition = itemPosition;
+        WorldPosition = worldPosition;
         UserLastMoveDirection = userLastMoveDirection;
         OpponentClientIds = opponentClientIds;
         GameStateReader = gameStateReader;
         GameStateWriter = gameStateWriter;
         LevelService = levelService;
         PlayerStatusSystem = playerStatusSystem;
+        AudioManager = audioManager;
+        EffectManager = effectManager;
     }
 }

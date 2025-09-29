@@ -3,6 +3,9 @@ using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Game.Level;
 using System.Collections.Generic;
 
+using TypingSurvivor.Features.Core.Audio;
+using TypingSurvivor.Features.Core.VFX;
+
 public class ItemService : MonoBehaviour, IItemService
 {
     // --- Dependencies (injected by Bootstrapper) ---
@@ -11,14 +14,20 @@ public class ItemService : MonoBehaviour, IItemService
     private IGameStateReader _gameStateReader;
     private IGameStateWriter _gameStateWriter;
     private IPlayerStatusSystemWriter _playerStatusSystemWriter;
+    private AudioManager _audioManager;
+    private EffectManager _effectManager;
+    private Grid _grid;
 
-    public void Initialize(ILevelService levelService, IGameStateReader gameStateReader, IGameStateWriter gameStateWriter, IPlayerStatusSystemWriter playerStatusSystemWriter, ItemRegistry itemRegistry)
+    public void Initialize(ILevelService levelService, IGameStateReader gameStateReader, IGameStateWriter gameStateWriter, IPlayerStatusSystemWriter playerStatusSystemWriter, ItemRegistry itemRegistry, AudioManager audioManager, EffectManager effectManager, Grid grid)
     {
         _levelService = levelService;
         _gameStateReader = gameStateReader;
         _gameStateWriter = gameStateWriter;
         _playerStatusSystemWriter = playerStatusSystemWriter;
         _itemRegistry = itemRegistry;
+        _audioManager = audioManager;
+        _effectManager = effectManager;
+        _grid = grid;
     }
 
     public void AcquireItem(ulong clientId, Vector3Int itemGridPosition, Vector3Int lastMoveDirection)
@@ -28,7 +37,7 @@ public class ItemService : MonoBehaviour, IItemService
             Debug.LogError("ItemRegistryが設定されていません。");
             return;
         }
-        if (_levelService == null || _gameStateReader == null)
+        if (_levelService == null || _gameStateReader == null || _grid == null)
         {
             Debug.LogError("ItemService has not been initialized correctly.");
             return;
@@ -56,15 +65,19 @@ public class ItemService : MonoBehaviour, IItemService
         }
 
         // 5. ItemExecutionContextを構築
+        var worldPosition = _grid.GetCellCenterWorld(itemGridPosition);
         var context = new ItemExecutionContext(
             clientId,
             itemGridPosition,
+            worldPosition,
             lastMoveDirection,
             opponentClientIds,
             _gameStateReader,
             _gameStateWriter,
             _levelService,
-            _playerStatusSystemWriter
+            _playerStatusSystemWriter,
+            _audioManager,
+            _effectManager
         );
 
         // 6. 全ての効果を実行

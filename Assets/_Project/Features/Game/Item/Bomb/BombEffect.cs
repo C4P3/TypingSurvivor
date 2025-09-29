@@ -1,3 +1,5 @@
+using TypingSurvivor.Features.Core.Audio;
+using TypingSurvivor.Features.Core.VFX;
 using UnityEngine;
 
 /// <summary>
@@ -7,6 +9,8 @@ using UnityEngine;
 public class BombEffect : ItemEffect
 {
     [SerializeField] private int _radius = 1;
+    [SerializeField] private VFXId _explosionVFX = VFXId.BombExplosion;
+    [SerializeField] private SoundId _explosionSound = SoundId.BombExplosion;
 
     public override void Execute(ItemExecutionContext context)
     {
@@ -26,6 +30,19 @@ public class BombEffect : ItemEffect
                     levelService.DestroyBlockAt(context.UserId, targetPos);
                 }
             }
+        }
+
+        // Play explosion effect and sound at the center of the explosion
+        var worldCenterPosition = context.WorldPosition;
+        float effectScale = _radius * 2.0f;
+
+        if (_explosionVFX != VFXId.None)
+        {
+            context.EffectManager.PlayEffect(_explosionVFX, worldCenterPosition, effectScale);
+        }
+        if (_explosionSound != SoundId.None)
+        {
+            context.AudioManager.PlaySoundAtPoint(_explosionSound, worldCenterPosition);
         }
     }
 }

@@ -8,6 +8,9 @@ using TypingSurvivor.Features.Game.Level;
 using TypingSurvivor.Features.Game.Camera;
 using TypingSurvivor.Features.UI;
 
+using TypingSurvivor.Features.Core.Audio;
+using TypingSurvivor.Features.Core.VFX;
+
 namespace TypingSurvivor.Features.Game.Gameplay
 {
     /// <summary>
@@ -148,7 +151,10 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 serviceLocator.GetService<IGameStateReader>(),
                 serviceLocator.GetService<IGameStateWriter>(),
                 serviceLocator.GetService<IPlayerStatusSystemWriter>(),
-                _gameConfig.ItemRegistry
+                _gameConfig.ItemRegistry,
+                AudioManager.Instance,
+                EffectManager.Instance,
+                _grid
             );
 
             // --- Inject dependencies into UI ---

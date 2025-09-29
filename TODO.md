@@ -13,7 +13,9 @@
 ---
 
 ## 🚀 フェーズ2: コアゲームプレイの強化
-
+- [ ] **パーリンノイズマップジェネレーターのバグ修正**:
+    - [ ] 値がおかしく、設定した値が反映されてない気がする
+    - [ ] 値によって、エラーが出る。
 - [ ] **エフェクトとサウンドの基盤を実装する**:
     - [ ] `Effect-and-Audio-Design.md`に基づき、永続的なコアサービスとして`AudioManager`と`EffectManager`を実装する。
     - [ ] IDとアセットを管理する`AudioRegistry`と`VFXRegistry` (ScriptableObject) を作成する。
