@@ -18,6 +18,11 @@ namespace TypingSurvivor.Features.Core.Audio
         private float _defaultBgmVolume;
         private Coroutine _fadeCoroutine;
 
+        private SoundId _currentBgmId = SoundId.None;
+        private bool _isJinglePlaying = false;
+        private SoundId _queuedBgmId = SoundId.None;
+        private (SoundId id, float duration) _queuedFadeBgm = (SoundId.None, 0f);
+
         public void Initialize(AudioRegistry registry)
         {
             _registry = registry;
@@ -44,21 +49,50 @@ namespace TypingSurvivor.Features.Core.Audio
             _sfxSource.loop = false;
         }
 
-        /// <summary>
-        /// Plays a background music track, avoiding re-playing the same track.
-        /// </summary>
         public void PlayBGM(SoundId bgmId)
         {
+            if (_isJinglePlaying)
+            {
+                // BGM再生を予約し、フェードの予約はクリアする
+                _queuedBgmId = bgmId;
+                _queuedFadeBgm = (SoundId.None, 0f);
+                return;
+            }
+
+            if (_currentBgmId == bgmId && _bgmSource.isPlaying) return;
+
             var clip = _registry.GetClip(bgmId);
             if (clip != null)
             {
-                if (_bgmSource.clip == clip && _bgmSource.isPlaying)
-                {
-                    return; // Already playing this clip
-                }
+                // 実行するので予約はすべてクリア
+                ClearQueue();
+                if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
+
+                _currentBgmId = bgmId;
                 _bgmSource.clip = clip;
                 _bgmSource.volume = _defaultBgmVolume;
                 _bgmSource.Play();
+            }
+        }
+
+        public void FadeInBGM(SoundId bgmId, float duration)
+        {
+            if (_isJinglePlaying)
+            {
+                // フェードインを予約し、通常のBGM再生予約はクリアする
+                _queuedFadeBgm = (bgmId, duration);
+                _queuedBgmId = SoundId.None;
+                return;
+            }
+
+            var clip = _registry.GetClip(bgmId);
+            if (clip != null)
+            {
+                // 実行するので予約はすべてクリア
+                ClearQueue();
+                _currentBgmId = bgmId;
+                if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
+                _fadeCoroutine = StartCoroutine(FadeBGM(clip, duration, true));
             }
         }
 
@@ -66,38 +100,90 @@ namespace TypingSurvivor.Features.Core.Audio
         {
             _bgmSource.Stop();
             _bgmSource.clip = null;
+            _currentBgmId = SoundId.None;
         }
 
-        public void PlayJingle(SoundId jingleId, System.Action onComplete = null)
+        public void PlayJingle(SoundId jingleId)
         {
             var clip = _registry.GetClip(jingleId);
             if (clip != null)
             {
-                StartCoroutine(JingleCoroutine(clip, onComplete));
+                StartCoroutine(JingleCoroutine(clip));
             }
-        }
-        private IEnumerator JingleCoroutine(AudioClip clip, System.Action onComplete)
-        {
-            _bgmSource.volume *= 0.3f; // Lower BGM volume
-            _sfxSource.PlayOneShot(clip);
-            yield return new WaitForSeconds(clip.length);
-            _bgmSource.volume = _defaultBgmVolume; // Restore BGM volume
-            onComplete?.Invoke();
         }
 
-        public void FadeInBGM(SoundId bgmId, float duration)
+        private IEnumerator JingleCoroutine(AudioClip clip)
         {
-            var clip = _registry.GetClip(bgmId);
-            if (clip != null)
+            if (_isJinglePlaying) yield break;
+
+            _isJinglePlaying = true;
+
+            if (_bgmSource.isPlaying)
             {
-                if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
-                _fadeCoroutine = StartCoroutine(FadeBGM(clip, duration, true));
+                _bgmSource.volume *= 0.3f;
             }
+
+            _sfxSource.PlayOneShot(clip);
+
+            yield return new WaitForSeconds(clip.length);
+            
+            _isJinglePlaying = false;
+
+            // 👇 ジングル終了後、予約されている処理を実行
+            // フェードインの予約があるか？
+            if (_queuedFadeBgm.id != SoundId.None)
+            {
+                FadeInBGM(_queuedFadeBgm.id, _queuedFadeBgm.duration);
+            }
+            // 通常再生の予約があるか？
+            else if (_queuedBgmId != SoundId.None)
+            {
+                PlayBGM(_queuedBgmId);
+            }
+            // 予約がなければ、元のBGMの音量を戻す
+            else if (_bgmSource.isPlaying)
+            {
+                _bgmSource.volume = _defaultBgmVolume;
+            }
+        }
+        
+        /// <summary>
+        /// 全ての予約をクリアするヘルパーメソッド
+        /// </summary>
+        public void ClearQueue()
+        {
+            _queuedBgmId = SoundId.None;
+            _queuedFadeBgm = (SoundId.None, 0f);
+        }
+
+        /// <summary>
+        /// BGMとジングルを停止し、予約された再生キューをすべてクリアします。
+        /// ゲームの状態が変わり、予約したオーディオ再生が不要になった場合に使用します。
+        /// </summary>
+        public void ResetAudio()
+        {
+            // 実行中のフェードコルーチンを停止
+            if (_fadeCoroutine != null)
+            {
+                StopCoroutine(_fadeCoroutine);
+                _fadeCoroutine = null;
+            }
+
+            // BGMとジングル（SFXソース）を停止
+            _bgmSource.Stop();
+            _sfxSource.Stop();
+            
+            _currentBgmId = SoundId.None;
+            _isJinglePlaying = false; // ジングル再生状態もリセット
+
+            // 予約キューをクリア
+            ClearQueue();
         }
 
         public void FadeOutBGM(float duration)
         {
             if (!_bgmSource.isPlaying) return;
+            _currentBgmId = SoundId.None;
             if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
             _fadeCoroutine = StartCoroutine(FadeBGM(null, duration, false));
         }
@@ -109,6 +195,10 @@ namespace TypingSurvivor.Features.Core.Audio
                 _bgmSource.clip = clip;
                 _bgmSource.volume = 0;
                 _bgmSource.Play();
+                if (_currentBgmId != _registry.GetId(clip))
+                {
+                    yield break;
+                }
             }
 
             float startVolume = _bgmSource.volume;

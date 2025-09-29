@@ -164,8 +164,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private IEnumerator CountdownPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.Countdown;
-            StopBgmClientRpc();
-            yield return new WaitForSeconds(5); // Countdown duration
+            yield return new WaitForSeconds(3); // Countdown duration
         }
 
         private IEnumerator PlayingPhase()
@@ -291,6 +290,18 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
         }
 
+        [ClientRpc]
+        private void PlayJingleClientRpc(SoundId jingleId)
+        {
+            AudioManager.Instance.PlayJingle(jingleId);
+        }
+
+        [ClientRpc]
+        private void FadeInBgmClientRpc(SoundId bgmId, float duration)
+        {
+            AudioManager.Instance.FadeInBGM(bgmId, duration);
+        }
+
         private IEnumerator FinishedPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.Finished;
@@ -311,6 +322,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 winnerId = alivePlayers[0].ClientId;
             }
             
+            // Play jingle and Result BGM on clients
             PlayJingleAndFadeInBgmClientRpc(winnerId);
 
             _rematchRequesters.Clear();
@@ -334,6 +346,10 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 }
             }
             
+            // リマッチが成立したので、全クライアントのオーディオ状態をリセットする。
+            // これにより、結果画面で予約されていたリザルトBGMの再生がキャンセルされる。
+            ResetAudioStateClientRpc();
+
             // If we passed the check, it means everyone requested a rematch. Proceed.
             // --- Prepare for the next round ---
             ResetPlayersForRematch();
@@ -491,6 +507,15 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
         // --- BGM Control RPCs ---
         [ClientRpc]
+        private void ResetAudioStateClientRpc()
+        {
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.ResetAudio();
+            }
+        }
+
+        [ClientRpc]
         private void PlayBgmClientRpc(SoundId bgmId)
         {
             AudioManager.Instance.PlayBGM(bgmId);
@@ -506,13 +531,11 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private void PlayJingleAndFadeInBgmClientRpc(ulong winnerId)
         {
             AudioManager.Instance.StopBGM();
-            bool localPlayerWon = (winnerId == NetworkManager.Singleton.LocalClientId);
+            bool localPlayerWon = winnerId == NetworkManager.Singleton.LocalClientId;
             var jingleId = localPlayerWon ? SoundId.WinJingle : SoundId.LoseJingle;
-            
-            AudioManager.Instance.PlayJingle(jingleId, () =>
-            {
-                AudioManager.Instance.FadeInBGM(SoundId.ResultsBGM, 0.5f);
-            });
+
+            AudioManager.Instance.PlayJingle(jingleId);
+            AudioManager.Instance.FadeInBGM(SoundId.ResultsBGM, 0.5f);
         }
     }
 }

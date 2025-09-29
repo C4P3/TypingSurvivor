@@ -38,15 +38,18 @@ namespace TypingSurvivor.Features.Core.Audio
         [SerializeField] private List<SoundEntry> _sounds;
 
         private Dictionary<SoundId, AudioClip> _soundDictionary;
+        private Dictionary<AudioClip, SoundId> _clipToIdDictionary;
 
         public void Initialize()
         {
             _soundDictionary = new Dictionary<SoundId, AudioClip>();
+            _clipToIdDictionary = new Dictionary<AudioClip, SoundId>();
             foreach (var entry in _sounds)
             {
                 if (entry.Clip != null && !_soundDictionary.ContainsKey(entry.Id))
                 {
                     _soundDictionary.Add(entry.Id, entry.Clip);
+                    _clipToIdDictionary.Add(entry.Clip, entry.Id);
                 }
             }
         }
@@ -55,6 +58,12 @@ namespace TypingSurvivor.Features.Core.Audio
         {
             _soundDictionary.TryGetValue(id, out var clip);
             return clip;
+        }
+
+        public SoundId GetId(AudioClip clip)
+        {
+            _clipToIdDictionary.TryGetValue(clip, out var id);
+            return id;
         }
     }
 }
