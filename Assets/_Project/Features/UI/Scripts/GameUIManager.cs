@@ -157,9 +157,30 @@ namespace TypingSurvivor.Features.UI
             {
                 case GamePhase.Playing:
                     _inGameHUD.gameObject.SetActive(true);
+                    AudioManager.Instance.PlayBGM(SoundId.GameBGM);
                     break;
                 case GamePhase.Finished:
                     _resultScreen.Show("Game Over!");
+                    // --- Reset all low oxygen effects ---
+                    // Stop all running coroutines
+                    foreach (var coroutine in _blinkingCoroutines.Values)
+                    {
+                        StopCoroutine(coroutine);
+                    }
+                    _blinkingCoroutines.Clear();
+
+                    // Reset the opacity of any active effects
+                    foreach (var effect in _activeLowHealthEffects.Values)
+                    {
+                        if (effect != null)
+                        {
+                            effect.SetOpacity(0f);
+                        }
+                    }
+                    _activeLowHealthEffects.Clear();
+                    
+                    // Reset BGM pitch
+                    AudioManager.Instance.ResetBgmPitch();
                     break;
             }
         }
