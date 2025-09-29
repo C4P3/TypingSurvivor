@@ -1,29 +1,14 @@
 # **タイルとのインタラクション設計**
 
-このドキュメントは、プレイヤーがマップ上のタイル（特にブロックタイル）とどのように相互作用（インタラクション）するかに関する、現在および将来の設計方針を定義する。
+このドキュメントは、プレイヤーがマップ上のタイル（特にブロックタイル）とどのように相互作用（インタラクション）するかに関する現在の設計を定義します。
 
-## 1. 現状の実装 (v1)
+## 1. 設計概要: 「インタラクション種別」モデル
 
-現在のシステムでは、プレイヤーが移動先にブロックタイルを発見した場合、`ILevelService.IsWalkable()`を通じて、そのタイルが「歩けるか（`false`）」、あるいは「歩けないか（`true`）」という二値的な情報のみを取得している。
+プレイヤーとタイルの相互作用は、タイルの性質を表す **`enum`（インタラクション種別）** に基づいて処理されます。これにより、単に通行可能か否かだけでなく、タイルの種類に応じた多様なフィードバックをプレイヤーに提供し、将来的な拡張（ダメージ床など）にも柔軟に対応できる設計となっています。
 
-このシンプルな設計は、破壊可能なブロックに対してタイピングモードを開始するという基本的な要件を満たしている。
+### 1.1. `TileInteractionType` enum
 
-## 2. 課題と将来の構想
-
-`IsWalkable()`だけでは、プレイヤーへのフィードバックが不十分になるケースが存在する。
-
-*   **破壊不能ブロック:** 現在の実装では、プレイヤーは破壊不能ブロック（`IndestructibleTile`）に対してもタイピングモードを開始しようとしてしまう。これはプレイヤーに「なぜこのブロックは壊せないんだ？」という混乱を与える。
-*   **将来的な拡張:** 「踏むとダメージを受ける溶岩タイル」や「滑る氷のタイル」のような、新しい種類のタイルを追加する際に、`bool`値だけではタイルの多様な性質を表現できない。
-
-この課題を解決し、よりリッチで直感的なプレイヤー体験を実現するため、以下の将来構想を計画する。
-
-## 3. 将来の設計案 (v2): 「インタラクション種別」の導入
-
-プレイヤーとタイルの相互作用を、単なる`bool`値ではなく、タイルの性質を表す**`enum`（インタラクション種別）**に基づいて行うようにリファクタリングする。
-
-### 3.1. `TileInteractionType` enum
-
-タイルの性質を定義する`enum`を新設する。
+タイルの性質を定義する`enum`です。
 
 ```csharp
 public enum TileInteractionType
@@ -31,38 +16,36 @@ public enum TileInteractionType
     Walkable,         // 通行可能（何もない空間）
     Destructible,     // 破壊可能（通常のブロック）
     Indestructible    // 破壊不能（岩盤、Unchiなど）
-    // Damaging,      // 将来的な拡張: ダメージタイル
-    // Slippery,      // 将来的な拡張: 滑るタイル
 }
 ```
 
-### 3.2. ILevelServiceの拡張
+### 1.2. `ILevelService`による情報提供
 
-`ILevelService`に、`bool IsWalkable(...)`を置き換える新しいメソッドを追加する。
+`ILevelService`は、タイルの性質を問い合わせるための統一された窓口を提供します。
 
-*   `TileInteractionType GetInteractionType(Vector3Int gridPosition)`
+-   `TileInteractionType GetInteractionType(Vector3Int gridPosition)`: 指定された座標のタイルの`TileInteractionType`を返します。
 
-### 3.3. PlayerFacadeのロジック刷新
+### 1.3. `PlayerFacade`によるロジックの実行
 
-`PlayerFacade`の移動ロジックは、`GetInteractionType`から返された`enum`の値に応じて、`switch`文で振る舞いを決定するようになる。
+`PlayerFacade`のサーバーサイド移動ロジックは、`GetInteractionType`から返された`enum`の値に応じて、`switch`文で振る舞いを決定します。
 
 ```csharp
-// PlayerFacade.cs の将来の移動ロジック (擬似コード)
+// PlayerFacade.cs の移動ロジック
 var interactionType = _levelService.GetInteractionType(targetGridPos);
 
 switch (interactionType)
 {
     case TileInteractionType.Walkable:
-        // 通常の移動処理
+        // 通常の移動処理を実行
         break;
     case TileInteractionType.Destructible:
         // タイピングモードへ移行
         break;
     case TileInteractionType.Indestructible:
-        // 移動せず、その場で「弾かれた」フィードバックを再生する (効果音、エフェクト)
-        PlayCollisionFeedbackClientRpc(...);
+        // 移動を中断し、その場に留まる
+        // TODO: その場で「弾かれた」フィードバックを再生する (効果音、エフェクト)
         break;
 }
 ```
 
-この設計への移行により、プレイヤーへのフィードバックが豊かになり、将来的なタイルの種類の追加にも柔軟に対応できる、拡張性の高い基盤が確立される。
+この設計により、プレイヤーへのフィードバックが豊かになり、将来的なタイルの種類の追加にも柔軟に対応できる、拡張性の高い基盤が確立されています。

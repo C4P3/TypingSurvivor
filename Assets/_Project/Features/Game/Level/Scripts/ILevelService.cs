@@ -14,6 +14,7 @@ namespace TypingSurvivor.Features.Game.Level
 
         // --- Tile Queries & Manipulation ---
         TileBase GetTile(Vector3Int gridPosition);
+        TileInteractionType GetInteractionType(Vector3Int gridPosition);
         bool IsWalkable(Vector3Int gridPosition);
         bool HasItemTile(Vector3Int gridPosition);
         void RemoveItem(Vector3Int gridPosition);

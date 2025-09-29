@@ -11,6 +11,8 @@ using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Game.Level;
 
 
+using TypingSurvivor.Features.Game.Level.Data;
+
 namespace TypingSurvivor.Features.Game.Player
 {
     public class PlayerFacade : NetworkBehaviour
@@ -268,29 +270,37 @@ namespace TypingSurvivor.Features.Game.Player
                     _itemService.AcquireItem(OwnerClientId, targetGridPos, _continuousMoveDirection_Server);
                 }
 
-                if (_levelService.IsWalkable(targetGridPos))
+                var interactionType = _levelService.GetInteractionType(targetGridPos);
+                switch (interactionType)
                 {
-                    float moveSpeed = _statusReader.GetStatValue(OwnerClientId, PlayerStat.MoveSpeed);
-                    float duration = 1f / Mathf.Max(0.1f, moveSpeed);
-                    
-                    NetworkMoveDuration.Value = duration;
-                    NetworkGridPosition.Value = targetGridPos;
-                    _currentState.Value = PlayerState.Moving;
+                    case TileInteractionType.Walkable:
+                        float moveSpeed = _statusReader.GetStatValue(OwnerClientId, PlayerStat.MoveSpeed);
+                        float duration = 1f / Mathf.Max(0.1f, moveSpeed);
 
-                    yield return new WaitForSeconds(duration);
+                        NetworkMoveDuration.Value = duration;
+                        NetworkGridPosition.Value = targetGridPos;
+                        _currentState.Value = PlayerState.Moving;
 
-                    transform.position = _grid.GetCellCenterWorld(NetworkGridPosition.Value);
-                    _gameStateWriter.UpdatePlayerPosition(OwnerClientId, NetworkGridPosition.Value);
-                    OnPlayerMoved_Server?.Invoke(OwnerClientId, transform.position);
-                }
-                else
-                {
-                    // Typingステートに移行し、移動コルーチンを完全に終了させる
-                    NetworkTypingTargetPosition.Value = targetGridPos;
-                    _currentState.Value = PlayerState.Typing;
-                    _continuousMoveDirection_Server = Vector3Int.zero;
-                    _isMoving_Server = false;
-                    yield break;
+                        yield return new WaitForSeconds(duration);
+
+                        transform.position = _grid.GetCellCenterWorld(NetworkGridPosition.Value);
+                        _gameStateWriter.UpdatePlayerPosition(OwnerClientId, NetworkGridPosition.Value);
+                        OnPlayerMoved_Server?.Invoke(OwnerClientId, transform.position);
+                        break;
+
+                    case TileInteractionType.Destructible:
+                        // Typingステートに移行し、移動コルーチンを完全に終了させる
+                        NetworkTypingTargetPosition.Value = targetGridPos;
+                        _currentState.Value = PlayerState.Typing;
+                        _continuousMoveDirection_Server = Vector3Int.zero; // Stop further movement attempts
+                        _isMoving_Server = false;
+                        yield break; // Exit coroutine
+
+                    case TileInteractionType.Indestructible:
+                        // 破壊不能ブロックに衝突した場合、移動を停止するだけ
+                        _continuousMoveDirection_Server = Vector3Int.zero;
+                        // TODO: Play collision feedback sound/effect via ClientRpc
+                        break;
                 }
             }
 

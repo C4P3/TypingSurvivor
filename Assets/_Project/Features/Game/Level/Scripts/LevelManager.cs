@@ -363,15 +363,30 @@ public class LevelManager : NetworkBehaviour, ILevelService
         }
     }
 
+    public TileInteractionType GetInteractionType(Vector3Int gridPosition)
+    {
+        if (!IsServer) return TileInteractionType.Walkable;
+
+        var tile = GetTile(gridPosition);
+
+        if (tile == null)
+        {
+            return TileInteractionType.Walkable;
+        }
+        if (tile is IndestructibleTile)
+        {
+            return TileInteractionType.Indestructible;
+        }
+        
+        // If a tile exists and it's not indestructible, it must be a destructible block.
+        return TileInteractionType.Destructible;
+    }
+
     public bool IsWalkable(Vector3Int gridPosition)
     {
         if (!IsServer) return true;
-        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
-        if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
-        {
-            return !tiles.Any(t => t.Position == gridPosition);
-        }
-        return true;
+        // This now correctly reflects that only walkable tiles should return true.
+        return GetInteractionType(gridPosition) == TileInteractionType.Walkable;
     }
 
     public bool HasItemTile(Vector3Int gridPosition)
