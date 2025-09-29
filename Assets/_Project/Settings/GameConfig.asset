@@ -36,4 +36,4 @@ MonoBehaviour:
   _defaultItemPlacementStrategy: {fileID: 11400000, guid: 9578854241a4310409ea6f626152eea1, type: 2}
   _singlePlayerItemStrategy: {fileID: 11400000, guid: 9578854241a4310409ea6f626152eea1, type: 2}
   _multiPlayerItemStrategy: {fileID: 11400000, guid: 45474bb147f1fe442b1090a045c8d024, type: 2}
-  _defaultMapGenerator: {fileID: 11400000, guid: d392453bf04131842b85d06e1ca298ac, type: 2}
+  _defaultMapGenerator: {fileID: 11400000, guid: ff3a4d292b7dee4418b90a205ba130e6, type: 2}

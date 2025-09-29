@@ -32,7 +32,22 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
     public List<TileData> Generate(long seed, Vector2Int worldOffset, Dictionary<TileBase, int> tileIdMap, Dictionary<string, TileBase> tileNameToTileMap)
     {
         var blockTiles = new List<TileData>();
+        if (_blockTypes == null || _blockTypes.Length == 0) return blockTiles;
+
         var prng = new System.Random((int)seed);
+
+        // 1. Generate consistent offsets for each block type's noise map ONCE.
+        var noiseOffsets = new Vector2[_blockTypes.Length];
+        for (int i = 0; i < _blockTypes.Length; i++)
+        {
+            noiseOffsets[i] = new Vector2(prng.Next(-10000, 10000), prng.Next(-10000, 10000));
+        }
+
+        // Pre-calculate total weight for weighted random selection.
+        float totalWeight = _blockTypes.Sum(bt => bt.probabilityWeight);
+        
+        // Add a small epsilon to prevent division by zero or flat noise.
+        float safeNoiseScale = _noiseScale > 0 ? _noiseScale : 0.001f;
 
         for (int x = 0; x < _width; x++)
         {
@@ -40,33 +55,47 @@ public class PerlinNoiseMapGenerator : ScriptableObject, IMapGenerator
             {
                 var tilePos = new Vector3Int(x - _width / 2 + worldOffset.x, y - _height / 2 + worldOffset.y, 0);
 
-                // --- ブロック生成ロジック ---
-                BlockTypeSetting chosenBlockSetting = null;
-                float maxNoiseValue = -1f;
+                // 2. Use the first block type's noise as the primary map to decide IF a block should be placed.
+                float noiseX = (tilePos.x + noiseOffsets[0].x) * safeNoiseScale;
+                float noiseY = (tilePos.y + noiseOffsets[0].y) * safeNoiseScale;
+                float placementNoise = Mathf.PerlinNoise(noiseX, noiseY);
 
-                foreach (var blockSetting in _blockTypes)
+                if (placementNoise > _blockThreshold)
                 {
-                    float noiseX = (tilePos.x + prng.Next(-1000, 1000)) * _noiseScale;
-                    float noiseY = (tilePos.y + prng.Next(-1000, 1000)) * _noiseScale;
-                    float currentNoise = Mathf.PerlinNoise(noiseX, noiseY) * blockSetting.probabilityWeight;
-
-                    if (currentNoise > maxNoiseValue)
+                    // 3. If placing a block, decide WHICH block to place using weighted random selection.
+                    BlockTypeSetting chosenBlockSetting = null;
+                    if (totalWeight > 0)
                     {
-                        maxNoiseValue = currentNoise;
-                        chosenBlockSetting = blockSetting;
+                        float randomPoint = (float)prng.NextDouble() * totalWeight;
+                        foreach (var blockType in _blockTypes)
+                        {
+                            if (randomPoint < blockType.probabilityWeight)
+                            {
+                                chosenBlockSetting = blockType;
+                                break;
+                            }
+                            randomPoint -= blockType.probabilityWeight;
+                        }
+                        // Fallback in case of floating point inaccuracies
+                        if (chosenBlockSetting == null)
+                        {
+                            chosenBlockSetting = _blockTypes.LastOrDefault(bt => bt.probabilityWeight > 0) ?? _blockTypes.Last();
+                        }
                     }
-                }
-
-                if (chosenBlockSetting != null && maxNoiseValue > _blockThreshold)
-                {
-                    if (tileNameToTileMap.TryGetValue(chosenBlockSetting.tileName, out var tileAsset))
+                    else
+                    {
+                        // If all weights are zero, just pick the first one.
+                        chosenBlockSetting = _blockTypes[0];
+                    }
+                    
+                    if (chosenBlockSetting != null && tileNameToTileMap.TryGetValue(chosenBlockSetting.tileName, out var tileAsset))
                     {
                         if (tileIdMap.TryGetValue(tileAsset, out int tileId))
                         {
                             blockTiles.Add(new TileData { Position = tilePos, TileId = tileId });
                         }
                     }
-                    else
+                    else if (chosenBlockSetting != null)
                     {
                         Debug.LogWarning($"[PerlinNoiseMapGenerator] Tile with name '{chosenBlockSetting.tileName}' not found in the provided tile map.");
                     }

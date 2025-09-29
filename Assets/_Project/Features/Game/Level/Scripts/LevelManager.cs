@@ -188,6 +188,9 @@ public class LevelManager : NetworkBehaviour, ILevelService
 
             ChunkAndStoreMapData(generatedBlocks, _entireBlockMapData_Server);
             ChunkAndStoreMapData(generatedItems, _entireItemMapData_Server);
+
+            // Ensure a safe spawn point by clearing the center of the area after generation.
+            ClearArea(new Vector3Int(area.WorldOffset.x, area.WorldOffset.y, 0), 1); // Clears a 3x3 area
         }
         
         UpdateActiveChunks();

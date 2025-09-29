@@ -240,7 +240,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 {
                     ulong clientId = area.PlayerClientIds[i];
                     Vector3Int gridPos = spawnPoints[i];
-                    _levelService.ClearArea(gridPos, 1);
                     Vector3 spawnPos = _grid.GetCellCenterWorld(gridPos);
 
                     GameObject playerInstance = Instantiate(_gameConfig.PlayerPrefab, spawnPos, Quaternion.identity);

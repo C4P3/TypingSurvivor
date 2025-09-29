@@ -30,6 +30,6 @@ MonoBehaviour:
   - tileName: PurpleBlock
     probabilityWeight: 1
   - tileName: YellowBlock
-    probabilityWeight: 0.2
-  _noiseScale: 0.3
-  _blockThreshold: 0.55
+    probabilityWeight: 1
+  _noiseScale: 0.01
+  _blockThreshold: 0
