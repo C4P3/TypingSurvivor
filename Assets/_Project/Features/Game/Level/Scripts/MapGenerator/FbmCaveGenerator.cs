@@ -3,25 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Tilemaps;
 
-/// <summary>
-/// fBMノイズ生成における地形レイヤーの設定。
-/// </summary>
-[System.Serializable]
-public class NoiseLayer
-{
-    [Tooltip("The name of the tile to be used. Use 'EMPTY' or leave blank for empty space (cave).")]
-    public string tileName;
-    [Tooltip("The probability weight for this layer. Higher values make this layer more common.")]
-    public float probabilityWeight = 1.0f;
-
-    // Calculated at runtime
-    [System.NonSerialized]
-    public float threshold;
-}
-
 [CreateAssetMenu(fileName = "FbmCaveGenerator", menuName = "Typing Survivor/Map Generators/fBM Cave Generator")]
 public class FbmCaveGenerator : ScriptableObject, IMapGenerator
 {
+    // Helper class for runtime calculations
+    private class RuntimeNoiseLayer
+    {
+        public BlockTypeSetting settings;
+        public float threshold;
+    }
+
     [Header("Map Dimensions")]
     [SerializeField] private int _width = 100;
     [SerializeField] private int _height = 100;
@@ -39,25 +30,26 @@ public class FbmCaveGenerator : ScriptableObject, IMapGenerator
     [SerializeField] private float _persistence = 0.5f;
 
     [Header("Terrain Layers")]
-    [Tooltip("Layers of terrain, ordered from lowest elevation (e.g., empty space) to highest (e.g., solid rock).")]
-    [SerializeField] private NoiseLayer[] _layers;
+    [Tooltip("The preset defining the layers of terrain to be generated.")]
+    [SerializeField] private TerrainPreset _terrainPreset;
 
     public List<TileData> Generate(long seed, Vector2Int worldOffset, Dictionary<TileBase, int> tileIdMap, Dictionary<string, TileBase> tileNameToTileMap)
     {
         var blockTiles = new List<TileData>();
-        if (_layers == null || _layers.Length == 0) return blockTiles;
+        if (_terrainPreset == null || _terrainPreset.blockTypes == null || _terrainPreset.blockTypes.Count == 0) return blockTiles;
 
         var prng = new System.Random((int)seed);
         var noiseOffset = new Vector2(prng.Next(-10000, 10000), prng.Next(-10000, 10000));
 
         // --- 1. Calculate thresholds from weights ---
-        float totalWeight = _layers.Sum(l => l.probabilityWeight);
-        if (totalWeight <= 0) return blockTiles; // Prevent division by zero
+        var runtimeLayers = _terrainPreset.blockTypes.Select(bt => new RuntimeNoiseLayer { settings = bt }).ToList();
+        float totalWeight = _terrainPreset.blockTypes.Sum(l => l.probabilityWeight);
+        if (totalWeight <= 0) return blockTiles;
 
         float cumulativeWeight = 0f;
-        foreach (var layer in _layers)
+        foreach (var layer in runtimeLayers)
         {
-            cumulativeWeight += layer.probabilityWeight;
+            cumulativeWeight += layer.settings.probabilityWeight;
             layer.threshold = cumulativeWeight / totalWeight;
         }
 
@@ -88,31 +80,26 @@ public class FbmCaveGenerator : ScriptableObject, IMapGenerator
                 // --- End fBM ---
 
                 // --- 3. Choose tile based on noise and thresholds ---
-                NoiseLayer chosenLayer = null;
-                foreach (var layer in _layers)
+                BlockTypeSetting chosenBlock = null;
+                foreach (var layer in runtimeLayers)
                 {
                     if (finalNoise <= layer.threshold)
                     {
-                        chosenLayer = layer;
+                        chosenBlock = layer.settings;
                         break;
                     }
                 }
-                // Fallback to the last layer if something goes wrong
-                if (chosenLayer == null) chosenLayer = _layers.Last();
+                if (chosenBlock == null) chosenBlock = runtimeLayers.Last().settings;
 
                 // --- 4. Add tile data if it's not an empty layer ---
-                if (chosenLayer != null && !string.IsNullOrEmpty(chosenLayer.tileName) && chosenLayer.tileName.ToUpper() != "EMPTY")
+                if (chosenBlock != null && !string.IsNullOrEmpty(chosenBlock.tileName) && chosenBlock.tileName.ToUpper() != "EMPTY")
                 {
-                    if (tileNameToTileMap.TryGetValue(chosenLayer.tileName, out var tileAsset))
+                    if (tileNameToTileMap.TryGetValue(chosenBlock.tileName, out var tileAsset))
                     {
                         if (tileIdMap.TryGetValue(tileAsset, out int tileId))
                         {
                             blockTiles.Add(new TileData { Position = tilePos, TileId = tileId });
                         }
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[FbmCaveGenerator] Tile with name '{chosenLayer.tileName}' not found in the provided tile map.");
                     }
                 }
             }

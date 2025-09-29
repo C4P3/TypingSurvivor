@@ -18,20 +18,4 @@ MonoBehaviour:
   _octaves: 4
   _lacunarity: 2
   _persistence: 0.5
-  _layers:
-  - tileName: DarkBlueBlock
-    probabilityWeight: 1
-  - tileName: LightBlueBlock
-    probabilityWeight: 1
-  - tileName: GrayBlock
-    probabilityWeight: 1
-  - tileName: GreenBlock
-    probabilityWeight: 1
-  - tileName: YellowBlock
-    probabilityWeight: 1
-  - tileName: OrangeBlock
-    probabilityWeight: 1
-  - tileName: PurpleBlock
-    probabilityWeight: 1
-  - tileName: PinkBlock
-    probabilityWeight: 1
+  _terrainPreset: {fileID: 11400000, guid: cdd2b47155f8bfb428d60d74e44b9506, type: 2}

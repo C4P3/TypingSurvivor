@@ -10,8 +10,8 @@ public class CellularAutomataGenerator : ScriptableObject, IMapGenerator
     [SerializeField] private int _height = 100;
 
     [Header("Tile Settings")]
-    [Tooltip("The name of the tile to be used for walls.")]
-    [SerializeField] private string _wallTileName = "NormalBlock";
+    [Tooltip("The terrain preset to use. The FIRST block type in the list will be used as the wall tile.")]
+    [SerializeField] private TerrainPreset _terrainPreset;
 
     [Header("Cellular Automata Settings")]
     [Tooltip("The initial percentage of the map that will be filled with walls.")]
@@ -26,9 +26,16 @@ public class CellularAutomataGenerator : ScriptableObject, IMapGenerator
 
     public List<TileData> Generate(long seed, Vector2Int worldOffset, Dictionary<TileBase, int> tileIdMap, Dictionary<string, TileBase> tileNameToTileMap)
     {
-        if (!tileNameToTileMap.TryGetValue(_wallTileName, out var wallTileAsset) || !tileIdMap.TryGetValue(wallTileAsset, out var wallTileId))
+        if (_terrainPreset == null || _terrainPreset.blockTypes == null || _terrainPreset.blockTypes.Count == 0)
         {
-            Debug.LogError($"[CellularAutomataGenerator] Wall tile '{_wallTileName}' not found or not registered.");
+            Debug.LogError("[CellularAutomataGenerator] Terrain Preset is not set or is empty.");
+            return new List<TileData>();
+        }
+        
+        var wallTypeName = _terrainPreset.blockTypes[0].tileName;
+        if (!tileNameToTileMap.TryGetValue(wallTypeName, out var wallTileAsset) || !tileIdMap.TryGetValue(wallTileAsset, out var wallTileId))
+        {
+            Debug.LogError($"[CellularAutomataGenerator] Wall tile '{wallTypeName}' from preset not found or not registered.");
             return new List<TileData>();
         }
 
