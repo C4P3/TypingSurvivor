@@ -23,6 +23,18 @@ namespace TypingSurvivor.Features.Game.Camera
             _gameStateReader = gameStateReader;
         }
 
+        public UnityEngine.Camera GetCameraForPlayer(ulong clientId)
+        {
+            foreach (var camFollow in _cameras)
+            {
+                if (camFollow.gameObject.activeInHierarchy && camFollow.TargetFacade != null && camFollow.TargetFacade.OwnerClientId == clientId)
+                {
+                    return camFollow.GetComponent<UnityEngine.Camera>();
+                }
+            }
+            return null;
+        }
+
         private void Start()
         {
             if (_gameStateReader != null)
@@ -63,6 +75,7 @@ namespace TypingSurvivor.Features.Game.Camera
             foreach (var cam in _cameras)
             {
                 cam.gameObject.SetActive(false);
+                cam.TargetFacade = null; // Clear target
             }
 
             int playerCount = players.Count;
@@ -98,6 +111,7 @@ namespace TypingSurvivor.Features.Game.Camera
             cam1.gameObject.SetActive(true);
             cam1.GetComponent<UnityEngine.Camera>().rect = new Rect(0, 0, 1, 1);
             cam1.Target = player.transform;
+            cam1.TargetFacade = player;
             
             // Enable listener only for the local player
             var listener = cam1.GetComponent<AudioListener>();
@@ -112,6 +126,7 @@ namespace TypingSurvivor.Features.Game.Camera
             cam1.gameObject.SetActive(true);
             cam1.GetComponent<UnityEngine.Camera>().rect = new Rect(0, 0, 0.5f, 1);
             cam1.Target = player1.transform;
+            cam1.TargetFacade = player1;
             var listener1 = cam1.GetComponent<AudioListener>();
             if (listener1 != null) listener1.enabled = player1.IsOwner;
 
@@ -119,6 +134,7 @@ namespace TypingSurvivor.Features.Game.Camera
             cam2.gameObject.SetActive(true);
             cam2.GetComponent<UnityEngine.Camera>().rect = new Rect(0.5f, 0, 0.5f, 1);
             cam2.Target = player2.transform;
+            cam2.TargetFacade = player2;
             var listener2 = cam2.GetComponent<AudioListener>();
             if (listener2 != null) listener2.enabled = player2.IsOwner;
         }
@@ -142,6 +158,7 @@ namespace TypingSurvivor.Features.Game.Camera
                 cam.gameObject.SetActive(true);
                 cam.GetComponent<UnityEngine.Camera>().rect = rects[i];
                 cam.Target = player.transform;
+                cam.TargetFacade = player;
                 
                 var listener = cam.GetComponent<AudioListener>();
                 if (listener != null) listener.enabled = player.IsOwner;

@@ -8,6 +8,7 @@ namespace TypingSurvivor.Features.Game.Camera
     public class CameraFollow : MonoBehaviour
     {
         public Transform Target { get; set; }
+        public Player.PlayerFacade TargetFacade { get; set; }
 
         [SerializeField]
         private float _smoothSpeed = 0.125f;

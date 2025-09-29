@@ -1,10 +1,16 @@
+using System.Collections;
+using System.Collections.Generic;
+using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.PlayerStatus;
+using TypingSurvivor.Features.Core.VFX;
+using TypingSurvivor.Features.Game.Camera;
 using TypingSurvivor.Features.Game.Gameplay;
 using TypingSurvivor.Features.Game.Gameplay.Data;
 using TypingSurvivor.Features.UI.Screens;
 using TypingSurvivor.Features.UI.Screens.InGameHUD;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace TypingSurvivor.Features.UI
 {
@@ -17,11 +23,17 @@ namespace TypingSurvivor.Features.UI
         [Header("Screen References")]
         [SerializeField] private InGameHUDManager _inGameHUD;
         [SerializeField] private ResultScreen _resultScreen;
-        // TODO: Add references for CountdownUI, WaitingForPlayersUI etc.
+        [SerializeField] private CameraManager _cameraManager;
 
+        [Header("Low Oxygen Effect")]
+        [SerializeField] private float _lowOxygenPitch = 1.2f;
+        
         private IGameStateReader _gameStateReader;
         private IPlayerStatusSystemReader _playerStatusReader;
         private GameManager _gameManager; // For sending RPCs
+
+        private readonly Dictionary<ulong, Coroutine> _blinkingCoroutines = new();
+        private readonly Dictionary<ulong, LowHealthEffect> _activeLowHealthEffects = new();
 
         // --- For Client-Side Disconnection ---
         private bool _showDisconnectGUI = false;
@@ -32,14 +44,15 @@ namespace TypingSurvivor.Features.UI
             _playerStatusReader = playerStatusReader;
             _gameManager = gameManager;
 
-            // Pass the typing service down to the HUD manager, which is responsible for the typing UI.
+            // Pass the dependencies down to the HUD manager.
             _inGameHUD.Initialize(gameStateReader, playerStatusReader, typingService);
 
+            // Subscribe to events
             _gameStateReader.CurrentPhaseNV.OnValueChanged += HandlePhaseChanged;
             _resultScreen.OnRematchClicked += HandleRematchClicked;
             _resultScreen.OnMainMenuClicked += HandleMainMenuClicked;
+            _gameManager.OnLowOxygenStateChanged_Client += HandleLowOxygenStateChange;
 
-            // Subscribe to client-side disconnect event
             if (NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsHost)
             {
                 NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnect;
@@ -60,32 +73,92 @@ namespace TypingSurvivor.Features.UI
                 _resultScreen.OnRematchClicked -= HandleRematchClicked;
                 _resultScreen.OnMainMenuClicked -= HandleMainMenuClicked;
             }
+            if (_gameManager != null)
+            {
+                _gameManager.OnLowOxygenStateChanged_Client -= HandleLowOxygenStateChange;
+            }
             if (NetworkManager.Singleton != null)
             {
                 NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnect;
             }
         }
 
+        public void HandleLowOxygenStateChange(ulong clientId, bool isLowOxygen)
+        {
+            var playerCamera = _cameraManager.GetCameraForPlayer(clientId);
+            if (playerCamera == null) return;
+
+            var lowHealthEffect = playerCamera.GetComponent<LowHealthEffect>();
+            if (lowHealthEffect == null) return;
+
+            if (isLowOxygen)
+            {
+                if (!_blinkingCoroutines.ContainsKey(clientId))
+                {
+                    Coroutine coroutine = StartCoroutine(BlinkEffectCoroutine(lowHealthEffect));
+                    _blinkingCoroutines[clientId] = coroutine;
+                    _activeLowHealthEffects[clientId] = lowHealthEffect;
+                }
+            }
+            else
+            {
+                if (_blinkingCoroutines.TryGetValue(clientId, out Coroutine coroutine))
+                {
+                    StopCoroutine(coroutine);
+                    _blinkingCoroutines.Remove(clientId);
+                }
+                if (_activeLowHealthEffects.TryGetValue(clientId, out var effect))
+                {
+                    effect.SetOpacity(0f);
+                    _activeLowHealthEffects.Remove(clientId);
+                }
+            }
+
+            if (clientId == NetworkManager.Singleton.LocalClientId)
+            {
+                if (isLowOxygen)
+                {
+                    AudioManager.Instance.SetBgmPitch(_lowOxygenPitch);
+                }
+                else
+                {
+                    AudioManager.Instance.ResetBgmPitch();
+                }
+            }
+        }
+
+        private IEnumerator BlinkEffectCoroutine(LowHealthEffect effect)
+        {
+            while (true)
+            {
+                float t = 0;
+                while (t < 1)
+                {
+                    t += Time.deltaTime * 2;
+                    effect.SetOpacity(Mathf.Lerp(0, 1f, t));
+                    yield return null;
+                }
+                t = 0;
+                while (t < 1)
+                {
+                    t += Time.deltaTime * 2;
+                    effect.SetOpacity(Mathf.Lerp(1f, 0, t));
+                    yield return null;
+                }
+            }
+        }
+
         private void HandlePhaseChanged(GamePhase previousPhase, GamePhase newPhase)
         {
-            // Hide all screens first
             _inGameHUD.gameObject.SetActive(false);
             _resultScreen.Hide();
 
-            // Show the correct screen based on the new phase
             switch (newPhase)
             {
-                case GamePhase.WaitingForPlayers:
-                    // Show Waiting UI
-                    break;
-                case GamePhase.Countdown:
-                    // Show Countdown UI
-                    break;
                 case GamePhase.Playing:
                     _inGameHUD.gameObject.SetActive(true);
                     break;
                 case GamePhase.Finished:
-                    // TODO: Get actual result message
                     _resultScreen.Show("Game Over!");
                     break;
             }
@@ -103,8 +176,6 @@ namespace TypingSurvivor.Features.UI
 
         private void HandleClientDisconnect(ulong clientId)
         {
-            // This is the client-side disconnect handler.
-            // We only care about our own disconnection.
             if (clientId == NetworkManager.Singleton.LocalClientId)
             {
                 _showDisconnectGUI = true;
@@ -113,7 +184,6 @@ namespace TypingSurvivor.Features.UI
 
         private void ReturnToMainMenu()
         {
-            // Disconnect and load main menu
             NetworkManager.Singleton.Shutdown();
             UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
         }
@@ -122,23 +192,18 @@ namespace TypingSurvivor.Features.UI
         {
             if (!_showDisconnectGUI) return;
 
-            // Simple GUI to show disconnection message and provide a way back to the main menu.
             float boxWidth = 300;
             float boxHeight = 120;
             float screenWidth = Screen.width;
             float screenHeight = Screen.height;
-
             Rect boxRect = new Rect((screenWidth - boxWidth) / 2, (screenHeight - boxHeight) / 2, boxWidth, boxHeight);
-
             GUI.Box(boxRect, "サーバーとの接続が切断されました。");
-
             float buttonWidth = 200;
             float buttonHeight = 40;
             Rect buttonRect = new Rect(boxRect.x + (boxWidth - buttonWidth) / 2, boxRect.y + 60, buttonWidth, buttonHeight);
-
             if (GUI.Button(buttonRect, "メインメニューへ戻る"))
             {
-                _showDisconnectGUI = false; // Prevent multiple clicks
+                _showDisconnectGUI = false;
                 ReturnToMainMenu();
             }
         }

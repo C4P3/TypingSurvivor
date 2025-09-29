@@ -12,6 +12,8 @@ namespace TypingSurvivor.Features.Core.Audio
         public static AudioManager Instance { get; private set; }
 
         private AudioRegistry _registry;
+        private AudioSource _bgmSource;
+        private float _defaultBgmPitch;
 
         public void Initialize(AudioRegistry registry)
         {
@@ -28,6 +30,44 @@ namespace TypingSurvivor.Features.Core.Audio
             }
 
             Instance = this;
+
+            // Create and configure the BGM AudioSource
+            _bgmSource = gameObject.AddComponent<AudioSource>();
+            _bgmSource.loop = true;
+            _defaultBgmPitch = _bgmSource.pitch;
+        }
+
+        /// <summary>
+        /// Plays a background music track.
+        /// </summary>
+        public void PlayBGM(SoundId bgmId)
+        {
+            var clip = _registry.GetClip(bgmId);
+            if (clip != null)
+            {
+                _bgmSource.clip = clip;
+                _bgmSource.Play();
+            }
+            else
+            {
+                Debug.LogWarning($"[AudioManager] BGM clip for ID '{bgmId}' not found in registry.");
+            }
+        }
+
+        /// <summary>
+        /// Sets the pitch of the background music.
+        /// </summary>
+        public void SetBgmPitch(float pitch)
+        {
+            _bgmSource.pitch = pitch;
+        }
+
+        /// <summary>
+        /// Resets the background music pitch to its default value.
+        /// </summary>
+        public void ResetBgmPitch()
+        {
+            _bgmSource.pitch = _defaultBgmPitch;
         }
 
         /// <summary>

@@ -24,7 +24,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private readonly HashSet<ulong> _rematchRequesters = new();
         private Coroutine _serverGameLoop;
         private GameConfig _gameConfig;
-        private float oxygenDecreaseRate = 1.0f;
+        private float oxygenDecreaseRate = 5.0f;
+        private const float LowOxygenThreshold = 0.3f; // 30%
+        private readonly HashSet<ulong> _playersInLowOxygen = new();
 
         public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig, Grid grid)
         {
@@ -81,6 +83,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private void HandleClientDisconnected(ulong clientId)
         {
             if (!IsServer) return;
+
+            // Clean up low oxygen tracking
+            _playersInLowOxygen.Remove(clientId);
 
             // Netcode automatically despawns the player object. We just need to clean up our game state.
             if (_playerInstances.TryGetValue(clientId, out var playerFacade))
@@ -163,19 +168,19 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private IEnumerator PlayingPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.Playing;
+            _playersInLowOxygen.Clear(); // Reset for the new round
+
             while (!_gameModeStrategy.IsGameOver(_gameState))
             {
-                // Decrease oxygen for all players
+                // Decrease oxygen and check for low oxygen state changes
                 for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
                 {
                     var data = _gameState.PlayerDatas[i];
                     if (data.IsGameOver) continue;
 
-                    // Get the current damage reduction for the player
+                    // --- Oxygen Decrease Logic ---
                     float damageReduction = _statusReader.GetStatValue(data.ClientId, PlayerStat.DamageReduction);
-                    damageReduction = Mathf.Clamp01(damageReduction); // Ensure it's between 0 and 1
-
-                    // Calculate the actual oxygen decrease
+                    damageReduction = Mathf.Clamp01(damageReduction);
                     float actualDecrease = oxygenDecreaseRate * (1.0f - damageReduction);
                     data.Oxygen -= actualDecrease * Time.deltaTime;
 
@@ -185,9 +190,35 @@ namespace TypingSurvivor.Features.Game.Gameplay
                         data.IsGameOver = true;
                     }
                     _gameState.PlayerDatas[i] = data;
+                    // --- End Oxygen Decrease ---
+
+                    // --- Low Oxygen State Change Check ---
+                    float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
+                    bool isCurrentlyLow = (data.Oxygen / maxOxygen) < LowOxygenThreshold;
+                    bool wasPreviouslyLow = _playersInLowOxygen.Contains(data.ClientId);
+
+                    if (isCurrentlyLow && !wasPreviouslyLow)
+                    {
+                        _playersInLowOxygen.Add(data.ClientId);
+                        NotifyLowOxygenStateClientRpc(data.ClientId, true);
+                    }
+                    else if (!isCurrentlyLow && wasPreviouslyLow)
+                    {
+                        _playersInLowOxygen.Remove(data.ClientId);
+                        NotifyLowOxygenStateClientRpc(data.ClientId, false);
+                    }
                 }
                 yield return null;
             }
+        }
+
+        public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
+
+        [ClientRpc]
+        public void NotifyLowOxygenStateClientRpc(ulong clientId, bool isLowOxygen)
+        {
+            // Invoke the client-side event. GameUIManager will subscribe to this.
+            OnLowOxygenStateChanged_Client?.Invoke(clientId, isLowOxygen);
         }
 
         private IEnumerator InitialSpawnPhase()
