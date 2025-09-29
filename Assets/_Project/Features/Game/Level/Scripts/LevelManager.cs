@@ -186,6 +186,10 @@ public class LevelManager : NetworkBehaviour, ILevelService
             var generatedBlocks = area.MapGenerator.Generate(_mapSeed, area.WorldOffset, _tileToBaseIdMap, _tileNameToTileMap);
             var generatedItems = _itemPlacementStrategy.PlaceItems(generatedBlocks, _itemRegistry, prng, _tileToBaseIdMap, area.WorldOffset);
 
+            // Ensure items override blocks by removing any block at the same position as an item.
+            var itemPositions = new HashSet<Vector3Int>(generatedItems.Select(item => item.Position));
+            generatedBlocks.RemoveAll(block => itemPositions.Contains(block.Position));
+
             ChunkAndStoreMapData(generatedBlocks, _entireBlockMapData_Server);
             ChunkAndStoreMapData(generatedItems, _entireItemMapData_Server);
 

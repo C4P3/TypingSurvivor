@@ -69,18 +69,20 @@ public class RandomItemPlacementStrategy : ScriptableObject, IItemPlacementStrat
 
         var occupiedPositions = new HashSet<Vector3Int>(areaBlockTiles.Select(t => t.Position));
 
-        int minX = occupiedPositions.Any() ? occupiedPositions.Min(p => p.x) : worldOffset.x;
-        int maxX = occupiedPositions.Any() ? occupiedPositions.Max(p => p.x) : worldOffset.x;
-        int minY = occupiedPositions.Any() ? occupiedPositions.Min(p => p.y) : worldOffset.y;
-        int maxY = occupiedPositions.Any() ? occupiedPositions.Max(p => p.y) : worldOffset.y;
+        // Determine the bounds of the area to place items in.
+        int minX = areaBlockTiles.Any() ? areaBlockTiles.Min(p => p.Position.x) : worldOffset.x;
+        int maxX = areaBlockTiles.Any() ? areaBlockTiles.Max(p => p.Position.x) : worldOffset.x;
+        int minY = areaBlockTiles.Any() ? areaBlockTiles.Min(p => p.Position.y) : worldOffset.y;
+        int maxY = areaBlockTiles.Any() ? areaBlockTiles.Max(p => p.Position.y) : worldOffset.y;
 
         for (int x = minX; x <= maxX; x++)
         {
             for (int y = minY; y <= maxY; y++)
             {
-                var currentPos = new Vector3Int(x, y, 0);
-                if (!occupiedPositions.Contains(currentPos) && prng.NextDouble() < _placementChancePerTile)
+                // The check for occupied positions is removed. Items can now spawn anywhere.
+                if (prng.NextDouble() < _placementChancePerTile)
                 {
+                    var currentPos = new Vector3Int(x, y, 0);
                     ItemData randomItem = GetRandomItem();
                     if (randomItem != null && randomItem.itemTile != null && tileIdMap.TryGetValue(randomItem.itemTile, out int tileId))
                     {
