@@ -13,9 +13,6 @@
 ---
 
 ## 🚀 フェーズ2: コアゲームプレイの強化
-- [ ] **パーリンノイズマップジェネレーターのバグ修正**:
-    - [ ] 値がおかしく、設定した値が反映されてない気がする
-    - [ ] 値によって、エラーが出る。
 - [ ] **低酸素時の演出を実装する**:
     - [ ] クライアントが自身の酸素レベルを監視し、閾値を下回ったらBGMのピッチ変更と画面の点滅エフェクトを開始するロジックを実装する。
 - [ ] **全エフェクトとサウンドを実装する**:
@@ -51,6 +48,13 @@
 
 ## ✅ 完了済みタスク (Completed)
 
+- [x] **多様なマップ生成アルゴリズムの実装**:
+    - [x] `TerrainPreset` ScriptableObjectを導入し、ジェネレーター間で地層設定を共有できるようにした。
+    - [x] `FbmCaveGenerator`, `CellularAutomataGenerator`, `VoronoiGenerator`, `RandomWalkGenerator`, `BspDungeonGenerator`を実装した。
+- [x] **パーリンノイズマップジェネレーターのバグ修正**:
+    - [x] スポーン地点が確保されない問題を`LevelManager`の責務として解決し、ジェネレーターの安定性を向上させた。
+    - [x] `PerlinNoiseMapGenerator`のアルゴリズムを、より直感的で安定したものに修正した。
+- [x] **アイテムスポーンロジックの改善**: アイテムがブロックを上書きして生成されるように`LevelManager`のロジックを修正した。
 - [x] **エフェクトとサウンドの基盤を実装**:
     - [x] `Effect-and-Audio-Design.md`に基づき、永続的なコアサービスとして`AudioManager`と`EffectManager`を実装した。
     - [x] IDとアセットを管理する`AudioRegistry`と`VFXRegistry` (ScriptableObject) を作成した。
