@@ -100,7 +100,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
             
-            AudioManager.Instance.FadeOutBGM(0.5f);
+            AudioManager.Instance.StopBGM();
             AppManager.Instance.SetGameMode(GameModeType.SinglePlayer);
             
             if (NetworkManager.Singleton.StartHost())
@@ -113,7 +113,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
 
-            AudioManager.Instance.FadeOutBGM(0.5f);
+            AudioManager.Instance.StopBGM();
             AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
 
             const string ipAddress = "127.0.0.1";
@@ -127,7 +127,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
 
-            AudioManager.Instance.FadeOutBGM(0.5f);
+            AudioManager.Instance.StopBGM();
             AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
 
             if (NetworkManager.Singleton.StartServer())

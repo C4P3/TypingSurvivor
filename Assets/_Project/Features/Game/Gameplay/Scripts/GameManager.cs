@@ -1,6 +1,3 @@
-using System.Collections;
-using TypingSurvivor.Features.Game.Level.Data;
-using TypingSurvivor.Features.Game.Settings;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
@@ -8,7 +5,11 @@ using UnityEngine;
 using TypingSurvivor.Features.Game.Level;
 using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Game.Player;
+using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Game.Gameplay.Data;
+using System.Collections;
+using TypingSurvivor.Features.Game.Settings;
+using TypingSurvivor.Features.Game.Level.Data;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -24,9 +25,10 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private readonly HashSet<ulong> _rematchRequesters = new();
         private Coroutine _serverGameLoop;
         private GameConfig _gameConfig;
-        private float oxygenDecreaseRate = 5.0f;
+        private float oxygenDecreaseRate = 8.0f;
         private const float LowOxygenThreshold = 0.3f; // 30%
         private readonly HashSet<ulong> _playersInLowOxygen = new();
+        public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
 
         public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig, Grid grid)
         {
@@ -162,12 +164,14 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private IEnumerator CountdownPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.Countdown;
+            StopBgmClientRpc();
             yield return new WaitForSeconds(5); // Countdown duration
         }
 
         private IEnumerator PlayingPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.Playing;
+            PlayBgmClientRpc(SoundId.GameBGM);
             _playersInLowOxygen.Clear(); // Reset for the new round
 
             while (!_gameModeStrategy.IsGameOver(_gameState))
@@ -211,8 +215,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 yield return null;
             }
         }
-
-        public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
 
         [ClientRpc]
         public void NotifyLowOxygenStateClientRpc(ulong clientId, bool isLowOxygen)
@@ -292,6 +294,25 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private IEnumerator FinishedPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.Finished;
+
+            // Determine winner
+            ulong winnerId = ulong.MaxValue;
+            var alivePlayers = new List<PlayerData>();
+            foreach (var p in _gameState.PlayerDatas)
+            {
+                if (!p.IsGameOver)
+                {
+                    alivePlayers.Add(p);
+                }
+            }
+            
+            if (alivePlayers.Count == 1)
+            {
+                winnerId = alivePlayers[0].ClientId;
+            }
+            
+            PlayJingleAndFadeInBgmClientRpc(winnerId);
+
             _rematchRequesters.Clear();
 
             // This loop will naturally terminate if all players request a rematch OR if a player disconnects
@@ -466,6 +487,32 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 _rematchRequesters.Add(clientId);
                 Debug.Log($"Player {clientId} requested a rematch. {_rematchRequesters.Count}/{_playerInstances.Count}");
             }
+        }
+
+        // --- BGM Control RPCs ---
+        [ClientRpc]
+        private void PlayBgmClientRpc(SoundId bgmId)
+        {
+            AudioManager.Instance.PlayBGM(bgmId);
+        }
+
+        [ClientRpc]
+        private void StopBgmClientRpc()
+        {
+            AudioManager.Instance.StopBGM();
+        }
+
+        [ClientRpc]
+        private void PlayJingleAndFadeInBgmClientRpc(ulong winnerId)
+        {
+            AudioManager.Instance.StopBGM();
+            bool localPlayerWon = (winnerId == NetworkManager.Singleton.LocalClientId);
+            var jingleId = localPlayerWon ? SoundId.WinJingle : SoundId.LoseJingle;
+            
+            AudioManager.Instance.PlayJingle(jingleId, () =>
+            {
+                AudioManager.Instance.FadeInBGM(SoundId.ResultsBGM, 0.5f);
+            });
         }
     }
 }

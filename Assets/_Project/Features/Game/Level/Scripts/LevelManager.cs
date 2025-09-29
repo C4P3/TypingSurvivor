@@ -204,42 +204,14 @@ public class LevelManager : NetworkBehaviour, ILevelService
     {
         if (!IsServer) return new List<Vector3Int>();
 
-        var areaWalkableTiles = new List<Vector3Int>();
-        var areaBounds = new BoundsInt();
-        bool firstTile = true;
-
-        foreach (var tileData in _entireBlockMapData_Server.SelectMany(kvp => kvp.Value))
+        // The GenerateWorld method now guarantees that the center of the spawn area is clear.
+        // Therefore, we can directly and deterministically return this central point.
+        // This removes the randomness of the SpawnPointStrategy for initial spawns.
+        var spawnPoints = new List<Vector3Int>
         {
-            if (Vector2.Distance(new Vector2(tileData.Position.x, tileData.Position.y), spawnArea.WorldOffset) < 100)
-            {
-                if (firstTile)
-                {
-                    areaBounds.position = tileData.Position;
-                    firstTile = false;
-                }
-                else
-                {
-                    areaBounds.xMin = Mathf.Min(areaBounds.xMin, tileData.Position.x);
-                    areaBounds.yMin = Mathf.Min(areaBounds.yMin, tileData.Position.y);
-                    areaBounds.xMax = Mathf.Max(areaBounds.xMax, tileData.Position.x + 1);
-                    areaBounds.yMax = Mathf.Max(areaBounds.yMax, tileData.Position.y + 1);
-                }
-            }
-        }
-        
-        for (int x = areaBounds.xMin; x < areaBounds.xMax; x++)
-        {
-            for (int y = areaBounds.yMin; y < areaBounds.yMax; y++)
-            {
-                var pos = new Vector3Int(x, y, 0);
-                if (IsWalkable(pos))
-                {
-                    areaWalkableTiles.Add(pos);
-                }
-            }
-        }
-
-        return spawnArea.SpawnPointStrategy.GetSpawnPoints(spawnArea.PlayerClientIds.Count, areaWalkableTiles, areaBounds, spawnArea.WorldOffset);
+            new Vector3Int(spawnArea.WorldOffset.x, spawnArea.WorldOffset.y, 0)
+        };
+        return spawnPoints;
     }
 
     #endregion
