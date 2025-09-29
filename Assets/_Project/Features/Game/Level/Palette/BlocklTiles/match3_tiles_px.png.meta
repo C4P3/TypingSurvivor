@@ -188,7 +188,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: OragneBlock
+      name: OrangeBlock
       rect:
         serializedVersion: 2
         x: 160
@@ -293,7 +293,7 @@ TextureImporter:
       GrayBlock: 1321716245
       GreenBlock: 1263372621
       LightBlueBlock: 6742961673591888044
-      OragneBlock: -2084821694
+      OrangeBlock: -2084821694
       PinkBlock: 341529272
       PurpleBlock: 217064118
       YellowBlock: -51942503

@@ -8,6 +8,9 @@ using TypingSurvivor.Features.Core.PlayerStatus;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
 
+using TypingSurvivor.Features.Core.Audio;
+using TypingSurvivor.Features.Core.VFX;
+
 namespace TypingSurvivor.Features.Core.App
 {
     /// <summary>
@@ -106,6 +109,34 @@ namespace TypingSurvivor.Features.Core.App
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+
+            // --- Initialize Core Managers ---
+            InitializeCoreManagers();
+        }
+
+        [Header("Core Registries")]
+        [SerializeField] private AudioRegistry _audioRegistry;
+        [SerializeField] private VFXRegistry _vfxRegistry;
+
+        private void InitializeCoreManagers()
+        {
+            // AudioManager
+            if (AudioManager.Instance == null)
+            {
+                var audioManagerGO = new GameObject("AudioManager");
+                audioManagerGO.transform.SetParent(transform);
+                var audioManager = audioManagerGO.AddComponent<AudioManager>();
+                audioManager.Initialize(_audioRegistry);
+            }
+
+            // EffectManager
+            if (EffectManager.Instance == null)
+            {
+                var effectManagerGO = new GameObject("EffectManager");
+                effectManagerGO.transform.SetParent(transform);
+                var effectManager = effectManagerGO.AddComponent<EffectManager>();
+                effectManager.Initialize(_vfxRegistry);
+            }
         }
 
         private async Task InitializeCoreServicesAsync()
