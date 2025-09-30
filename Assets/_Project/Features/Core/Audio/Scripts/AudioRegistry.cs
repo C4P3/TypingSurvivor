@@ -7,25 +7,29 @@ namespace TypingSurvivor.Features.Core.Audio
     // SoundId enum remains the same, acting as a universal identifier.
     public enum SoundId
     {
-        None,
+        None = 0,
         // UI
-        UIButtonClick,
-        UIButtonHover,
+        UIButtonClick = 10,
+        UIButtonHover = 11,
         // Gameplay
-        Countdown,
-        TypingKeyPress,
-        TypingSuccess,
-        TypingMiss,
-        BlockDestroy,
+        Countdown = 100,
+        CountdownEnd = 101,
+        TypingKeyPress = 102,
+        TypingSuccess = 103,
+        TypingMiss = 104,
+        BlockDestroy = 105,
         // Items
-        ItemPickup,
-        BombExplosion,
-        // BGM & Jingles (now handled by MusicManager)
-        MainMenuMusic,
-        GameMusic,
-        ResultsMusic,
-        WinJingle,
-        LoseJingle
+        ItemPickup = 200,
+        BombExplosion = 201,
+        // BGM & Jingles
+        MainMenuMusic = 300,
+        GameMusic = 301,
+        ResultsMusic = 302,
+        WinJingle = 303,
+        LoseJingle = 304,
+        
+        // 新しいIDを追加する際は、既存の値と被らないように注意する
+        // 例: NewSound = 106,
     }
 
     [System.Serializable]

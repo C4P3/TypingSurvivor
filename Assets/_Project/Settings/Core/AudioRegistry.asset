@@ -13,24 +13,28 @@ MonoBehaviour:
   m_Name: AudioRegistry
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.AudioRegistry
   _sfxEntries:
-  - Id: 3
+  - Id: 100
     SoundData: {fileID: 11400000, guid: 3e24ac5df01ff354fa9fc9f5012dd6f1, type: 2}
-  - Id: 9
+  - Id: 101
+    SoundData: {fileID: 11400000, guid: 2ac9134e4b2aca045a076bea9bd66981, type: 2}
+  - Id: 201
     SoundData: {fileID: 11400000, guid: a7941d4f6dd881d44bab8a884f53472a, type: 2}
-  - Id: 4
+  - Id: 102
     SoundData: {fileID: 11400000, guid: 6d5f2fa20d758aa4e8f5f295e44d0b1c, type: 2}
-  - Id: 5
+  - Id: 103
     SoundData: {fileID: 11400000, guid: b82952651da5d0945a2b63e77d2af580, type: 2}
-  - Id: 6
+  - Id: 104
     SoundData: {fileID: 11400000, guid: ef40bc440c2e1c74bbb6cb4ba67bbc4e, type: 2}
+  - Id: 105
+    SoundData: {fileID: 11400000, guid: bef22fac9c31fe0429f2a42c4d0ef5aa, type: 2}
   _musicEntries:
-  - Id: 10
+  - Id: 300
     MusicData: {fileID: 11400000, guid: 7e3f49d90b1de144299ae6d148ec3d4a, type: 2}
-  - Id: 11
+  - Id: 301
     MusicData: {fileID: 11400000, guid: 92e44f9d633c63846b73b2913f17c8df, type: 2}
-  - Id: 12
+  - Id: 302
     MusicData: {fileID: 11400000, guid: 61e3c09d602d30d49889482e3d1f1715, type: 2}
-  - Id: 13
+  - Id: 303
     MusicData: {fileID: 11400000, guid: 73cda2c050b78c740aeb59f48147304f, type: 2}
-  - Id: 14
+  - Id: 304
     MusicData: {fileID: 11400000, guid: 605cfcf1c00b15943830acfad187ff70, type: 2}

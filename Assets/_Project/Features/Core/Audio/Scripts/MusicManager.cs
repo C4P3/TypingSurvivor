@@ -19,13 +19,11 @@ namespace TypingSurvivor.Features.Core.Audio
         private AudioSource _turntableB;
         private AudioSource _activeTurntable;
         
-        // 変更点1: AudioRegistryを保持するためのフィールドを追加
         private AudioRegistry _registry;
 
         private readonly Stack<MusicData> _musicStack = new();
         private Coroutine _activeTransitionCoroutine;
 
-        // 変更点2: AudioRegistryを受け取る初期化メソッド
         public void Initialize(AudioRegistry registry)
         {
             _registry = registry;
@@ -45,7 +43,7 @@ namespace TypingSurvivor.Features.Core.Audio
             _activeTurntable = _turntableA;
         }
 
-        // --- MusicDataを受け取る元のAPI ---
+        // --- Public API ---
 
         /// <summary>
         /// Master command. Interrupts everything and plays the specified music.
@@ -83,49 +81,17 @@ namespace TypingSurvivor.Features.Core.Audio
         /// <summary>
         /// Plays a non-looping jingle, and then transitions to the next music track.
         /// </summary>
-        public void PlayJingleThen(MusicData jingle, MusicData nextMusic, float nextMusicFadeInDuration = 1.0f)
+        public void PlayJingleThen(MusicData jingle, MusicData nextMusic, float nextMusicFadeInDuration = 1.0f, float overlapDuration = 0f)
         {
             StopAndClear();
             _musicStack.Push(nextMusic); // The next music is the new base
-            _activeTransitionCoroutine = StartCoroutine(JingleThenCoroutine(jingle, nextMusic, nextMusicFadeInDuration));
+            _activeTransitionCoroutine = StartCoroutine(JingleThenCoroutine(jingle, nextMusic, nextMusicFadeInDuration, overlapDuration));
         }
-
-        // --- SoundIdを受け取る新しい利便性の高いAPI ---
-
-        /// <summary>
-        /// Master command. Interrupts everything and plays the specified music by ID.
-        /// Clears the entire music stack.
-        /// </summary>
-        public void Play(SoundId musicId, float fadeDuration = 0.0f)
-        {
-            var music = _registry?.GetMusicData(musicId);
-            if (music != null) Play(music, fadeDuration);
-        }
-        
-        /// <summary>
-        /// Pushes a temporary music track onto the stack and plays it by ID.
-        /// </summary>
-        public void Push(SoundId temporaryMusicId, float fadeDuration = 1.0f)
-        {
-            var music = _registry?.GetMusicData(temporaryMusicId);
-            if (music != null) Push(music, fadeDuration);
-        }
-
-        /// <summary>
-        /// Plays a non-looping jingle (by ID), and then transitions to the next music track (by ID).
-        /// </summary>
-        public void PlayJingleThen(SoundId jingleId, SoundId nextMusicId, float nextMusicFadeInDuration = 1.0f)
-        {
-            var jingle = _registry?.GetMusicData(jingleId);
-            var nextMusic = _registry?.GetMusicData(nextMusicId);
-            if (jingle != null && nextMusic != null) PlayJingleThen(jingle, nextMusic, nextMusicFadeInDuration);
-        }
-
 
         /// <summary>
         /// Stops all music playback with a fade-out and clears the stack.
         /// </summary>
-        public void Stop(float fadeDuration)
+        public void Stop(float fadeDuration = 1.0f)
         {
             StopAndClear();
             _activeTransitionCoroutine = StartCoroutine(FadeOutCoroutine(fadeDuration));
@@ -138,10 +104,56 @@ namespace TypingSurvivor.Features.Core.Audio
                 StopCoroutine(_activeTransitionCoroutine);
                 _activeTransitionCoroutine = null;
             }
+            // Stop AudioSources immediately as a fallback
+            if (_turntableA.isPlaying) _turntableA.Stop();
+            if (_turntableB.isPlaying) _turntableB.Stop();
+            
             _musicStack.Clear();
         }
 
+        // --- Coroutine Wrappers (Managing _activeTransitionCoroutine) ---
+
         private IEnumerator CrossfadeCoroutine(MusicData music, float duration)
+        {
+            yield return StartCoroutine(CrossfadeLogic(music, duration));
+            _activeTransitionCoroutine = null;
+        }
+
+        private IEnumerator FadeOutCoroutine(float duration)
+        {
+            yield return StartCoroutine(FadeOutLogic(duration));
+            _activeTransitionCoroutine = null;
+        }
+        
+        private IEnumerator JingleThenCoroutine(MusicData jingle, MusicData nextMusic, float nextMusicFadeInDuration, float overlapDuration)
+        {
+            // Fade out current music (if any) using the logic part
+            if (_activeTurntable.isPlaying)
+            {
+                yield return StartCoroutine(FadeOutLogic(0.5f));
+            }
+
+            // Play jingle
+            _activeTurntable.clip = jingle.Clip;
+            _activeTurntable.volume = jingle.Volume;
+            _activeTurntable.loop = false;
+            _activeTurntable.Play();
+
+            // Wait for the jingle to nearly finish
+            float jingleDuration = jingle.Clip.length;
+            float waitTime = Mathf.Max(0f, jingleDuration - overlapDuration);
+            yield return new WaitForSeconds(waitTime);
+
+            // Start crossfade to the next music using the logic part
+            yield return StartCoroutine(CrossfadeLogic(nextMusic, nextMusicFadeInDuration));
+            
+            // This parent coroutine is now finished, so it can clear the state.
+            _activeTransitionCoroutine = null;
+        }
+
+        // --- Coroutine Logic (Actual Implementation) ---
+
+        private IEnumerator CrossfadeLogic(MusicData music, float duration)
         {
             AudioSource newTurntable = (_activeTurntable == _turntableA) ? _turntableB : _turntableA;
             AudioSource oldTurntable = _activeTurntable;
@@ -156,62 +168,46 @@ namespace TypingSurvivor.Features.Core.Audio
 
             // Fade logic
             float timer = 0f;
+            float startOldVolume = oldTurntable.volume; // Store the starting volume for a linear fade
+
             while (timer < duration)
             {
                 timer += Time.deltaTime;
-                float progress = timer / duration;
+                float progress = Mathf.Clamp01(timer / duration);
                 
-                // Lerpを使って滑らかにクロスフェード
                 newTurntable.volume = Mathf.Lerp(0, music.Volume, progress);
-                oldTurntable.volume = Mathf.Lerp(oldTurntable.volume, 0, progress);
+                oldTurntable.volume = Mathf.Lerp(startOldVolume, 0, progress); // Use stored start volume
                 yield return null;
             }
 
             newTurntable.volume = music.Volume;
             oldTurntable.Stop();
             oldTurntable.clip = null;
-            _activeTransitionCoroutine = null;
         }
-
-        private IEnumerator JingleThenCoroutine(MusicData jingle, MusicData nextMusic, float nextMusicFadeInDuration)
+        
+        private IEnumerator FadeOutLogic(float duration)
         {
-            // Fade out current music (if any)
-            if (_activeTurntable.isPlaying)
-            {
-                yield return StartCoroutine(FadeOutCoroutine(0.5f));
-            }
+            if (!_activeTurntable.isPlaying) yield break;
 
-            // Play jingle
-            _activeTurntable.clip = jingle.Clip;
-            _activeTurntable.volume = jingle.Volume;
-            _activeTurntable.loop = false;
-            _activeTurntable.Play();
-
-            yield return new WaitForSeconds(jingle.Clip.length);
-
-            // Crossfade to next music
-            yield return StartCoroutine(CrossfadeCoroutine(nextMusic, nextMusicFadeInDuration));
-        }
-
-        private IEnumerator FadeOutCoroutine(float duration)
-        {
             float startVolume = _activeTurntable.volume;
             float timer = 0f;
+
             while (timer < duration)
             {
                 timer += Time.deltaTime;
-                _activeTurntable.volume = Mathf.Lerp(startVolume, 0, timer / duration);
+                _activeTurntable.volume = Mathf.Lerp(startVolume, 0, Mathf.Clamp01(timer / duration));
                 yield return null;
             }
+
             _activeTurntable.volume = 0;
             _activeTurntable.Stop();
             _activeTurntable.clip = null;
-            _activeTransitionCoroutine = null; // FadeOutで停止した際も念のためコルーチン参照をクリア
         }
-        
+
+        // --- Pitch Control & Utility API ---
+
         public void SetPitch(float pitch)
         {
-            // 両方のターンテーブルにピッチを設定することで、クロスフェード中もピッチが一貫するようにする
             _turntableA.pitch = pitch;
             _turntableB.pitch = pitch;
         }
@@ -219,6 +215,25 @@ namespace TypingSurvivor.Features.Core.Audio
         public void ResetPitch()
         {
             SetPitch(1.0f);
+        }
+
+        public void Play(SoundId musicId, float fadeDuration = 1.0f)
+        {
+            var music = _registry?.GetMusicData(musicId);
+            if (music != null) Play(music, fadeDuration);
+        }
+        
+        public void Push(SoundId temporaryMusicId, float fadeDuration = 1.0f)
+        {
+            var music = _registry?.GetMusicData(temporaryMusicId);
+            if (music != null) Push(music, fadeDuration);
+        }
+        
+        public void PlayJingleThen(SoundId jingleId, SoundId nextMusicId, float nextMusicFadeInDuration = 1.0f, float overlapDuration = 0f)
+        {
+            var jingle = _registry?.GetMusicData(jingleId);
+            var nextMusic = _registry?.GetMusicData(nextMusicId);
+            if (jingle != null && nextMusic != null) PlayJingleThen(jingle, nextMusic, nextMusicFadeInDuration, overlapDuration);
         }
     }
 }
