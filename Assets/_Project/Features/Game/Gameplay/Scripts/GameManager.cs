@@ -164,7 +164,15 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private IEnumerator CountdownPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.Countdown;
-            yield return new WaitForSeconds(3); // Countdown duration
+            // The countdown will be 3 seconds. Play a sound each second.
+            for (int i = 3; i > 0; i--)
+            {
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySfxOnAllClients(SoundId.Countdown);
+                }
+                yield return new WaitForSeconds(1);
+            }
         }
 
         private IEnumerator PlayingPhase()

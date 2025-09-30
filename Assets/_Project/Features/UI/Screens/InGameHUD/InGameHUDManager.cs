@@ -1,7 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 using TypingSurvivor.Features.Core.PlayerStatus;
-using TypingSurvivor.Features.Game.Typing; // Add this using directive
+using TypingSurvivor.Features.Game.Typing;
+using TypingSurvivor.Features.Core.Audio; // Add this using directive
 
 namespace TypingSurvivor.Features.UI.Screens.InGameHUD
 {
@@ -46,7 +47,8 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
             {
                 _typingService.OnTypingProgressed += HandleTypingProgressed;
                 _typingService.OnTypingCancelled += HandleTypingCancelled; // Also handle cancellation
-                _typingService.OnTypingSuccess += HandleTypingCancelled; // Success also hides the UI
+                _typingService.OnTypingSuccess += HandleTypingSuccess;
+                _typingService.OnTypingMiss += HandleTypingMiss;
             }
         }
         private void UnSubscribeEvents()
@@ -60,13 +62,32 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
             {
                 _typingService.OnTypingProgressed -= HandleTypingProgressed;
                 _typingService.OnTypingCancelled -= HandleTypingCancelled;
-                _typingService.OnTypingSuccess -= HandleTypingCancelled;
+                _typingService.OnTypingSuccess -= HandleTypingSuccess;
+                _typingService.OnTypingMiss -= HandleTypingMiss;
             }
         }
+
+        private void HandleTypingSuccess()
+        {
+            AudioManager.Instance.PlaySfx(SoundId.TypingSuccess);
+            if (_typingView != null)
+            {
+                _typingView.Hide();
+            }
+        }
+
+        private void HandleTypingMiss()
+        {
+            AudioManager.Instance.PlaySfx(SoundId.TypingMiss);
+        }
+
 
         private void HandleTypingProgressed()
         {
             if (_typingView == null) return;
+
+            // Play sound for every successful key press with a slight pitch variation
+            AudioManager.Instance.PlaySfxWithRandomPitch(SoundId.TypingKeyPress, 0.95f, 1.05f);
 
             if (_typingService.IsTyping)
             {

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Core.VFX;
@@ -24,6 +25,8 @@ namespace TypingSurvivor.Features.UI
         [SerializeField] private InGameHUDManager _inGameHUD;
         [SerializeField] private ResultScreen _resultScreen;
         [SerializeField] private CameraManager _cameraManager;
+        [SerializeField] private TextMeshProUGUI _countdownText;
+
 
         [Header("Low Oxygen Effect")]
         [SerializeField] private float _lowOxygenPitch = 1.2f;
@@ -34,6 +37,7 @@ namespace TypingSurvivor.Features.UI
 
         private readonly Dictionary<ulong, Coroutine> _blinkingCoroutines = new();
         private readonly Dictionary<ulong, LowHealthEffect> _activeLowHealthEffects = new();
+        private Coroutine _countdownCoroutine;
 
         // --- For Client-Side Disconnection ---
         private bool _showDisconnectGUI = false;
@@ -152,6 +156,12 @@ namespace TypingSurvivor.Features.UI
         {
             _inGameHUD.gameObject.SetActive(false);
             _resultScreen.Hide();
+            if (_countdownText != null) _countdownText.gameObject.SetActive(false);
+            if (_countdownCoroutine != null)
+            {
+                StopCoroutine(_countdownCoroutine);
+                _countdownCoroutine = null;
+            }
 
             switch (newPhase)
             {
@@ -180,9 +190,31 @@ namespace TypingSurvivor.Features.UI
                     AudioManager.Instance.ResetBgmPitch();
                     break;
                 case GamePhase.Countdown:
-                    // TODO: Show Countdown UI
+                    _countdownCoroutine = StartCoroutine(CountdownCoroutine());
                     break;
             }
+        }
+        
+        private IEnumerator CountdownCoroutine()
+        {
+            if (_countdownText == null) yield break;
+
+            _countdownText.gameObject.SetActive(true);
+
+            _countdownText.text = "3";
+            yield return new WaitForSeconds(1f);
+
+            _countdownText.text = "2";
+            yield return new WaitForSeconds(1f);
+
+            _countdownText.text = "1";
+            yield return new WaitForSeconds(1f);
+
+            _countdownText.text = "START!";
+            yield return new WaitForSeconds(0.5f);
+
+            _countdownText.gameObject.SetActive(false);
+            _countdownCoroutine = null;
         }
 
         private void HandleRematchClicked()

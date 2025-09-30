@@ -10,6 +10,8 @@ namespace TypingSurvivor.Features.Core.Audio
         UIButtonClick,
         UIButtonHover,
         // Gameplay
+        Countdown,
+        TypingKeyPress,
         TypingSuccess,
         TypingMiss,
         BlockDestroy,

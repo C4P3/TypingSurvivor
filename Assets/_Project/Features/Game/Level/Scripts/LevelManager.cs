@@ -275,6 +275,13 @@ public class LevelManager : NetworkBehaviour, ILevelService
         var tile = GetTile(gridPosition);
         if (tile is IndestructibleTile) return;
 
+        // Play destruction sound effect at the block's position
+        if (TypingSurvivor.Features.Core.Audio.AudioManager.Instance != null)
+        {
+            var worldPos = _grid.GetCellCenterWorld(gridPosition);
+            TypingSurvivor.Features.Core.Audio.AudioManager.Instance.PlaySoundAtPointWithRandomPitch(TypingSurvivor.Features.Core.Audio.SoundId.BlockDestroy, worldPos);
+        }
+
         Vector2Int chunkPos = WorldToChunkPos(gridPosition);
         if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))
         {

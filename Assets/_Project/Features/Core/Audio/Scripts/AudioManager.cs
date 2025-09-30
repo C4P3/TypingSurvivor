@@ -237,6 +237,52 @@ namespace TypingSurvivor.Features.Core.Audio
         }
 
         /// <summary>
+        /// Plays a one-shot sound effect locally.
+        /// Used for UI sounds or effects specific to the local player.
+        /// </summary>
+        public void PlaySfx(SoundId sfxId)
+        {
+            var clip = _registry.GetClip(sfxId);
+            if (clip != null)
+            {
+                _sfxSource.PlayOneShot(clip);
+            }
+        }
+
+        /// <summary>
+        /// Plays a one-shot sound effect locally with a randomized pitch.
+        /// Ideal for frequent sounds like typing or footsteps to avoid monotony.
+        /// </summary>
+        public void PlaySfxWithRandomPitch(SoundId sfxId, float minPitch = 0.9f, float maxPitch = 1.1f)
+        {
+            var clip = _registry.GetClip(sfxId);
+            if (clip != null)
+            {
+                // Set a random pitch for this specific shot
+                _sfxSource.pitch = Random.Range(minPitch, maxPitch);
+                // Play the sound
+                _sfxSource.PlayOneShot(clip);
+                // Reset the pitch back to default for the next sound that might not be randomized
+                _sfxSource.pitch = 1.0f;
+            }
+        }
+
+        /// <summary>
+        /// Server-side method to request playing a one-shot SFX on all clients.
+        /// </summary>
+        public void PlaySfxOnAllClients(SoundId sfxId)
+        {
+            if (!IsServer) return;
+            PlaySfxClientRpc(sfxId);
+        }
+
+        [ClientRpc]
+        private void PlaySfxClientRpc(SoundId sfxId)
+        {
+            PlaySfx(sfxId);
+        }
+
+        /// <summary>
         /// Server-side method to request playing a sound on all clients at a specific position.
         /// </summary>
         public void PlaySoundAtPoint(SoundId id, Vector3 position)
@@ -252,6 +298,39 @@ namespace TypingSurvivor.Features.Core.Audio
             if (clip != null)
             {
                 AudioSource.PlayClipAtPoint(clip, position);
+            }
+        }
+
+        /// <summary>
+        /// Server-side method to request playing a sound on all clients at a specific position with random pitch.
+        /// </summary>
+        public void PlaySoundAtPointWithRandomPitch(SoundId id, Vector3 position, float minPitch = 0.9f, float maxPitch = 1.1f)
+        {
+            if (!IsServer) return;
+            PlaySoundAtPointWithRandomPitchClientRpc(id, position, minPitch, maxPitch);
+        }
+
+        [ClientRpc]
+        private void PlaySoundAtPointWithRandomPitchClientRpc(SoundId id, Vector3 position, float minPitch, float maxPitch)
+        {
+            var clip = _registry.GetClip(id);
+            if (clip != null)
+            {
+                // Create a temporary GameObject to host the AudioSource
+                GameObject tempAudioHost = new GameObject("TempAudio");
+                tempAudioHost.transform.position = position;
+                AudioSource audioSource = tempAudioHost.AddComponent<AudioSource>();
+
+                // Configure the AudioSource
+                audioSource.clip = clip;
+                audioSource.pitch = Random.Range(minPitch, maxPitch);
+                // TODO: Configure other properties like spatialBlend, volume, etc. if needed
+
+                // Play the sound
+                audioSource.Play();
+
+                // Destroy the temporary GameObject after the clip has finished playing
+                Destroy(tempAudioHost, clip.length);
             }
         }
     }
