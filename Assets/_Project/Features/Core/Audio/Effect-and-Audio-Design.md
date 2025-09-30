@@ -4,127 +4,96 @@
 
 このドキュメントは、ゲーム内のサウンド（BGM, SFX）とビジュアルエフェクト（VFX）を管理・再生するための、堅牢で拡張性の高いシステム設計を定義します。
 
-## **2. 実現したい演出リスト**
-
-本システムが実現を目指す具体的な演出は以下の通りです。
-
-### **2.1. BGM**
--   **シーン連動**: タイトル、メインメニュー、ゲーム中の各シーンで、適切なBGMが再生される。
--   **シームレスな遷移**: シーンをまたいでBGMが途切れない（例: メインメニューからゲームシーンへ）。
--   **動的変化**: ゲームの状況に応じてBGMが変化する。
-    -   **低酸素時**: プレイヤーの酸素が一定値を下回ると、BGMのピッチと速度が上昇し、緊張感を煽る。
-    -   **勝敗ジングル**: ゲーム終了時、勝敗に応じた短いジングルを再生してからリザルトBGMに繋ぐ。
-
-### **2.2. UIサウンド (SFX)**
--   ボタンのホバー時、クリック時にフィードバックとして効果音が再生される。
-
-### **2.3. ゲームプレイサウンド (SFX)**
--   ゲーム開始時のカウントダウン音。（BGMは無音にする）
--   タイピング成功時、失敗時の効果音。
--   ブロック破壊時の効果音。
-
-### **2.4. アイテムVFX & SFX**
--   **使用者**: アイテムを取得・使用したプレイヤーの位置でエフェクト・サウンドを再生。
--   **効果範囲**: 爆発系アイテムの場合、効果範囲内の各タイルでエフェクトを再生。
--   **対象者**: 妨害系アイテムの場合、効果を受けた相手プレイヤーの位置でエフェクト・サウンドを再生。
--   **飛翔演出**: 妨害系アイテム使用時、使用者から対象者へエフェクトが飛んでいく演出を追加する。
-
-### **2.5. 画面エフェクト (VFX)**
--   **低酸素時**: プレイヤーのカメラに、画面の縁が赤く点滅するようなエフェクトを適用する。
+特にサウンドシステムは、単純な再生機能だけでなく、将来の拡張（サウンドの着せ替えショップなど）にも柔軟に対応できる、高度なデータ駆動設計を採用します。
 
 ---
 
-## **3. アーキテクチャ: 永続的コアサービス**
+## **2. 設計思想**
 
-本システムは、特定のシーンに依存しないアプリケーション全体の**コアサービス**として設計します。
+*   **責務の分離 (Separation of Concerns):**
+    *   単純な「撃ちっぱなし」でよい効果音（SFX）と、クロスフェードやスタック管理といった複雑な状態を持つBGMのロジックを、**`AudioManager`**と**`MusicManager`**という完全に別のクラスに分離します。
+*   **データ駆動設計 (Data-Driven Design):**
+    *   「どの音を、どのように再生するか」という振all舞いの定義を、コードから**ScriptableObjectアセット**に分離します。これにより、非プログラマーでも安全かつ自由にサウンドの調整が可能になります。
 
--   **`AudioManager.cs` / `EffectManager.cs`**:
-    -   **役割**: それぞれオーディオとVFXの再生を管理する責務を持つ、シングルトンなMonoBehaviour。
-    -   **配置**: `Features/Core/Audio` および `Features/Core/VFX` フォルダに配置する。
-    -   **永続化**: `App.unity`シーンにGameObjectとして配置され、`AppManager`によって初期化される。親である`AppManager`が`DontDestroyOnLoad`であるため、自身も永続化される。
+---
 
-## **4. データ管理: IDベースのレジストリ**
+## **3. システム構成**
 
-再生するアセット（AudioClip, VFX Prefab）をコードから直接参照するのではなく、IDを介して間接的に管理する**データ駆動設計**を採用します。
-
--   **`AudioRegistry.cs` / `VFXRegistry.cs` (ScriptableObject)**:
-    -   **役割**: サウンドID/VFX IDと、それに対応するアセット（AudioClipやGameObjectプレハブ）のペアをリストとして保持する「カタログ」。
-    -   **IDの形式**: `enum`を採用し、インスペクターから設定可能にする。
-    -   **利点**: プログラマーがコードを変更することなく、サウンドデザイナーやアーティストがアセットの追加・差し替えを安全に行える。
-
-## **5. 責務分担: サーバーRPC vs クライアントローカル**
-
-いつ、誰がエフェクトやサウンドの再生をトリガーするかのルールを明確に定義します。
-
-### **5.1. サーバーがトリガー (ClientRpc)**
-
--   **対象**: ゲームの論理的な状態変化に起因し、**全プレイヤーに同期されるべき演出**。
--   **例**:
-    -   アイテムの効果発動（爆発、妨害）
-    -   ブロックの破壊
-    -   ゲームのグローバルイベント（開始、終了）
--   **フロー**: サーバーサイドのロジック（`ItemService`など）が`EffectManager.PlayEffectClientRpc(effectId, position)`のようなRPCを呼び出し、全クライアントに再生を命令する。
-
-### **5.2. クライアントがトリガー (ローカル)**
-
--   **対象**: **ローカルプレイヤーの状態や入力にのみ依存**し、他のプレイヤーと同期する必要がない演出。
--   **例**:
-    -   UIボタンのクリック音
-    -   低酸素時のBGM変化や画面エフェクト
--   **フロー**: クライアントサイドのロジック（`InGameHUDManager`など）が、ローカルの`PlayerData`を監視し、条件を満たした際にローカルの`AudioManager`や`EffectManager`のメソッドを直接呼び出す。
--   **利点**: サーバーへの不要な通信を削減し、プレイヤーの操作に対する応答性を向上させる。
-
-## **6. シーケンス図**
-
-### **フロー①：妨害アイテム使用時 (サーバーRPC)**
 ```mermaid
-sequenceDiagram
-    participant Player as PlayerFacade (Server)
-    participant ItemSvc as ItemService (Server)
-    participant EffectMgr as EffectManager (Server)
-    participant Client as Client(s)
+graph TD
+    subgraph "永続サウンドシステム (Persistent Sound System)"
+        AudioManager["AudioManager (SFX専門)"]
+        MusicManager["MusicManager (BGM専門)"]
+    end
 
-    Player->>ItemSvc: AcquireItem(itemId)
-    ItemSvc->>EffectMgr: PlayEffect(effectId, startPos, targetPos)
-    EffectMgr->>Client: PlayFlyingEffectClientRpc(effectId, startPos, targetPos)
-    Note right of Client: 各クライアントが飛翔エフェクトを再生
+    subgraph "データアセット (Data Assets)"
+        SoundEffectData["SoundEffectData (SFXの設計図)"]
+        MusicData["MusicData (BGMの設計図)"]
+        AudioRegistry["AudioRegistry (IDとデータを紐付けるカタログ)"]
+    end
+
+    GameLogic["ゲームロジック<br>(UI, GameManagerなど)"]
+
+    AudioRegistry -- "SFXデータを参照" --> SoundEffectData
+    AudioRegistry -- "BGMデータを参照" --> MusicData
+
+    GameLogic -- "PlaySfx(SoundId.TypingKeyPress)" --> AudioManager
+    GameLogic -- "Play(mainMenuMusic), Push(dangerMusic)..." --> MusicManager
+    
+    AudioManager -- "どのデータを再生するか問い合わせ" --> AudioRegistry
+    MusicManager -- "どのデータを再生するか問い合わせ" --> AudioRegistry
 ```
 
-### **フロー②：低酸素状態 (クライアントローカル)**
-## **7. AudioListener戦略: ローカルプレイヤー追従**
+---
 
-2D画面分割ゲームにおける3Dオーディオの複雑さを回避しつつ、Unityの「複数のAudioListenerが存在します」という警告を解決するため、以下の戦略を採用します。
+## **4. 効果音 (SFX) システム: `AudioManager`**
 
--   **設計思想**: 各クライアント（プレイヤー）は、「自分が見ている画面」に対応した音を聞くべきである。
--   **実装**:
-    -   **`CameraManager`の責務**: `CameraManager`は、カメラのレイアウトを設定する際に、各カメラが追従している`PlayerFacade`がローカルプレイヤー（`IsOwner`が`true`）か否かを判定します。
-    -   **動的な有効化**: ローカルプレイヤーを写すカメラの`AudioListener`コンポーネントのみを有効化（`enabled = true`）し、他の全プレイヤーのカメラのリスナーは無効化（`enabled = false`）します。
--   **効果**:
-    -   各クライアントのシーン内では、常に単一の`AudioListener`のみが有効になるため、警告が解消されます。
-    -   プレイヤーは、自分自身の画面（ビューポート）を基準とした、直感的で正しいサウンド（左右のパンニングなど）を体験できます。
-    -   `WorldOffset`によるプレイヤー間の大きな物理的距離を気にする必要がなくなります。
+### **4.1. 責務**
+効果音（SFX）の再生に特化します。状態を持たない「ファイア・アンド・フォーゲット」方式です。
 
-## **8. BGM再生シーケンス**
+### **4.2. データ: `SoundEffectData.cs` (ScriptableObject)**
+個々のSFXの振る舞いを定義するアセットです。
+*   `List<AudioClip> Clips`: 複数の音声クリップを登録でき、再生時にこの中からランダムに1つが選ばれます。
+*   `bool RandomizePitch`: 再生時にピッチをランダム化するかを設定します。
+*   `float MinPitch`, `float MaxPitch`: ピッチのランダム化範囲を指定します。
+*   `float Volume`: 再生音量。
 
-BGMの再生と停止は、各シーンやゲームフェーズを管理するマネージャークラスが、`AudioManager`に命令を出すことで実行されます。
+### **4.3. API**
+*   `PlaySfx(SoundId id)`: 指定されたIDに対応する`SoundEffectData`の定義に従って、効果音を1回再生します。
+*   `PlaySfxAtPoint(SoundId id, Vector3 position)`: 3D空間の特定の位置でSFXを再生します。
 
-| シーン / 状態 | BGM / アクション | 指示を出すマネージャー | タイミング |
-| :--- | :--- | :--- | :--- |
-| **メインメニュー** | `MainMenuBGM`を再生 | `MainMenuManager` | `Start()` |
-| **ゲームシーンへ遷移** | **BGMを停止** (`StopBGM`) | `MainMenuManager` | ゲーム開始ボタン押下時 |
-| **カウントダウン中** | **無音** (SFXに集中させる) | - | - |
-| **ゲームプレイ開始** | `GameBGM`を再生 | `GameUIManager` | `GamePhase`が`Playing`になった時 |
-| **ゲーム終了** | **ジングル再生** → `ResultsBGM`を**フェードイン** | `GameUIManager` | `GamePhase`が`Finished`になった時 |
-| **（将来）ランキング画面** | `RankingBGM`を再生 | `RankingManager`など | 画面表示時 |
+---
 
+## **5. BGMシステム: `MusicManager`**
 
-2D画面分割ゲームにおける3Dオーディオの複雑さを回避しつつ、Unityの「複数のAudioListenerが存在します」という警告を解決するため、以下の戦略を採用します。
+### **5.1. 責務**
+BGMの複雑な遷移（クロスフェード、スタック管理、ジングル再生）を一手に引き受けます。
 
--   **設計思想**: 各クライアント（プレイヤー）は、「自分が見ている画面」に対応した音を聞くべきである。
--   **実装**:
-    -   **`CameraManager`の責務**: `CameraManager`は、カメラのレイアウトを設定する際に、各カメラが追従している`PlayerFacade`がローカルプレイヤー（`IsOwner`が`true`）か否かを判定します。
-    -   **動的な有効化**: ローカルプレイヤーを写すカメラの`AudioListener`コンポーネントのみを有効化（`enabled = true`）し、他の全プレイヤーのカメラのリスナーは無効化（`enabled = false`）します。
--   **効果**:
-    -   各クライアントのシーン内では、常に単一の`AudioListener`のみが有効になるため、警告が解消されます。
-    -   プレイヤーは、自分自身の画面（ビューポート）を基準とした、直感的で正しいサウンド（左右のパンニングなど）を体験できます。
-    -   `WorldOffset`によるプレイヤー間の大きな物理的距離を気にする必要がなくなります。
+### **5.2. データ: `MusicData.cs` (ScriptableObject)**
+個々のBGMトラックを定義するアセットです。
+*   `AudioClip Clip`: BGMの音声クリップ。
+*   `float Volume`: 再生音量。
+*   `bool Loop`: ループ再生するか。
+
+### **5.3. 内部構造**
+*   **2つのターンテーブル:** 2つの`AudioSource`を内部に持ち、片方を再生しながらもう片方で次の曲を準備することで、スムーズなクロスフェードを実現します。
+*   **BGMスタック:** BGMの再生履歴をスタックで管理し、「一時的なBGMを再生し、終わったら元のBGMに戻る」といった処理を可能にします。
+
+### **5.4. API**
+*   **`Play(MusicData music, float fadeDuration)`:**
+    *   **役割:** **マスターコマンド**。現在の再生状況（スタック、ジングル、フェードなど）を**全て中断・リセット**し、指定された`music`を最優先で再生します。フェード時間0を指定すれば即座に切り替わります。シーン遷移時に最適です。
+*   **`Push(MusicData temporaryMusic, float fadeDuration)`:**
+    *   **役割:** 現在のBGMをスタックに積み、一時的な`temporaryMusic`を上に重ねて再生します。（例: 危険地帯BGM）
+*   **`Pop(float fadeDuration)`:**
+    *   **役割:** スタックの一番上のBGMを終了し、一つ前のBGMにクロスフェードで戻ります。（例: 危険地帯から脱出）
+*   **`PlayJingleThen(MusicData jingle, MusicData nextMusic, float fadeDuration)`:**
+    *   **役割:** `jingle`（ループしない`MusicData`）を再生し、**その再生が完了したのを待ってから**、自動的に`nextMusic`へクロスフェードで繋ぐ、一連のシーケンスを実行します。（例: リザルト画面の演出）
+
+---
+
+## **6. ビジュアルエフェクト (VFX) システム**
+
+VFXもSFXと同様に、`VFXData`と`VFXRegistry`を用いたデータ駆動設計を採用し、`EffectManager`が再生を担当します。
+
+---
+*（旧ドキュメントの「AudioListener戦略」などの項目は、この設計と競合しないため、必要に応じてこの下に維持されます）*
