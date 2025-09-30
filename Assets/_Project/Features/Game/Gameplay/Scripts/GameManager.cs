@@ -161,372 +161,355 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
         }
 
-        private IEnumerator CountdownPhase()
-        {
-            _gameState.CurrentPhase.Value = GamePhase.Countdown;
-            // The countdown will be 3 seconds. Play a sound each second.
-            for (int i = 3; i > 0; i--)
-            {
-                if (AudioManager.Instance != null)
+                private IEnumerator CountdownPhase()
                 {
-                    AudioManager.Instance.PlaySfxOnAllClients(SoundId.Countdown);
-                }
-                yield return new WaitForSeconds(1);
-            }
-        }
-
-        private IEnumerator PlayingPhase()
-        {
-            _gameState.CurrentPhase.Value = GamePhase.Playing;
-            PlayBgmClientRpc(SoundId.GameBGM);
-            _playersInLowOxygen.Clear(); // Reset for the new round
-
-            while (!_gameModeStrategy.IsGameOver(_gameState))
-            {
-                // Decrease oxygen and check for low oxygen state changes
-                for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
-                {
-                    var data = _gameState.PlayerDatas[i];
-                    if (data.IsGameOver) continue;
-
-                    // --- Oxygen Decrease Logic ---
-                    float damageReduction = _statusReader.GetStatValue(data.ClientId, PlayerStat.DamageReduction);
-                    damageReduction = Mathf.Clamp01(damageReduction);
-                    float actualDecrease = oxygenDecreaseRate * (1.0f - damageReduction);
-                    data.Oxygen -= actualDecrease * Time.deltaTime;
-
-                    if (data.Oxygen <= 0)
+                    _gameState.CurrentPhase.Value = GamePhase.Countdown;
+                    // The countdown will be 3 seconds. Play a sound each second.
+                    for (int i = 3; i > 0; i--)
                     {
-                        data.Oxygen = 0;
-                        data.IsGameOver = true;
-                    }
-                    _gameState.PlayerDatas[i] = data;
-                    // --- End Oxygen Decrease ---
-
-                    // --- Low Oxygen State Change Check ---
-                    float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
-                    bool isCurrentlyLow = (data.Oxygen / maxOxygen) < LowOxygenThreshold;
-                    bool wasPreviouslyLow = _playersInLowOxygen.Contains(data.ClientId);
-
-                    if (isCurrentlyLow && !wasPreviouslyLow)
-                    {
-                        _playersInLowOxygen.Add(data.ClientId);
-                        NotifyLowOxygenStateClientRpc(data.ClientId, true);
-                    }
-                    else if (!isCurrentlyLow && wasPreviouslyLow)
-                    {
-                        _playersInLowOxygen.Remove(data.ClientId);
-                        NotifyLowOxygenStateClientRpc(data.ClientId, false);
+                        SfxManager.Instance.PlaySfx(SoundId.Countdown);
+                        yield return new WaitForSeconds(1);
                     }
                 }
-                yield return null;
-            }
-        }
-
-        [ClientRpc]
-        public void NotifyLowOxygenStateClientRpc(ulong clientId, bool isLowOxygen)
-        {
-            // Invoke the client-side event. GameUIManager will subscribe to this.
-            OnLowOxygenStateChanged_Client?.Invoke(clientId, isLowOxygen);
-        }
-
-        private IEnumerator InitialSpawnPhase()
-        {
-            // --- Pre-flight checks for configuration ---
-            if (_gameConfig.DefaultMapGenerator == null || _gameConfig.VersusSpawnStrategy == null || _gameConfig.DefaultItemPlacementStrategy == null)
-            {
-                Debug.LogError("GameConfig is missing one or more required assets (DefaultMapGenerator, VersusSpawnStrategy, or DefaultItemPlacementStrategy). Aborting spawn.");
-                yield break;
-            }
-
-            // 1. Build the map generation request based on the game mode
-            var request = new MapGenerationRequest();
-            var clientIds = NetworkManager.Singleton.ConnectedClientsIds.ToList();
-
-            // For now, use a simple logic. This can be expanded for different modes.
-            if (_gameModeStrategy is MultiPlayerStrategy)
-            {
-                for (int i = 0; i < clientIds.Count; i++)
-                {
-                    request.SpawnAreas.Add(new SpawnArea
-                    {
-                        PlayerClientIds = new List<ulong> { clientIds[i] },
-                        WorldOffset = new Vector2Int(i * 1000, 0),
-                        MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
-                    });
-                }
-            }
-            else // SinglePlayer
-            {
-                request.SpawnAreas.Add(new SpawnArea
-                {
-                    PlayerClientIds = new List<ulong> { clientIds[0] },
-                    WorldOffset = new Vector2Int(0, 0),
-                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
-                });
-            }
-
-            // 2. Tell LevelManager to build the world
-            _levelService.GenerateWorld(request);
-            yield return null; // Give LevelManager a frame to process
-
-            // 3. Spawn players in their designated areas
-            foreach (var area in request.SpawnAreas)
-            {
-                var spawnPoints = _levelService.GetSpawnPoints(area);
-                for (int i = 0; i < area.PlayerClientIds.Count; i++)
-                {
-                    ulong clientId = area.PlayerClientIds[i];
-                    Vector3Int gridPos = spawnPoints[i];
-                    Vector3 spawnPos = _grid.GetCellCenterWorld(gridPos);
-
-                    GameObject playerInstance = Instantiate(_gameConfig.PlayerPrefab, spawnPos, Quaternion.identity);
-                    var playerNetworkObject = playerInstance.GetComponent<NetworkObject>();
-                    playerNetworkObject.SpawnAsPlayerObject(clientId, true);
-
-                    var playerFacade = playerInstance.GetComponent<TypingSurvivor.Features.Game.Player.PlayerFacade>();
-                    playerFacade.NetworkGridPosition.Value = gridPos;
-
-                    // Register initial position in the GameState
-                    UpdatePlayerPosition(clientId, gridPos);
-
-                    _playerInstances[clientId] = playerFacade;
-                    _gameState.SpawnedPlayers.Add(playerNetworkObject);
-                }
-            }
-        }
-
-
-        private IEnumerator FinishedPhase()
-        {
-            _gameState.CurrentPhase.Value = GamePhase.Finished;
-
-            // Determine winner
-            ulong winnerId = ulong.MaxValue;
-            var alivePlayers = new List<PlayerData>();
-            foreach (var p in _gameState.PlayerDatas)
-            {
-                if (!p.IsGameOver)
-                {
-                    alivePlayers.Add(p);
-                }
-            }
-            
-            if (alivePlayers.Count == 1)
-            {
-                winnerId = alivePlayers[0].ClientId;
-            }
-            
-            // Play jingle and Result BGM on clients
-            PlayJingleAndFadeInBgmClientRpc(winnerId);
-
-            _rematchRequesters.Clear();
-
-            // This loop will naturally terminate if all players request a rematch OR if a player disconnects
-            // (because _playerInstances.Count will decrease).
-            while (_rematchRequesters.Count < _playerInstances.Count)
-            {
-                yield return null;
-            }
-
-            // FINAL GATEKEEPER: After the loop, check if we have enough players to start a rematch.
-            // This prevents a rematch if the loop was exited due to a disconnection.
-            if (_playerInstances.Count < _gameModeStrategy.PlayerCount)
-            {
-                Debug.Log("A player disconnected while waiting for rematch. Rematch is cancelled.");
-                // Wait indefinitely on the results screen.
-                while (true)
-                {
-                    yield return null;
-                }
-            }
-            
-            // リマッチが成立したので、全クライアントのオーディオ状態をリセットする。
-            // これにより、結果画面で予約されていたリザルトBGMの再生がキャンセルされる。
-            ResetAudioStateClientRpc();
-
-            // If we passed the check, it means everyone requested a rematch. Proceed.
-            // --- Prepare for the next round ---
-            ResetPlayersForRematch();
-
-            // Regenerate world using the same request logic as initial spawn
-            var request = new MapGenerationRequest();
-            var clientIds = _playerInstances.Keys.ToList();
-
-            if (_gameModeStrategy is MultiPlayerStrategy)
-            {
-                for (int i = 0; i < clientIds.Count; i++)
-                {
-                    request.SpawnAreas.Add(new SpawnArea
-                    {
-                        PlayerClientIds = new List<ulong> { clientIds[i] },
-                        WorldOffset = new Vector2Int(i * 1000, 0),
-                        MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
-                    });
-                }
-            }
-            else
-            {
-                 request.SpawnAreas.Add(new SpawnArea
-                {
-                    PlayerClientIds = new List<ulong> { clientIds[0] },
-                    WorldOffset = new Vector2Int(0, 0),
-                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
-                });
-            }
-            _levelService.GenerateWorld(request);
-            yield return null;
-
-            // Reposition players
-            foreach (var area in request.SpawnAreas)
-            {
-                var spawnPoints = _levelService.GetSpawnPoints(area);
-                for (int i = 0; i < area.PlayerClientIds.Count; i++)
-                {
-                    ulong clientId = area.PlayerClientIds[i];
-                    var player = _playerInstances[clientId];
-                    var gridPos = spawnPoints[i];
-                    _levelService.ClearArea(gridPos, 1);
-                    var spawnPos = _grid.GetCellCenterWorld(gridPos);
-                    player.RespawnAt(spawnPos);
-                    // After teleporting the player, update their position in the GameState and force a chunk update.
-                    UpdatePlayerPosition(clientId, gridPos);
-                    _levelService.ForceChunkUpdateForPlayer(clientId, spawnPos);
-                }
-            }
-        }
-
-        public void ResetPlayersForRematch()
-        {
-            if (!IsServer) return;
-
-            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
-            {
-                var data = _gameState.PlayerDatas[i];
-                
-                // Clear temporary buffs from the previous session
-                _statusWriter.ClearSessionModifiers(data.ClientId);
-                
-                // Get the (potentially modified) max oxygen for this player
-                float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
-
-                // Reset runtime stats
-                data.Score = 0;
-                data.IsGameOver = false;
-                data.Oxygen = maxOxygen;
-                
-                _gameState.PlayerDatas[i] = data;
-            }
-        }
-
-        // --- IGameStateWriter Implementation ---
-        public void AddOxygen(ulong clientId, float amount)
-        {
-            if (!IsServer) return;
-            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
-            {
-                if (_gameState.PlayerDatas[i].ClientId == clientId)
-                {
-                    var data = _gameState.PlayerDatas[i];
-                    float maxOxygen = _statusReader.GetStatValue(clientId, PlayerStat.MaxOxygen);
-                    data.Oxygen = Mathf.Clamp(data.Oxygen + amount, 0, maxOxygen);
-                    _gameState.PlayerDatas[i] = data;
-                    return;
-                }
-            }
-        }
-
-        public void AddScore(ulong clientId, int amount)
-        {
-            if (!IsServer) return;
-            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
-            {
-                if (_gameState.PlayerDatas[i].ClientId == clientId)
-                {
-                    var data = _gameState.PlayerDatas[i];
-                    data.Score += amount;
-                    _gameState.PlayerDatas[i] = data;
-                    return;
-                }
-            }
-        }
-        public void UpdatePlayerPosition(ulong clientId, Vector3Int gridPosition)
-        {
-            if (!IsServer) return;
-            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
-            {
-                if (_gameState.PlayerDatas[i].ClientId == clientId)
-                {
-                    var data = _gameState.PlayerDatas[i];
-                    data.GridPosition = gridPosition;
-                    _gameState.PlayerDatas[i] = data;
-                    return;
-                }
-            }
-        }
-        public void SetPlayerGameOver(ulong clientId)
-        {
-            if (!IsServer) return;
-            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
-            {
-                if (_gameState.PlayerDatas[i].ClientId == clientId)
-                {
-                    var data = _gameState.PlayerDatas[i];
-                    data.IsGameOver = true;
-                    _gameState.PlayerDatas[i] = data;
-                    return;
-                }
-            }
-        }
         
-        private void HandlePhaseChanged_Client(GamePhase previousPhase, GamePhase newPhase)
-        {
-            Debug.Log($"Game phase changed to: {newPhase}");
-        }
-
-        // --- Rematch Logic ---
-        [ServerRpc(RequireOwnership = false)]
-        public void RequestRematchServerRpc(ServerRpcParams rpcParams = default)
-        {
-            if (_gameState.CurrentPhase.Value != GamePhase.Finished) return;
-
-            ulong clientId = rpcParams.Receive.SenderClientId;
-            if (_playerInstances.ContainsKey(clientId) && !_rematchRequesters.Contains(clientId))
-            {
-                _rematchRequesters.Add(clientId);
-                Debug.Log($"Player {clientId} requested a rematch. {_rematchRequesters.Count}/{_playerInstances.Count}");
+                private IEnumerator PlayingPhase()
+                {
+                    _gameState.CurrentPhase.Value = GamePhase.Playing;
+                    PlayBgmClientRpc(SoundId.GameMusic);
+                    _playersInLowOxygen.Clear(); // Reset for the new round
+        
+                    while (!_gameModeStrategy.IsGameOver(_gameState))
+                    {
+                        // Decrease oxygen and check for low oxygen state changes
+                        for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+                        {
+                            var data = _gameState.PlayerDatas[i];
+                            if (data.IsGameOver) continue;
+        
+                            // --- Oxygen Decrease Logic ---
+                            float damageReduction = _statusReader.GetStatValue(data.ClientId, PlayerStat.DamageReduction);
+                            damageReduction = Mathf.Clamp01(damageReduction);
+                            float actualDecrease = oxygenDecreaseRate * (1.0f - damageReduction);
+                            data.Oxygen -= actualDecrease * Time.deltaTime;
+        
+                            if (data.Oxygen <= 0)
+                            {
+                                data.Oxygen = 0;
+                                data.IsGameOver = true;
+                            }
+                            _gameState.PlayerDatas[i] = data;
+                            // --- End Oxygen Decrease ---
+        
+                            // --- Low Oxygen State Change Check ---
+                            float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
+                            bool isCurrentlyLow = (data.Oxygen / maxOxygen) < LowOxygenThreshold;
+                            bool wasPreviouslyLow = _playersInLowOxygen.Contains(data.ClientId);
+        
+                            if (isCurrentlyLow && !wasPreviouslyLow)
+                            {
+                                _playersInLowOxygen.Add(data.ClientId);
+                                NotifyLowOxygenStateClientRpc(data.ClientId, true);
+                            }
+                            else if (!isCurrentlyLow && wasPreviouslyLow)
+                            {
+                                _playersInLowOxygen.Remove(data.ClientId);
+                                NotifyLowOxygenStateClientRpc(data.ClientId, false);
+                            }
+                        }
+                        yield return null;
+                    }
+                }
+        
+                [ClientRpc]
+                public void NotifyLowOxygenStateClientRpc(ulong clientId, bool isLowOxygen)
+                {
+                    // Invoke the client-side event. GameUIManager will subscribe to this.
+                    OnLowOxygenStateChanged_Client?.Invoke(clientId, isLowOxygen);
+                }
+        
+                private IEnumerator InitialSpawnPhase()
+                {
+                    // --- Pre-flight checks for configuration ---
+                    if (_gameConfig.DefaultMapGenerator == null || _gameConfig.VersusSpawnStrategy == null || _gameConfig.DefaultItemPlacementStrategy == null)
+                    {
+                        Debug.LogError("GameConfig is missing one or more required assets (DefaultMapGenerator, VersusSpawnStrategy, or DefaultItemPlacementStrategy). Aborting spawn.");
+                        yield break;
+                    }
+        
+                    // 1. Build the map generation request based on the game mode
+                    var request = new MapGenerationRequest();
+                    var clientIds = NetworkManager.Singleton.ConnectedClientsIds.ToList();
+        
+                    // For now, use a simple logic. This can be expanded for different modes.
+                    if (_gameModeStrategy is MultiPlayerStrategy)
+                    {
+                        for (int i = 0; i < clientIds.Count; i++)
+                        {
+                            request.SpawnAreas.Add(new SpawnArea
+                            {
+                                PlayerClientIds = new List<ulong> { clientIds[i] },
+                                WorldOffset = new Vector2Int(i * 1000, 0),
+                                MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                                SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
+                            });
+                        }
+                    }
+                    else // SinglePlayer
+                    {
+                        request.SpawnAreas.Add(new SpawnArea
+                        {
+                            PlayerClientIds = new List<ulong> { clientIds[0] },
+                            WorldOffset = new Vector2Int(0, 0),
+                            MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                            SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
+                        });
+                    }
+        
+                    // 2. Tell LevelManager to build the world
+                    _levelService.GenerateWorld(request);
+                    yield return null; // Give LevelManager a frame to process
+        
+                    // 3. Spawn players in their designated areas
+                    foreach (var area in request.SpawnAreas)
+                    {
+                        var spawnPoints = _levelService.GetSpawnPoints(area);
+                        for (int i = 0; i < area.PlayerClientIds.Count; i++)
+                        {
+                            ulong clientId = area.PlayerClientIds[i];
+                            Vector3Int gridPos = spawnPoints[i];
+                            Vector3 spawnPos = _grid.GetCellCenterWorld(gridPos);
+        
+                            GameObject playerInstance = Instantiate(_gameConfig.PlayerPrefab, spawnPos, Quaternion.identity);
+                            var playerNetworkObject = playerInstance.GetComponent<NetworkObject>();
+                            playerNetworkObject.SpawnAsPlayerObject(clientId, true);
+        
+                            var playerFacade = playerInstance.GetComponent<TypingSurvivor.Features.Game.Player.PlayerFacade>();
+                            playerFacade.NetworkGridPosition.Value = gridPos;
+        
+                            // Register initial position in the GameState
+                            UpdatePlayerPosition(clientId, gridPos);
+        
+                            _playerInstances[clientId] = playerFacade;
+                            _gameState.SpawnedPlayers.Add(playerNetworkObject);
+                        }
+                    }
+                }
+        
+        
+                private IEnumerator FinishedPhase()
+                {
+                    _gameState.CurrentPhase.Value = GamePhase.Finished;
+        
+                    // Determine winner
+                    ulong winnerId = ulong.MaxValue;
+                    var alivePlayers = new List<PlayerData>();
+                    foreach (var p in _gameState.PlayerDatas)
+                    {
+                        if (!p.IsGameOver)
+                        {
+                            alivePlayers.Add(p);
+                        }
+                    }
+                    
+                    if (alivePlayers.Count == 1)
+                    {
+                        winnerId = alivePlayers[0].ClientId;
+                    }
+                    
+                    // Play jingle and Result BGM on clients
+                    PlayJingleThenMusicClientRpc(winnerId);
+        
+                    _rematchRequesters.Clear();
+        
+                    // This loop will naturally terminate if all players request a rematch OR if a player disconnects
+                    // (because _playerInstances.Count will decrease).
+                    while (_rematchRequesters.Count < _playerInstances.Count)
+                    {
+                        yield return null;
+                    }
+        
+                    // FINAL GATEKEEPER: After the loop, check if we have enough players to start a rematch.
+                    // This prevents a rematch if the loop was exited due to a disconnection.
+                    if (_playerInstances.Count < _gameModeStrategy.PlayerCount)
+                    {
+                        Debug.Log("A player disconnected while waiting for rematch. Rematch is cancelled.");
+                        // Wait indefinitely on the results screen.
+                        while (true)
+                        {
+                            yield return null;
+                        }
+                    }
+                    
+                    // If we passed the check, it means everyone requested a rematch. Proceed.
+                    // --- Prepare for the next round ---
+                    ResetPlayersForRematch();
+        
+                    // Regenerate world using the same request logic as initial spawn
+                    var request = new MapGenerationRequest();
+                    var clientIds = _playerInstances.Keys.ToList();
+        
+                    if (_gameModeStrategy is MultiPlayerStrategy)
+                    {
+                        for (int i = 0; i < clientIds.Count; i++)
+                        {
+                            request.SpawnAreas.Add(new SpawnArea
+                            {
+                                PlayerClientIds = new List<ulong> { clientIds[i] },
+                                WorldOffset = new Vector2Int(i * 1000, 0),
+                                MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                                SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
+                            });
+                        }
+                    }
+                    else
+                    {
+                         request.SpawnAreas.Add(new SpawnArea
+                        {
+                            PlayerClientIds = new List<ulong> { clientIds[0] },
+                            WorldOffset = new Vector2Int(0, 0),
+                            MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                            SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
+                        });
+                    }
+                    _levelService.GenerateWorld(request);
+                    yield return null;
+        
+                    // Reposition players
+                    foreach (var area in request.SpawnAreas)
+                    {
+                        var spawnPoints = _levelService.GetSpawnPoints(area);
+                        for (int i = 0; i < area.PlayerClientIds.Count; i++)
+                        {
+                            ulong clientId = area.PlayerClientIds[i];
+                            var player = _playerInstances[clientId];
+                            var gridPos = spawnPoints[i];
+                            _levelService.ClearArea(gridPos, 1);
+                            var spawnPos = _grid.GetCellCenterWorld(gridPos);
+                            player.RespawnAt(spawnPos);
+                            // After teleporting the player, update their position in the GameState and force a chunk update.
+                            UpdatePlayerPosition(clientId, gridPos);
+                            _levelService.ForceChunkUpdateForPlayer(clientId, spawnPos);
+                        }
+                    }
+                }
+        
+                public void ResetPlayersForRematch()
+                {
+                    if (!IsServer) return;
+        
+                    for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+                    {
+                        var data = _gameState.PlayerDatas[i];
+                        
+                        // Clear temporary buffs from the previous session
+                        _statusWriter.ClearSessionModifiers(data.ClientId);
+                        
+                        // Get the (potentially modified) max oxygen for this player
+                        float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
+        
+                        // Reset runtime stats
+                        data.Score = 0;
+                        data.IsGameOver = false;
+                        data.Oxygen = maxOxygen;
+                        
+                        _gameState.PlayerDatas[i] = data;
+                    }
+                }
+        
+                // --- IGameStateWriter Implementation ---
+                public void AddOxygen(ulong clientId, float amount)
+                {
+                    if (!IsServer) return;
+                    for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+                    {
+                        if (_gameState.PlayerDatas[i].ClientId == clientId)
+                        {
+                            var data = _gameState.PlayerDatas[i];
+                            float maxOxygen = _statusReader.GetStatValue(clientId, PlayerStat.MaxOxygen);
+                            data.Oxygen = Mathf.Clamp(data.Oxygen + amount, 0, maxOxygen);
+                            _gameState.PlayerDatas[i] = data;
+                            return;
+                        }
+                    }
+                }
+        
+                public void AddScore(ulong clientId, int amount)
+                {
+                    if (!IsServer) return;
+                    for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+                    {
+                        if (_gameState.PlayerDatas[i].ClientId == clientId)
+                        {
+                            var data = _gameState.PlayerDatas[i];
+                            data.Score += amount;
+                            _gameState.PlayerDatas[i] = data;
+                            return;
+                        }
+                    }
+                }
+                public void UpdatePlayerPosition(ulong clientId, Vector3Int gridPosition)
+                {
+                    if (!IsServer) return;
+                    for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+                    {
+                        if (_gameState.PlayerDatas[i].ClientId == clientId)
+                        {
+                            var data = _gameState.PlayerDatas[i];
+                            data.GridPosition = gridPosition;
+                            _gameState.PlayerDatas[i] = data;
+                            return;
+                        }
+                    }
+                }
+                public void SetPlayerGameOver(ulong clientId)
+                {
+                    if (!IsServer) return;
+                    for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+                    {
+                        if (_gameState.PlayerDatas[i].ClientId == clientId)
+                        {
+                            var data = _gameState.PlayerDatas[i];
+                            data.IsGameOver = true;
+                            _gameState.PlayerDatas[i] = data;
+                            return;
+                        }
+                    }
+                }
+                
+                private void HandlePhaseChanged_Client(GamePhase previousPhase, GamePhase newPhase)
+                {
+                    Debug.Log($"Game phase changed to: {newPhase}");
+                }
+        
+                // --- Rematch Logic ---
+                [ServerRpc(RequireOwnership = false)]
+                public void RequestRematchServerRpc(ServerRpcParams rpcParams = default)
+                {
+                    if (_gameState.CurrentPhase.Value != GamePhase.Finished) return;
+        
+                    ulong clientId = rpcParams.Receive.SenderClientId;
+                    if (_playerInstances.ContainsKey(clientId) && !_rematchRequesters.Contains(clientId))
+                    {
+                        _rematchRequesters.Add(clientId);
+                        Debug.Log($"Player {clientId} requested a rematch. {_rematchRequesters.Count}/{_playerInstances.Count}");
+                    }
+                }
+        
+                // --- Music Control RPCs ---
+                [ClientRpc]
+                private void PlayBgmClientRpc(SoundId bgmId)
+                {
+                    MusicManager.Instance.Play(bgmId, 0f);
+                }
+        
+                [ClientRpc]
+                private void PlayJingleThenMusicClientRpc(ulong winnerId)
+                {
+                    bool localPlayerWon = winnerId == NetworkManager.Singleton.LocalClientId;
+                    var jingleId = localPlayerWon ? SoundId.WinJingle : SoundId.LoseJingle;
+                    
+                    // 修正点: SoundIdを受け取るAPIに置き換え
+                    MusicManager.Instance.PlayJingleThen(jingleId, SoundId.ResultsMusic, 1.0f);
+                }
             }
         }
-
-        // --- BGM Control RPCs ---
-        [ClientRpc]
-        private void ResetAudioStateClientRpc()
-        {
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.ResetAudio();
-            }
-        }
-
-        [ClientRpc]
-        private void PlayBgmClientRpc(SoundId bgmId)
-        {
-            AudioManager.Instance.PlayBGM(bgmId);
-        }
-
-        [ClientRpc]
-        private void PlayJingleAndFadeInBgmClientRpc(ulong winnerId)
-        {
-            AudioManager.Instance.StopBGM();
-            bool localPlayerWon = winnerId == NetworkManager.Singleton.LocalClientId;
-            var jingleId = localPlayerWon ? SoundId.WinJingle : SoundId.LoseJingle;
-
-            AudioManager.Instance.PlayJingle(jingleId);
-            AudioManager.Instance.FadeInBGM(SoundId.ResultsBGM, 0.5f);
-        }
-    }
-}

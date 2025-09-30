@@ -122,11 +122,11 @@ namespace TypingSurvivor.Features.UI
             {
                 if (isLowOxygen)
                 {
-                    AudioManager.Instance.SetBgmPitch(_lowOxygenPitch);
+                    MusicManager.Instance.SetPitch(_lowOxygenPitch);
                 }
                 else
                 {
-                    AudioManager.Instance.ResetBgmPitch();
+                    MusicManager.Instance.ResetPitch();
                 }
             }
         }
@@ -187,7 +187,7 @@ namespace TypingSurvivor.Features.UI
                     }
                     _activeLowHealthEffects.Clear();
                     
-                    AudioManager.Instance.ResetBgmPitch();
+                    MusicManager.Instance.ResetPitch();
                     break;
                 case GamePhase.Countdown:
                     _countdownCoroutine = StartCoroutine(CountdownCoroutine());

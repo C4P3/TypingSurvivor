@@ -99,13 +99,14 @@ namespace TypingSurvivor.Features.Core.App
             }
         }
 
-        [Header("Core Registries")]
-        [SerializeField] private AudioRegistry _audioRegistry;
-        [SerializeField] private VFXRegistry _vfxRegistry;
+    [Header("Core Registries")]
+    [SerializeField] private AudioRegistry _audioRegistry;
+    [SerializeField] private VFXRegistry _vfxRegistry;
 
-        [Header("Core Managers")]
-        [SerializeField] private AudioManager _audioManager;
-        [SerializeField] private EffectManager _effectManager;
+    [Header("Core Managers")]
+    [SerializeField] private SfxManager _sfxManager;
+    [SerializeField] private MusicManager _musicManager;
+    [SerializeField] private EffectManager _effectManager;
 
         private void Awake()
         {
@@ -119,8 +120,10 @@ namespace TypingSurvivor.Features.Core.App
             DontDestroyOnLoad(gameObject);
 
             // --- Initialize Core Managers ---
-            _audioManager.Initialize(_audioRegistry);
+            _audioRegistry.Initialize();
+            _sfxManager.Initialize(_audioRegistry);
             _effectManager.Initialize(_vfxRegistry);
+            _musicManager.Initialize(_audioRegistry); 
         }
 
         private async Task InitializeCoreServicesAsync()

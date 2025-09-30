@@ -152,7 +152,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 serviceLocator.GetService<IGameStateWriter>(),
                 serviceLocator.GetService<IPlayerStatusSystemWriter>(),
                 _gameConfig.ItemRegistry,
-                AudioManager.Instance,
+                SfxManager.Instance,
                 EffectManager.Instance,
                 _grid
             );

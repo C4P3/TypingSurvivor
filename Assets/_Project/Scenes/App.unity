@@ -272,7 +272,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.App.AppManager
   _audioRegistry: {fileID: 11400000, guid: f0dea25af675ebe4fadbc0e96bfa643c, type: 2}
   _vfxRegistry: {fileID: 11400000, guid: 513e65af526d9c446843722c71637295, type: 2}
-  _audioManager: {fileID: 1750466315}
+  _sfxManager: {fileID: 1750466315}
+  _musicManager: {fileID: 1750466316}
   _effectManager: {fileID: 930028204}
 --- !u!1 &930028201
 GameObject:
@@ -356,6 +357,7 @@ GameObject:
   - component: {fileID: 1750466313}
   - component: {fileID: 1750466314}
   - component: {fileID: 1750466315}
+  - component: {fileID: 1750466316}
   m_Layer: 0
   m_Name: AudioManager
   m_TagString: Untagged
@@ -415,6 +417,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d592f275ff511124887796e482c26116, type: 3}
   m_Name: 
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.AudioManager
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1750466316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1750466312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca071b20a6db23844a114699d77f9d1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.MusicManager
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

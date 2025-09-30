@@ -14,19 +14,19 @@ public class ItemService : MonoBehaviour, IItemService
     private IGameStateReader _gameStateReader;
     private IGameStateWriter _gameStateWriter;
     private IPlayerStatusSystemWriter _playerStatusSystemWriter;
-    private AudioManager _audioManager;
+    private SfxManager _sfxManager;
     private EffectManager _effectManager;
     private Grid _grid;
 
-    public void Initialize(ILevelService levelService, IGameStateReader gameStateReader, IGameStateWriter gameStateWriter, IPlayerStatusSystemWriter playerStatusSystemWriter, ItemRegistry itemRegistry, AudioManager audioManager, EffectManager effectManager, Grid grid)
+    public void Initialize(ILevelService levelService, IGameStateReader gameStateReader, IGameStateWriter gameStateWriter, IPlayerStatusSystemWriter playerStatusSystemWriter, ItemRegistry itemRegistry, SfxManager sfxManager, EffectManager effectManager, Grid grid)
     {
         _levelService = levelService;
         _gameStateReader = gameStateReader;
         _gameStateWriter = gameStateWriter;
         _playerStatusSystemWriter = playerStatusSystemWriter;
         _itemRegistry = itemRegistry;
-        _audioManager = audioManager;
         _effectManager = effectManager;
+        _sfxManager = sfxManager;
         _grid = grid;
     }
 
@@ -76,7 +76,7 @@ public class ItemService : MonoBehaviour, IItemService
             _gameStateWriter,
             _levelService,
             _playerStatusSystemWriter,
-            _audioManager,
+            _sfxManager,
             _effectManager
         );
 

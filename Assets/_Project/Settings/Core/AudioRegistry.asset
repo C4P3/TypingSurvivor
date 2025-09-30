@@ -12,26 +12,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 77201566502c8af4399f1b2fb335203e, type: 3}
   m_Name: AudioRegistry
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.AudioRegistry
-  _sounds:
-  - Id: 9
-    Clip: {fileID: 8300000, guid: 460b5b24ab78dc941ac010d9be4f320f, type: 3}
-  - Id: 11
-    Clip: {fileID: 8300000, guid: c843454cea746b84c9c009acb5f8abf6, type: 3}
-  - Id: 10
-    Clip: {fileID: 8300000, guid: cd69e663571b51d43b22d3112b65afbf, type: 3}
-  - Id: 12
-    Clip: {fileID: 8300000, guid: 1d39fc48a53392d489c4e97b41d52266, type: 3}
-  - Id: 14
-    Clip: {fileID: 8300000, guid: dde214fe616960941baf5af506e86a52, type: 3}
-  - Id: 13
-    Clip: {fileID: 8300000, guid: e54fde73bff743143a54579e08d21a40, type: 3}
-  - Id: 4
-    Clip: {fileID: 8300000, guid: a6e7560e2a0939c40863360410fa7804, type: 3}
-  - Id: 5
-    Clip: {fileID: 8300000, guid: 93504440c78cd9f42b945996a9530392, type: 3}
-  - Id: 6
-    Clip: {fileID: 8300000, guid: 379da66b9d35a114f90aa8e436f16816, type: 3}
-  - Id: 7
-    Clip: {fileID: 8300000, guid: eb3300942ce85e0409d7c32035ab02ea, type: 3}
+  _sfxEntries:
   - Id: 3
-    Clip: {fileID: 8300000, guid: f8853c1af163c3d4b897464a9e6aca1f, type: 3}
+    SoundData: {fileID: 11400000, guid: 3e24ac5df01ff354fa9fc9f5012dd6f1, type: 2}
+  - Id: 9
+    SoundData: {fileID: 11400000, guid: a7941d4f6dd881d44bab8a884f53472a, type: 2}
+  - Id: 4
+    SoundData: {fileID: 11400000, guid: 6d5f2fa20d758aa4e8f5f295e44d0b1c, type: 2}
+  - Id: 5
+    SoundData: {fileID: 11400000, guid: b82952651da5d0945a2b63e77d2af580, type: 2}
+  - Id: 6
+    SoundData: {fileID: 11400000, guid: ef40bc440c2e1c74bbb6cb4ba67bbc4e, type: 2}
+  _musicEntries:
+  - Id: 10
+    MusicData: {fileID: 11400000, guid: 7e3f49d90b1de144299ae6d148ec3d4a, type: 2}
+  - Id: 11
+    MusicData: {fileID: 11400000, guid: 92e44f9d633c63846b73b2913f17c8df, type: 2}
+  - Id: 12
+    MusicData: {fileID: 11400000, guid: 61e3c09d602d30d49889482e3d1f1715, type: 2}
+  - Id: 13
+    MusicData: {fileID: 11400000, guid: 73cda2c050b78c740aeb59f48147304f, type: 2}
+  - Id: 14
+    MusicData: {fileID: 11400000, guid: 605cfcf1c00b15943830acfad187ff70, type: 2}

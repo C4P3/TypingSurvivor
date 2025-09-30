@@ -69,7 +69,7 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
 
         private void HandleTypingSuccess()
         {
-            AudioManager.Instance.PlaySfx(SoundId.TypingSuccess);
+            SfxManager.Instance.PlaySfx(SoundId.TypingSuccess);
             if (_typingView != null)
             {
                 _typingView.Hide();
@@ -78,7 +78,7 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
 
         private void HandleTypingMiss()
         {
-            AudioManager.Instance.PlaySfx(SoundId.TypingMiss);
+            SfxManager.Instance.PlaySfx(SoundId.TypingMiss);
         }
 
 
@@ -86,8 +86,8 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
         {
             if (_typingView == null) return;
 
-            // Play sound for every successful key press with a slight pitch variation
-            AudioManager.Instance.PlaySfxWithRandomPitch(SoundId.TypingKeyPress, 0.95f, 1.05f);
+            // Play sound for every successful key press
+            SfxManager.Instance.PlaySfx(SoundId.TypingKeyPress);
 
             if (_typingService.IsTyping)
             {

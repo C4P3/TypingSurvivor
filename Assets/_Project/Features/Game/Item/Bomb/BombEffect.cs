@@ -42,7 +42,7 @@ public class BombEffect : ItemEffect
         }
         if (_explosionSound != SoundId.None)
         {
-            context.AudioManager.PlaySoundAtPoint(_explosionSound, worldCenterPosition);
+            context.SfxManager.PlaySfxAtPoint(_explosionSound, worldCenterPosition);
         }
     }
 }

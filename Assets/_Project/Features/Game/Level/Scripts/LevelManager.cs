@@ -9,6 +9,7 @@ using TypingSurvivor.Features.Game.Level;
 using TypingSurvivor.Features.Game.Level.Data;
 using TypingSurvivor.Features.Game.Settings;
 using TypingSurvivor.Features.Game.Level.Tiles;
+using TypingSurvivor.Features.Core.Audio;
 
 /// <summary>
 /// Level (タイルマップ) の状態を管理し、変更ロジックを実行するクラス。
@@ -276,10 +277,10 @@ public class LevelManager : NetworkBehaviour, ILevelService
         if (tile is IndestructibleTile) return;
 
         // Play destruction sound effect at the block's position
-        if (TypingSurvivor.Features.Core.Audio.AudioManager.Instance != null)
+        if (SfxManager.Instance != null)
         {
             var worldPos = _grid.GetCellCenterWorld(gridPosition);
-            TypingSurvivor.Features.Core.Audio.AudioManager.Instance.PlaySoundAtPointWithRandomPitch(TypingSurvivor.Features.Core.Audio.SoundId.BlockDestroy, worldPos);
+            SfxManager.Instance.PlaySfxAtPoint(SoundId.BlockDestroy, worldPos);
         }
 
         Vector2Int chunkPos = WorldToChunkPos(gridPosition);

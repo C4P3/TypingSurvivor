@@ -34,11 +34,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _joinClientButton.onClick.AddListener(JoinClientButton_OnClick);
             _startServerButton.onClick.AddListener(StartServerButton_OnClick);
 
-            // Play BGM
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayBGM(SoundId.MainMenuBGM);
-            }
+            MusicManager.Instance.Play(SoundId.MainMenuMusic, 0f);
 
             // Check-then-Subscribe pattern
             if (AppManager.Instance.IsCoreServicesInitialized)
@@ -100,7 +96,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
             
-            AudioManager.Instance.StopBGM();
+            MusicManager.Instance.Stop(0f);
             AppManager.Instance.SetGameMode(GameModeType.SinglePlayer);
             
             if (NetworkManager.Singleton.StartHost())
@@ -113,7 +109,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
 
-            AudioManager.Instance.StopBGM();
+            MusicManager.Instance.Stop(0f);
             AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
 
             const string ipAddress = "127.0.0.1";
@@ -127,7 +123,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
 
-            AudioManager.Instance.StopBGM();
+            MusicManager.Instance.Stop(0f);
             AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
 
             if (NetworkManager.Singleton.StartServer())

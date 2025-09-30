@@ -23,7 +23,7 @@ public class ItemExecutionContext
     public IGameStateWriter GameStateWriter { get; }
     public ILevelService LevelService { get; }
     public IPlayerStatusSystemWriter PlayerStatusSystem { get; }
-    public AudioManager AudioManager { get; }
+    public SfxManager SfxManager { get; }
     public EffectManager EffectManager { get; }
 
     public ItemExecutionContext(
@@ -36,7 +36,7 @@ public class ItemExecutionContext
         IGameStateWriter gameStateWriter,
         ILevelService levelService,
         IPlayerStatusSystemWriter playerStatusSystem,
-        AudioManager audioManager,
+        SfxManager sfxManager,
         EffectManager effectManager
     )
     {
@@ -49,7 +49,7 @@ public class ItemExecutionContext
         GameStateWriter = gameStateWriter;
         LevelService = levelService;
         PlayerStatusSystem = playerStatusSystem;
-        AudioManager = audioManager;
+        SfxManager = sfxManager;
         EffectManager = effectManager;
     }
 }

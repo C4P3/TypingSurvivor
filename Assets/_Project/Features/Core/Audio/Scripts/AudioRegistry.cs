@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using TypingSurvivor.Features.Core.Audio.Data;
 using UnityEngine;
 
 namespace TypingSurvivor.Features.Core.Audio
 {
+    // SoundId enum remains the same, acting as a universal identifier.
     public enum SoundId
     {
         None,
@@ -18,54 +20,73 @@ namespace TypingSurvivor.Features.Core.Audio
         // Items
         ItemPickup,
         BombExplosion,
-        // BGM
-        MainMenuBGM,
-        GameBGM,
-        ResultsBGM,
-        // Jingles
+        // BGM & Jingles (now handled by MusicManager)
+        MainMenuMusic,
+        GameMusic,
+        ResultsMusic,
         WinJingle,
         LoseJingle
     }
 
     [System.Serializable]
-    public class SoundEntry
+    public class SfxEntry
     {
         public SoundId Id;
-        public AudioClip Clip;
+        public SoundEffectData SoundData;
+    }
+
+    [System.Serializable]
+    public class MusicEntry
+    {
+        public SoundId Id;
+        public MusicData MusicData;
     }
 
     [CreateAssetMenu(fileName = "AudioRegistry", menuName = "Typing Survivor/Audio/Audio Registry")]
     public class AudioRegistry : ScriptableObject
     {
-        [SerializeField] private List<SoundEntry> _sounds;
+        [Header("Sound Effects")]
+        [SerializeField] private List<SfxEntry> _sfxEntries;
 
-        private Dictionary<SoundId, AudioClip> _soundDictionary;
-        private Dictionary<AudioClip, SoundId> _clipToIdDictionary;
+        [Header("Music & Jingles")]
+        [SerializeField] private List<MusicEntry> _musicEntries;
+
+        private Dictionary<SoundId, SoundEffectData> _sfxDictionary;
+        private Dictionary<SoundId, MusicData> _musicDictionary;
 
         public void Initialize()
         {
-            _soundDictionary = new Dictionary<SoundId, AudioClip>();
-            _clipToIdDictionary = new Dictionary<AudioClip, SoundId>();
-            foreach (var entry in _sounds)
+            _sfxDictionary = new Dictionary<SoundId, SoundEffectData>();
+            foreach (var entry in _sfxEntries)
             {
-                if (entry.Clip != null && !_soundDictionary.ContainsKey(entry.Id))
+                if (entry.SoundData != null && !_sfxDictionary.ContainsKey(entry.Id))
                 {
-                    _soundDictionary.Add(entry.Id, entry.Clip);
-                    _clipToIdDictionary.Add(entry.Clip, entry.Id);
+                    _sfxDictionary.Add(entry.Id, entry.SoundData);
+                }
+            }
+
+            _musicDictionary = new Dictionary<SoundId, MusicData>();
+            foreach (var entry in _musicEntries)
+            {
+                if (entry.MusicData != null && !_musicDictionary.ContainsKey(entry.Id))
+                {
+                    _musicDictionary.Add(entry.Id, entry.MusicData);
                 }
             }
         }
 
-        public AudioClip GetClip(SoundId id)
+        public SoundEffectData GetSfxData(SoundId id)
         {
-            _soundDictionary.TryGetValue(id, out var clip);
-            return clip;
+            _sfxDictionary.TryGetValue(id, out var data);
+            if (data == null) Debug.LogWarning($"SFX data for ID '{id}' not found in AudioRegistry.");
+            return data;
         }
 
-        public SoundId GetId(AudioClip clip)
+        public MusicData GetMusicData(SoundId id)
         {
-            _clipToIdDictionary.TryGetValue(clip, out var id);
-            return id;
+            _musicDictionary.TryGetValue(id, out var data);
+            if (data == null) Debug.LogWarning($"Music data for ID '{id}' not found in AudioRegistry.");
+            return data;
         }
     }
 }

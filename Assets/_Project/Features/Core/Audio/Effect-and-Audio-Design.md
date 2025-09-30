@@ -11,7 +11,7 @@
 ## **2. 設計思想**
 
 *   **責務の分離 (Separation of Concerns):**
-    *   単純な「撃ちっぱなし」でよい効果音（SFX）と、クロスフェードやスタック管理といった複雑な状態を持つBGMのロジックを、**`AudioManager`**と**`MusicManager`**という完全に別のクラスに分離します。
+    *   単純な「撃ちっぱなし」でよい効果音（SFX）と、クロスフェードやスタック管理といった複雑な状態を持つBGMのロジックを、**`SfxManager`**と**`MusicManager`**という完全に別のクラスに分離します。
 *   **データ駆動設計 (Data-Driven Design):**
     *   「どの音を、どのように再生するか」という振all舞いの定義を、コードから**ScriptableObjectアセット**に分離します。これにより、非プログラマーでも安全かつ自由にサウンドの調整が可能になります。
 
@@ -22,7 +22,7 @@
 ```mermaid
 graph TD
     subgraph "永続サウンドシステム (Persistent Sound System)"
-        AudioManager["AudioManager (SFX専門)"]
+        SfxManager["SfxManager (SFX専門)"]
         MusicManager["MusicManager (BGM専門)"]
     end
 
@@ -37,16 +37,16 @@ graph TD
     AudioRegistry -- "SFXデータを参照" --> SoundEffectData
     AudioRegistry -- "BGMデータを参照" --> MusicData
 
-    GameLogic -- "PlaySfx(SoundId.TypingKeyPress)" --> AudioManager
+    GameLogic -- "PlaySfx(SoundId.TypingKeyPress)" --> SfxManager
     GameLogic -- "Play(mainMenuMusic), Push(dangerMusic)..." --> MusicManager
     
-    AudioManager -- "どのデータを再生するか問い合わせ" --> AudioRegistry
+    SfxManager -- "どのデータを再生するか問い合わせ" --> AudioRegistry
     MusicManager -- "どのデータを再生するか問い合わせ" --> AudioRegistry
 ```
 
 ---
 
-## **4. 効果音 (SFX) システム: `AudioManager`**
+## **4. 効果音 (SFX) システム: `SfxManager`**
 
 ### **4.1. 責務**
 効果音（SFX）の再生に特化します。状態を持たない「ファイア・アンド・フォーゲット」方式です。
