@@ -50,9 +50,6 @@ namespace TypingSurvivor.Features.Game.Typing
             }
             _currentChallenge = challenge;
             
-            // UIがないため、Debug.Logでお題と正解ルートの一例を表示
-            UnityEngine.Debug.Log($"New Challenge: '{challenge.OriginalText}' | Romaji: '{challenge.GetRemainingRomaji()}'");
-
             // テキスト入力イベントを購読
             Keyboard.current.onTextInput += OnTextInput;
             
@@ -81,9 +78,6 @@ namespace TypingSurvivor.Features.Game.Typing
 
             // 入力処理をTypingChallengeに委譲
             var result = _currentChallenge.ProcessInput(character);
-
-            // UIがないため、Debug.Logで現在の状態を表示
-            UnityEngine.Debug.Log($"Input: '{character}' | Typed: '{GetTypedRomaji()}' | Remaining: '{GetRemainingRomaji()}' | Result: {result}");
 
             switch (result)
             {
