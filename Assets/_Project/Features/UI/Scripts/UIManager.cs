@@ -1,28 +1,27 @@
 using UnityEngine;
 using TypingSurvivor.Features.UI.Common;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace TypingSurvivor.Features.UI
 {
     /// <summary>
-    /// Manages screen and panel transitions, including overlays.
+    /// Manages screen and panel transitions using a base screen and a stack of overlay panels.
     /// </summary>
     public class UIManager : MonoBehaviour
     {
         private ScreenBase _currentScreen;
-        private readonly List<ScreenBase> _overlayStack = new List<ScreenBase>();
+        private readonly Stack<ScreenBase> _panelStack = new Stack<ScreenBase>();
 
         /// <summary>
-        /// Hides all current screens and overlays, then shows the new screen.
+        /// Hides all current screens and panels, then shows the new base screen.
         /// </summary>
         /// <param name="newScreen">The new base screen to show. Can be null to show nothing.</param>
         public void ShowScreen(ScreenBase newScreen)
         {
-            // Hide all active overlays first
-            while (_overlayStack.Count > 0)
+            // Hide all active panels first
+            while (_panelStack.Count > 0)
             {
-                HideTopOverlay();
+                PopPanel();
             }
 
             // Hide the current base screen
@@ -44,26 +43,25 @@ namespace TypingSurvivor.Features.UI
         }
 
         /// <summary>
-        /// Shows a panel as an overlay on top of the current screen and other overlays.
+        /// Pushes a panel onto the overlay stack and shows it.
         /// </summary>
-        /// <param name="panel">The panel to show.</param>
-        public void ShowPanelOverlay(ScreenBase panel)
+        /// <param name="panel">The panel to show as an overlay.</param>
+        public void PushPanel(ScreenBase panel)
         {
-            if (panel == null || _overlayStack.Contains(panel)) return;
+            if (panel == null) return;
 
             panel.Show();
-            _overlayStack.Add(panel);
+            _panelStack.Push(panel);
         }
 
         /// <summary>
-        /// Hides the most recently shown overlay panel.
+        /// Hides and removes the most recent panel from the overlay stack.
         /// </summary>
-        public void HideTopOverlay()
+        public void PopPanel()
         {
-            if (_overlayStack.Count > 0)
+            if (_panelStack.Count > 0)
             {
-                ScreenBase topPanel = _overlayStack.Last();
-                _overlayStack.RemoveAt(_overlayStack.Count - 1);
+                ScreenBase topPanel = _panelStack.Pop();
                 topPanel.Hide();
             }
         }

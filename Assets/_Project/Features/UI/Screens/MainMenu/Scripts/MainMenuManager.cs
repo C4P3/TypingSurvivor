@@ -84,12 +84,12 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         private void SinglePlayerButton_OnClick()
         {
-            _uiManager.ShowPanelOverlay(_levelSelectPanel);
+            _uiManager.PushPanel(_levelSelectPanel);
         }
 
         private void MultiplayerButton_OnClick()
         {
-            _uiManager.ShowPanelOverlay(_multiplayerModeSelectPanel);
+            _uiManager.PushPanel(_multiplayerModeSelectPanel);
         }
 
         private void DifficultyEasyButton_OnClick()
@@ -100,13 +100,13 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         private void FreeMatchButton_OnClick()
         {
-            _uiManager.ShowPanelOverlay(_matchmakingPanel);
+            _uiManager.PushPanel(_matchmakingPanel);
             // TODO: Call matchmaking service
         }
 
         private void CloseTopOverlay_OnClick()
         {
-            _uiManager.HideTopOverlay();
+            _uiManager.PopPanel();
         }
     }
 }
