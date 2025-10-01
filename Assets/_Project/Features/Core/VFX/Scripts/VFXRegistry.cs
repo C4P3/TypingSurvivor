@@ -7,9 +7,10 @@ namespace TypingSurvivor.Features.Core.VFX
     {
         None,
         // Items
-        BombExplosion,
+        BombExplosion = 1,
+        LightningStrike = 2,
         // Other
-        BlockDestroy
+        BlockDestroy = 100,
     }
 
     [System.Serializable]

@@ -21,6 +21,7 @@ namespace TypingSurvivor.Features.Core.Audio
         // Items
         ItemPickup = 200,
         BombExplosion = 201,
+        LightningStrike = 202,
         // BGM & Jingles
         MainMenuMusic = 300,
         GameMusic = 301,

@@ -15,3 +15,5 @@ MonoBehaviour:
   _vfx:
   - Id: 1
     Prefab: {fileID: 6818130971660275517, guid: 4ebbd175f6a731543bb48164803cdf20, type: 3}
+  - Id: 2
+    Prefab: {fileID: 6000096042029731410, guid: 3320790beae934d47a2cf055c8df9a47, type: 3}

@@ -410,6 +410,11 @@ public class LevelManager : NetworkBehaviour, ILevelService
         HandlePlayerMoved(clientId, newPosition);
     }
 
+    public Vector3 GetWorldPosition(Vector3Int gridPosition)
+    {
+        return _grid.GetCellCenterWorld(gridPosition);
+    }
+
     #endregion
 
     #region Server-Side Chunk Management
