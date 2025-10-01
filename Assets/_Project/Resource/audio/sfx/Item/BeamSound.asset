@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: BeamSound
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.Data.SoundEffectData
   Clips:
-  - {fileID: 8300000, guid: 4ec973b51a14ca8498f14377742cbf02, type: 3}
-  Volume: 1
+  - {fileID: 8300000, guid: d4495d0e2ca6fbe45954610e67028c4b, type: 3}
+  Volume: 0.5
   RandomizePitch: 0
   MinPitch: 0.9
   MaxPitch: 1.1

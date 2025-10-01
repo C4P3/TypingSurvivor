@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
+using Unity.Netcode;
 
 public class ItemService : MonoBehaviour, IItemService
 {
@@ -54,13 +55,24 @@ public class ItemService : MonoBehaviour, IItemService
         // 3. アイテムをマップから削除するようLevelServiceに依頼
         _levelService.RemoveItem(itemGridPosition);
 
-        // 4. Find opponents
+        // 4. Find all player NetworkObjects and categorize them
         var opponentClientIds = new List<ulong>();
-        foreach (var playerData in _gameStateReader.PlayerDatas)
+        NetworkObject userNetworkObject = null;
+        var opponentNetworkObjects = new Dictionary<ulong, NetworkObject>();
+
+        foreach (var playerRef in _gameStateReader.SpawnedPlayers)
         {
-            if (playerData.ClientId != clientId)
+            if (playerRef.TryGet(out var networkObject))
             {
-                opponentClientIds.Add(playerData.ClientId);
+                if (networkObject.OwnerClientId == clientId)
+                {
+                    userNetworkObject = networkObject;
+                }
+                else
+                {
+                    opponentClientIds.Add(networkObject.OwnerClientId);
+                    opponentNetworkObjects.Add(networkObject.OwnerClientId, networkObject);
+                }
             }
         }
 
@@ -72,6 +84,8 @@ public class ItemService : MonoBehaviour, IItemService
             worldPosition,
             lastMoveDirection,
             opponentClientIds,
+            userNetworkObject,
+            opponentNetworkObjects,
             _gameStateReader,
             _gameStateWriter,
             _levelService,

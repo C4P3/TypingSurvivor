@@ -91,9 +91,46 @@ BGMの複雑な遷移（クロスフェード、スタック管理、ジング�
 
 ---
 
-## **6. ビジュアルエフェクト (VFX) システム**
+## **6. ビジュアルエフェクト (VFX) システム: `EffectManager`**
 
-VFXもSFXと同様に、`VFXData`と`VFXRegistry`を用いたデータ駆動設計を採用し、`EffectManager`が再生を担当します。
+VFXシステムは、SFXと同様のデータ駆動設計を基本としつつ、多様なゲーム内演出に対応するため、複数の再生方式を提供します。
+
+### **6.1. 責務**
+`EffectManager`は、サーバーからの指示に基づき、全クライアントで同期されたビジュアルエフェクトを再生する責務を持ちます。
+
+### **6.2. データ: `VFXRegistry.cs`**
+`VFXId`というEnumと、VFXのプレハブを紐付ける「カタログ」アセットです。`EffectManager`は、このレジストリを通じて再生すべきプレハブを取得します。
+
+### **6.3. APIと機能拡張**
+
+#### **方式①: シンプル再生 (Fire-and-Forget)**
+特定の位置で一度だけ再生される、最も基本的なエフェクトです。
+
+*   **API**: `PlayEffect(VFXId id, Vector3 position, float scale = 1.0f)`
+*   **用途**: ブロック破壊、アイテム取得時のシンプルな光など。
+*   **備考**: 既存の実装です。
+
+#### **方式②: 指向性・可変スケール再生 (Directional & Scalable)**
+ロケットのように、特定の方向と長さを持つエフェクトを実現するための拡張です。
+
+*   **API (拡張)**: `PlayEffect(VFXId id, Vector3 position, Quaternion rotation, Vector3 scale)`
+*   **用途**: ロケット、レーザーなど。
+*   **実装**:
+    *   `EffectManager`に、回転(`Quaternion`)とスケール(`Vector3`)を引数に取る`PlayEffect`のオーバーロードを追加します。
+    *   `ItemEffect`（例: `DirectionalDestroyEffect`）は、エフェクトの進行方向から`rotation`を、効果範囲の長さから`scale`を算出して`EffectManager`に渡します。
+    *   VFXプレハブ側は、`Particle System`の`Shape`モジュールなどを調整し、スケール変更に対応できるように作成します。
+
+#### **方式③: 持続・追従再生 (Persistent & Attached)**
+スターの無敵状態のように、特定のオブジェクトに追従し、指定時間表示され続けるエフェクトを実現します。
+
+*   **API (新規)**: `PlayAttachedEffect(VFXId id, Transform target, float duration)`
+*   **用途**: スターの無敵オーラ、サンダーの気絶エフェクトなど。
+*   **実装**:
+    1.  **`VFXAutoDestroyWithDuration.cs`**: 指定された`duration`（秒）が経過すると自身を破棄する、新しいコンポーネントを作成します。
+    2.  **`EffectManager`の拡張**:
+        *   `PlayAttachedEffect`メソッドを新設します。
+        *   このメソッドは、クライアントサイドで`target`（プレイヤーなど）の子オブジェクトとしてVFXプレハブを生成し、`VFXAutoDestroyWithDuration`コンポーネントを追加して`duration`を設定します。
+    *   `ItemEffect`（例: `StarEffect`）は、効果を適用する対象の`Transform`と効果時間`duration`を`EffectManager`に渡します。
 
 ---
 *（旧ドキュメントの「AudioListener戦略」などの項目は、この設計と競合しないため、必要に応じてこの下に維持されます）*

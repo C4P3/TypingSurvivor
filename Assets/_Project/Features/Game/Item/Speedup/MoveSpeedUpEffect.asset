@@ -12,4 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2861ef800e07605468299a9e5b142406, type: 3}
   m_Name: MoveSpeedUpEffect
   m_EditorClassIdentifier: Assembly-CSharp::MoveSpeedUpEffect
-  _percentageIncrease: 0
+  _increaseMultiplier: 1.1
+  _speedUpVFX: 5
+  _speedUpSound: 205
+  _effectDuration: 2

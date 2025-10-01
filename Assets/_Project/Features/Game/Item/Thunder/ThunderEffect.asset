@@ -13,3 +13,5 @@ MonoBehaviour:
   m_Name: ThunderEffect
   m_EditorClassIdentifier: TypingSurvivor.Game::TypingSurvivor.Features.Game.Items.Effects.StunOpponentEffect
   _duration: 3
+  _stunVFX: 2
+  _stunSound: 202

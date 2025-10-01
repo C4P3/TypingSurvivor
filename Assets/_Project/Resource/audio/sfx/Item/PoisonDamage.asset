@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PoisonDamage
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.Data.SoundEffectData
   Clips:
-  - {fileID: 8300000, guid: 4ec973b51a14ca8498f14377742cbf02, type: 3}
+  - {fileID: 8300000, guid: 1c6a216b48a6fb64a9715df615ed5682, type: 3}
   Volume: 1
   RandomizePitch: 0
   MinPitch: 0.9

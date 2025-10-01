@@ -13,3 +13,5 @@ MonoBehaviour:
   m_Name: BombEffect
   m_EditorClassIdentifier: Assembly-CSharp::BombEffect
   _radius: 5
+  _explosionVFX: 1
+  _explosionSound: 201

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.Data.SoundEffectData
   Clips:
   - {fileID: 8300000, guid: a6e7560e2a0939c40863360410fa7804, type: 3}
-  Volume: 1
+  Volume: 0.5
   RandomizePitch: 1
   MinPitch: 0.95
   MaxPitch: 1.05

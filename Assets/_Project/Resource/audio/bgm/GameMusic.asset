@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: GameMusic
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.Data.MusicData
   Clip: {fileID: 8300000, guid: c843454cea746b84c9c009acb5f8abf6, type: 3}
-  Volume: 1
+  Volume: 0.5
   Loop: 1

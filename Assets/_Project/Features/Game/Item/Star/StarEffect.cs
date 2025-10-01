@@ -1,5 +1,7 @@
 using UnityEngine;
 using TypingSurvivor.Features.Core.PlayerStatus;
+using TypingSurvivor.Features.Core.VFX;
+using TypingSurvivor.Features.Core.Audio;
 
 namespace TypingSurvivor.Features.Game.Items.Effects
 {
@@ -9,9 +11,14 @@ namespace TypingSurvivor.Features.Game.Items.Effects
     [CreateAssetMenu(menuName = "Items/Effects/StarEffect")]
     public class StarEffect : ItemEffect
     {
+        [Header("Effect Settings")]
         [SerializeField]
         [Tooltip("Duration of the invincibility effect in seconds.")]
         private float _duration = 10.0f;
+
+        [Header("Visual & Audio")]
+        [SerializeField] private VFXId _starVFX = VFXId.StarActivateVFX;
+        [SerializeField] private SoundId _starSound = SoundId.StarActivate;
 
         public override void Execute(ItemExecutionContext context)
         {
@@ -24,6 +31,19 @@ namespace TypingSurvivor.Features.Game.Items.Effects
             );
             
             context.PlayerStatusSystem.ApplyModifier(context.UserId, modifier);
+
+            // Play attached effect on the user
+            if (_starVFX != VFXId.None && context.UserNetworkObject != null)
+            {
+                context.EffectManager.PlayAttachedEffect(_starVFX, context.UserNetworkObject, _duration);
+            }
+
+            // Play sound effect
+            if (_starSound != SoundId.None)
+            {
+                // Play for all clients to hear, as it's a significant event
+                context.SfxManager.PlaySfxOnAllClients(_starSound);
+            }
         }
     }
 }

@@ -24,7 +24,7 @@ namespace TypingSurvivor.Features.Game.Items.Effects
 
         public override void Execute(ItemExecutionContext context)
         {
-            if (context.OpponentClientIds == null || context.OpponentClientIds.Count == 0)
+            if (context.OpponentNetworkObjects == null || context.OpponentNetworkObjects.Count == 0)
             {
                 return;
             }
@@ -38,37 +38,24 @@ namespace TypingSurvivor.Features.Game.Items.Effects
                 ModifierScope.Session
             );
 
-            foreach (var opponentId in context.OpponentClientIds)
+            foreach (var opponent in context.OpponentNetworkObjects)
             {
-                // ステータス効果を適用
+                var opponentId = opponent.Key;
+                var opponentObject = opponent.Value;
+
+                // Apply the stun status effect
                 context.PlayerStatusSystem.ApplyModifier(opponentId, stunModifier);
 
-                // --- ここから演出の追加 ---
-                // 相手プレイヤーのPlayerDataを探す
-                Gameplay.Data.PlayerData? targetData = null;
-                foreach(var pData in context.GameStateReader.PlayerDatas)
+                // Play the attached visual effect
+                if (_stunVFX != VFXId.None && opponentObject != null)
                 {
-                    if (pData.ClientId == opponentId)
-                    {
-                        targetData = pData;
-                        break;
-                    }
+                    context.EffectManager.PlayAttachedEffect(_stunVFX, opponentObject, _duration);
                 }
 
-                if (targetData.HasValue)
+                // Play the sound effect at the opponent's location
+                if (_stunSound != SoundId.None && opponentObject != null)
                 {
-                    // グリッド座標からワールド座標を取得 (このメソッドはLevelServiceにあると仮定)
-                    Vector3 opponentWorldPos = context.LevelService.GetWorldPosition(targetData.Value.GridPosition);
-                    
-                    // 相手の頭上あたりに座標を調整
-                    opponentWorldPos.y += 1.5f;
-
-                    // 相手の位置でVFXとSFXを再生するようサーバーから全クライアントに命令
-                    if (_stunVFX != VFXId.None)
-                        context.EffectManager.PlayEffect(_stunVFX, opponentWorldPos, 1.0f);
-
-                    if (_stunSound != SoundId.None)
-                        context.SfxManager.PlaySfxAtPoint(_stunSound, opponentWorldPos);
+                    context.SfxManager.PlaySfxAtPoint(_stunSound, opponentObject.transform.position);
                 }
             }
         }

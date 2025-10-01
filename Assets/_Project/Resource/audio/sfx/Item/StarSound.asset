@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: be7de368a9b0dfe46a24e75ad38c3025, type: 3}
-  m_Name: HealSound
+  m_Name: StarSound
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.Data.SoundEffectData
   Clips:
-  - {fileID: 8300000, guid: 0887aaa655902794e87091e61cc37350, type: 3}
+  - {fileID: 8300000, guid: b3e3bfd07f8a77b41a2ee34a123a6447, type: 3}
   Volume: 0.5
   RandomizePitch: 0
   MinPitch: 0.9

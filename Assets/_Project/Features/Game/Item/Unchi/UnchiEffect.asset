@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: TypingSurvivor.Game::TypingSurvivor.Features.Game.Items.Effects.TransformItemToBlockEffect
   _blockToPlace: {fileID: 11400000, guid: c39b81533a3f35e4a83a2157cba5c32d, type: 2}
   _searchRadius: 20
+  _unchiVFX: 8
+  _unchiSound: 208

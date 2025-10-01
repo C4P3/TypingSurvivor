@@ -2,6 +2,8 @@ using UnityEngine;
 using TypingSurvivor.Features.Game.Level.Tiles;
 using System.Linq;
 using UnityEngine.Tilemaps;
+using TypingSurvivor.Features.Core.VFX;
+using TypingSurvivor.Features.Core.Audio;
 
 namespace TypingSurvivor.Features.Game.Items.Effects
 {
@@ -11,6 +13,7 @@ namespace TypingSurvivor.Features.Game.Items.Effects
     [CreateAssetMenu(menuName = "Items/Effects/TransformItemToBlockEffect")]
     public class TransformItemToBlockEffect : ItemEffect, IBlockProvider
     {
+        [Header("Effect Settings")]
         [SerializeField]
         [Tooltip("The indestructible tile to place (e.g., UnchiTile).")]
         private IndestructibleTile _blockToPlace;
@@ -18,6 +21,10 @@ namespace TypingSurvivor.Features.Game.Items.Effects
         [SerializeField]
         [Tooltip("The maximum radius around each opponent to search for items.")]
         private int _searchRadius = 20;
+
+        [Header("Visual & Audio")]
+        [SerializeField] private VFXId _unchiVFX = VFXId.UnchiVFX;
+        [SerializeField] private SoundId _unchiSound = SoundId.UnchiEffect;
 
         public TileBase GetTile()
         {
@@ -77,8 +84,18 @@ namespace TypingSurvivor.Features.Game.Items.Effects
                 {
                     var finalTargetPos = closestItemPosition.Value;
                     context.LevelService.RemoveItem(finalTargetPos);
-
                     context.LevelService.PlaceBlock(finalTargetPos, _blockToPlace);
+
+                    // Play VFX and Sound at the location of the new block
+                    Vector3 worldPos = context.LevelService.GetWorldPosition(finalTargetPos);
+                    if (_unchiVFX != VFXId.None)
+                    {
+                        context.EffectManager.PlayEffect(_unchiVFX, worldPos);
+                    }
+                    if (_unchiSound != SoundId.None)
+                    {
+                        context.SfxManager.PlaySfxAtPoint(_unchiSound, worldPos);
+                    }
                 }
             }
         }

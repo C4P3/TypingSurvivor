@@ -13,3 +13,6 @@ MonoBehaviour:
   m_Name: DamageOpponentOxygenEffect
   m_EditorClassIdentifier: TypingSurvivor.Game::TypingSurvivor.Features.Game.Items.Effects.DamageOpponentOxygenEffect
   _damageAmount: 15
+  _poisonVFX: 7
+  _poisonSound: 207
+  _effectDuration: 5

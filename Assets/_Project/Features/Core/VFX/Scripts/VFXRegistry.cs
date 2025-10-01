@@ -9,6 +9,12 @@ namespace TypingSurvivor.Features.Core.VFX
         // Items
         BombExplosion = 1,
         LightningStrike = 2,
+        RocketVFX = 3,
+        HealVFX = 4,
+        SpeedUpVFX = 5,
+        StarActivateVFX = 6,
+        PoisonCloudVFX = 7,
+        UnchiVFX = 8,
         // Other
         BlockDestroy = 100,
     }

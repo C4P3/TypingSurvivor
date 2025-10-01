@@ -5,7 +5,7 @@ using UnityEngine;
 namespace TypingSurvivor.Features.Game.Level
 {
     /// <summary>
-    [CreateAssetMenu(fileName = "AreaSpawnStrategy", menuName = "TypingSurvivor/SpawnStrategy/Area Strategy")]
+    [CreateAssetMenu(fileName = "AreaSpawnStrategy", menuName = "Typing Survivor/SpawnStrategy/Area Strategy")]
     public class VersusSpawnStrategy : ScriptableObject, ISpawnPointStrategy
     {
         [Tooltip("エリアの中心からどのくらいの範囲をスポーン候補とするか（パーセンテージ）")]

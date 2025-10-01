@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: LoseJingle
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.Data.MusicData
   Clip: {fileID: 8300000, guid: 25e59098cd9ff9747a558caf17696568, type: 3}
-  Volume: 1
+  Volume: 0.5
   Loop: 1

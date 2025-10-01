@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: be7de368a9b0dfe46a24e75ad38c3025, type: 3}
-  m_Name: HealSound
+  m_Name: UnchiSound
   m_EditorClassIdentifier: TypingSurvivor.Core::TypingSurvivor.Features.Core.Audio.Data.SoundEffectData
   Clips:
-  - {fileID: 8300000, guid: 0887aaa655902794e87091e61cc37350, type: 3}
-  Volume: 0.5
+  - {fileID: 8300000, guid: 32b6472fa799cf845af9e124fa8e54d0, type: 3}
+  Volume: 1
   RandomizePitch: 0
   MinPitch: 0.9
   MaxPitch: 1.1

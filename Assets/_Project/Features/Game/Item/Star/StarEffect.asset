@@ -13,3 +13,5 @@ MonoBehaviour:
   m_Name: StarEffect
   m_EditorClassIdentifier: TypingSurvivor.Game::TypingSurvivor.Features.Game.Items.Effects.StarEffect
   _duration: 7
+  _starVFX: 6
+  _starSound: 206

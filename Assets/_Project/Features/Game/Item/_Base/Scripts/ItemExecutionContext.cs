@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
+using Unity.Netcode;
 
 /// <summary>
 /// アイテム効果を実行するために必要な全ての情報を持つコンテキストオブジェクト。
@@ -17,6 +18,8 @@ public class ItemExecutionContext
     public Vector3 WorldPosition { get; } // アイテムがあったワールド座標
     public Vector3Int UserLastMoveDirection { get; } // Rocket用: アイテムを拾ったプレイヤーの最後の移動方向
     public IReadOnlyList<ulong> OpponentClientIds { get; } // 妨害系用: 相手プレイヤーのIDリスト
+    public NetworkObject UserNetworkObject { get; } // スターや回復など、自分に追従するエフェクト用
+    public IReadOnlyDictionary<ulong, NetworkObject> OpponentNetworkObjects { get; } // サンダーなど、相手に追従するエフェクト用
 
     // DIで注入される各種サービスへの参照
     public IGameStateReader GameStateReader { get; }
@@ -32,6 +35,8 @@ public class ItemExecutionContext
         Vector3 worldPosition,
         Vector3Int userLastMoveDirection,
         IReadOnlyList<ulong> opponentClientIds,
+        NetworkObject userNetworkObject, // Add this
+        IReadOnlyDictionary<ulong, NetworkObject> opponentNetworkObjects, // Add this
         IGameStateReader gameStateReader,
         IGameStateWriter gameStateWriter,
         ILevelService levelService,
@@ -45,6 +50,8 @@ public class ItemExecutionContext
         WorldPosition = worldPosition;
         UserLastMoveDirection = userLastMoveDirection;
         OpponentClientIds = opponentClientIds;
+        UserNetworkObject = userNetworkObject; // Add this
+        OpponentNetworkObjects = opponentNetworkObjects; // Add this
         GameStateReader = gameStateReader;
         GameStateWriter = gameStateWriter;
         LevelService = levelService;

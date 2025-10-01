@@ -13,3 +13,6 @@ MonoBehaviour:
   m_Name: OxygenHealEffect
   m_EditorClassIdentifier: TypingSurvivor.Game::OxygenHealEffect
   _amount: 20
+  _healVFX: 4
+  _healSound: 204
+  _effectDuration: 2

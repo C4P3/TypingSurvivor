@@ -22,6 +22,12 @@ namespace TypingSurvivor.Features.Core.Audio
         ItemPickup = 200,
         BombExplosion = 201,
         LightningStrike = 202,
+        RocketLaunch = 203,
+        HealEffect = 204,
+        SpeedUpEffect = 205,
+        StarActivate = 206,
+        PoisonEffect = 207,
+        UnchiEffect = 208,
         // BGM & Jingles
         MainMenuMusic = 300,
         GameMusic = 301,
