@@ -41,6 +41,7 @@
 - [ ] **PlayerStatusSystemの永続化**: 
     - [ ] `PlayerStatusSystem`に、Unity Gaming ServicesのCloud Saveなどを利用したセーブ/ロード機能を追加する。
 - [ ] **コードクリーンアップ**:
+    - [ ] **MainMenuManagerの責務分割**: 現在MainMenuManagerに集中している各パネルのロジックを、パネルごとの専用コントローラークラスに分割し、MainMenuManagerは上位のイベントを購読するだけの形にリファクタリングする。
     - [ ] `PlayerInput`の古い設計（`EnableTypingInput`など）を削除し、単一アクションマップの設計思想を徹底させる。
     - [ ] 各クラスにSummaryコメントを追加する。
 
