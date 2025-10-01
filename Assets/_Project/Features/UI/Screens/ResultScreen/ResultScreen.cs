@@ -1,28 +1,34 @@
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using System;
+using TypingSurvivor.Features.UI.Common;
 
 namespace TypingSurvivor.Features.UI.Screens
 {
     /// <summary>
     /// Displays the game result and provides options for rematch or returning to the main menu.
-    /// This component is a passive view, controlled by a manager class (e.g., GameUIManager).
+    /// Inherits from ScreenBase to get fade in/out functionality.
     /// </summary>
-    public class ResultScreen : MonoBehaviour
+    public class ResultScreen : ScreenBase
     {
         [Header("UI Elements")]
         [SerializeField] private TextMeshProUGUI _resultText;
-        [SerializeField] private Button _rematchButton;
-        [SerializeField] private Button _mainMenuButton;
+        [SerializeField] private InteractiveButton _rematchButton;
+        [SerializeField] private InteractiveButton _mainMenuButton;
 
         public event Action OnRematchClicked;
         public event Action OnMainMenuClicked;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             _rematchButton.onClick.AddListener(() => OnRematchClicked?.Invoke());
             _mainMenuButton.onClick.AddListener(() => OnMainMenuClicked?.Invoke());
+            
+            // Start hidden
+            _canvasGroup.alpha = 0;
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
         }
 
         private void OnDestroy()
@@ -31,15 +37,11 @@ namespace TypingSurvivor.Features.UI.Screens
             _mainMenuButton.onClick.RemoveAllListeners();
         }
 
+        // Show method is now overloaded to accept the result message
         public void Show(string resultMessage)
         {
             _resultText.text = resultMessage;
-            gameObject.SetActive(true);
-        }
-
-        public void Hide()
-        {
-            gameObject.SetActive(false);
+            base.Show(); // Call the base class Show to trigger the fade-in
         }
     }
 }

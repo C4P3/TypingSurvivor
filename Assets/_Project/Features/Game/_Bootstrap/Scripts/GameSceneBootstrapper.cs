@@ -164,7 +164,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     serviceLocator.GetService<IGameStateReader>(),
                     serviceLocator.GetService<IPlayerStatusSystemReader>(),
                     _gameManager,
-                    serviceLocator.GetService<ITypingService>()
+                    serviceLocator.GetService<ITypingService>(),
+                    _cameraManager
                 );
             }
         }

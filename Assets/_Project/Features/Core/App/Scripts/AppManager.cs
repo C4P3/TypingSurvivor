@@ -178,5 +178,49 @@ namespace TypingSurvivor.Features.Core.App
             
             IsGameServicesInitialized = true;
         }
+
+        #region Network Start-up
+
+        public void StartHost(GameModeType gameMode)
+        {
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
+            
+            MusicManager.Instance.Stop(0f);
+            SetGameMode(gameMode);
+            
+            if (NetworkManager.Singleton.StartHost())
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
+            }
+        }
+
+        public void StartClient()
+        {
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
+
+            MusicManager.Instance.Stop(0f);
+            SetGameMode(GameModeType.MultiPlayer);
+
+            const string ipAddress = "127.0.0.1";
+            const ushort port = 7777;
+
+            NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData(ipAddress, port);
+            NetworkManager.Singleton.StartClient();
+        }
+
+        public void StartServer()
+        {
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
+
+            MusicManager.Instance.Stop(0f);
+            SetGameMode(GameModeType.MultiPlayer);
+
+            if (NetworkManager.Singleton.StartServer())
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
+            }
+        }
+
+        #endregion
     }
 }

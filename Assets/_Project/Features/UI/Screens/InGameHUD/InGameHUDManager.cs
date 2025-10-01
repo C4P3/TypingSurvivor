@@ -4,9 +4,11 @@ using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Game.Typing;
 using TypingSurvivor.Features.Core.Audio; // Add this using directive
 
+using TypingSurvivor.Features.UI.Common;
+
 namespace TypingSurvivor.Features.UI.Screens.InGameHUD
 {
-    public class InGameHUDManager : MonoBehaviour
+    public class InGameHUDManager : ScreenBase
     {
         // 子オブジェクトなどから参照を設定するUI部品
         [SerializeField] private OxygenView _oxygenView;
