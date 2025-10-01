@@ -41,6 +41,10 @@ MonoBehaviour:
     SoundData: {fileID: 11400000, guid: fcc23a5df247cc242af04cf9f90baad6, type: 2}
   - Id: 208
     SoundData: {fileID: 11400000, guid: 45cee450653919b419b7bfdbcc14e8be, type: 2}
+  - Id: 10
+    SoundData: {fileID: 11400000, guid: dc9c51fdd51bd9f4c91196cab2bea032, type: 2}
+  - Id: 11
+    SoundData: {fileID: 11400000, guid: f9c7675a7c939f04e92996167414d8d8, type: 2}
   _musicEntries:
   - Id: 300
     MusicData: {fileID: 11400000, guid: 7e3f49d90b1de144299ae6d148ec3d4a, type: 2}
