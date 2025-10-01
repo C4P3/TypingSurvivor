@@ -22,6 +22,10 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private ScreenBase _levelSelectPanel;
         [SerializeField] private ScreenBase _multiplayerModeSelectPanel;
         [SerializeField] private ScreenBase _matchmakingPanel;
+        [SerializeField] private ScreenBase _rankingScreen;
+        [SerializeField] private ScreenBase _settingsScreen;
+        [SerializeField] private ScreenBase _shopScreen;
+        [SerializeField] private ScreenBase _creditsScreen;
 
         [Header("Title Screen")]
         [SerializeField] private InteractiveButton _titleScreenButton; // Button to proceed from title
@@ -29,7 +33,10 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [Header("Main Menu Screen")]
         [SerializeField] private InteractiveButton _singlePlayerButton;
         [SerializeField] private InteractiveButton _multiplayerButton;
-        // TODO: Add buttons for Ranking, Settings, Shop, Credits
+        [SerializeField] private InteractiveButton _rankingButton;
+        [SerializeField] private InteractiveButton _settingsButton;
+        [SerializeField] private InteractiveButton _shopButton;
+        [SerializeField] private InteractiveButton _creditsButton;
 
         [Header("Level Select Panel")]
         [SerializeField] private InteractiveButton _difficultyEasyButton;
@@ -55,12 +62,17 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             // Main Menu
             _singlePlayerButton.onClick.AddListener(SinglePlayerButton_OnClick);
             _multiplayerButton.onClick.AddListener(MultiplayerButton_OnClick);
+            _rankingButton.onClick.AddListener(RankingButton_OnClick);
+            _settingsButton.onClick.AddListener(SettingsButton_OnClick);
+            _shopButton.onClick.AddListener(ShopButton_OnClick);
+            _creditsButton.onClick.AddListener(CreditsButton_OnClick);
+
             // Level Select
             _difficultyEasyButton.onClick.AddListener(DifficultyEasyButton_OnClick);
             _closeLevelSelectButton.onClick.AddListener(CloseTopOverlay_OnClick);
             // Multiplayer Select
             _freeMatchButton.onClick.AddListener(FreeMatchButton_OnClick);
-            _closeMultiplayerModeSelectButton.onClick.AddListener(CloseTopOverlay_OnClick);
+            _closeMultiplayerModeSelectButton.onClick.AddListener(GoToMainMenu_OnClick);
             // Matchmaking
             _cancelMatchmakingButton.onClick.AddListener(CloseTopOverlay_OnClick);
 
@@ -89,7 +101,27 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         private void MultiplayerButton_OnClick()
         {
-            _uiManager.PushPanel(_multiplayerModeSelectPanel);
+            _uiManager.ShowScreen(_multiplayerModeSelectPanel);
+        }
+
+        private void RankingButton_OnClick()
+        {
+            _uiManager.ShowScreen(_rankingScreen);
+        }
+
+        private void SettingsButton_OnClick()
+        {
+            _uiManager.ShowScreen(_settingsScreen);
+        }
+
+        private void ShopButton_OnClick()
+        {
+            _uiManager.ShowScreen(_shopScreen);
+        }
+
+        private void CreditsButton_OnClick()
+        {
+            _uiManager.ShowScreen(_creditsScreen);
         }
 
         private void DifficultyEasyButton_OnClick()
@@ -102,6 +134,11 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         {
             _uiManager.PushPanel(_matchmakingPanel);
             // TODO: Call matchmaking service
+        }
+
+        private void GoToMainMenu_OnClick()
+        {
+            _uiManager.ShowScreen(_mainMenuScreen);
         }
 
         private void CloseTopOverlay_OnClick()

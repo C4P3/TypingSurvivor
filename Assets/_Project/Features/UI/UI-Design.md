@@ -39,7 +39,7 @@ UIシステムの設計は、責務の分離とデータ駆動を重視します
 *   **構成**: `シングルプレイ`, `マルチプレイ`, `ランキング`, `設定`, `ショップ`, `クレジット` の6ボタン。
 *   **遷移**:
     *   `シングルプレイ` → `UIManager.PushPanel(DifficultySelectPanel)`
-    *   `マルチプレイ` → `UIManager.PushPanel(MultiplayerModeSelectPanel)`
+    *   `マルチプレイ` → `UIManager.ShowScreen(MultiplayerModeSelectScreen)`
     *   `ランキング` → `UIManager.ShowScreen(RankingScreen)`
     *   (設定、ショップ、クレジットも同様)
 
@@ -51,12 +51,12 @@ UIシステムの設計は、責務の分離とデータ駆動を重視します
     *   `戻る`ボタン → `UIManager.PopPanel()`
     *   `ランキングを見る`ボタン → `UIManager.ShowScreen(RankingScreen)`
 
-### **3.4. マルチプレイモード選択パネル (MultiplayerModeSelectPanel)**
-*   **役割**: マルチプレイの対戦形式を選択する。メインメニューの上に重ねて表示される。
+### **3.4. マルチプレイモード選択スクリーン (MultiplayerModeSelectScreen)**
+*   **役割**: マルチプレイの対戦形式を選択する、全画面表示のスクリーン。
 *   **構成**: `フリーマッチ`, `ランクマッチ`, `合言葉マッチ`ボタン、`戻る`ボタン、`ランキングを見る`ボタン。
 *   **遷移**:
     *   `マッチボタン` → `UIManager.PushPanel(MatchmakingPanel)`
-    *   `戻る`ボタン → `UIManager.PopPanel()`
+    *   `戻る`ボタン → `UIManager.ShowScreen(MainMenuScreen)`
     *   `ランキングを見る`ボタン → `UIManager.ShowScreen(RankingScreen)`
 
 ---
