@@ -4,10 +4,6 @@ using System.Collections;
 
 namespace TypingSurvivor.Features.UI.Common
 {
-    /// <summary>
-    /// Base class for all UI screens/panels that can be shown or hidden with a fade effect.
-    /// Requires a CanvasGroup component on the same GameObject.
-    /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public abstract class ScreenBase : MonoBehaviour
     {
@@ -23,31 +19,37 @@ namespace TypingSurvivor.Features.UI.Common
             {
                 _canvasGroup = GetComponent<CanvasGroup>();
             }
-        }
 
-        /// <summary>
-        /// Shows the screen with a fade-in effect.
-        /// </summary>
-        public virtual void Show()
-        {
-            if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
-            _fadeCoroutine = StartCoroutine(Fade(1f));
-            _canvasGroup.interactable = true;
-            _canvasGroup.blocksRaycasts = true;
-        }
-
-        /// <summary>
-        /// Hides the screen with a fade-out effect.
-        /// </summary>
-        public virtual void Hide()
-        {
-            if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
-            _fadeCoroutine = StartCoroutine(Fade(0f));
+            // Ensure all screens start in a known, hidden state.
+            _canvasGroup.alpha = 0f;
             _canvasGroup.interactable = false;
             _canvasGroup.blocksRaycasts = false;
         }
 
-        protected virtual IEnumerator Fade(float targetAlpha)
+        public virtual void Show()
+        {
+            if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
+            gameObject.SetActive(true);
+            _fadeCoroutine = StartCoroutine(Fade(1f, () => {
+                _canvasGroup.interactable = true;
+                _canvasGroup.blocksRaycasts = true;
+            }));
+        }
+
+        public virtual void Hide()
+        {
+            if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
+            
+            // Immediately disable interaction
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
+
+            _fadeCoroutine = StartCoroutine(Fade(0f, () => {
+                gameObject.SetActive(false);
+            }));
+        }
+
+        protected virtual IEnumerator Fade(float targetAlpha, System.Action onCompleted = null)
         {
             float startAlpha = _canvasGroup.alpha;
             float timer = 0f;
@@ -60,6 +62,7 @@ namespace TypingSurvivor.Features.UI.Common
             }
 
             _canvasGroup.alpha = targetAlpha;
+            onCompleted?.Invoke();
             _fadeCoroutine = null;
         }
     }
