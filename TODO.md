@@ -12,6 +12,15 @@
 
 ---
 
+## 🚀 フェーズ2: マッチング機能の実装
+
+- [x] **Matchmaking機能の設計**:
+    - [x] `Matchmaking-Design.md` を作成し、UGSのMatchmakerとRelayを利用したシステムの全体像を設計した。
+- [ ] **Matchmaking機能の実装**:
+    - [ ] `Matchmaking-Design.md`に基づき、`MatchmakingService`と`MatchmakingController`を実装する。
+
+---
+
 ## 🛠️ フェーズ4: オンライン機能の実装
 
 コアなゲーム体験が固まった後、本格的なマルチプレイ体験の構築と、長期的な運用を見据えた改善を行います。

@@ -33,6 +33,7 @@
 各機能（Feature）の内部実装に関する詳細なドキュメントです。特定の機能について深く知りたい場合に参照してください。
 
 * **ゲームプレイの根幹**  
+  * [**./Features/Core/Matchmaking/Matchmaking-Design.md**](./Features/Core/Matchmaking/Matchmaking-Design.md): UGSを利用したオンラインマッチング機能全般について。
   * [**./Features/Game/Gameplay/Gameplay-Design.md**](./Features/Game/Gameplay/Gameplay-Design.md): ゲームのルール、勝敗条件、スコアなどを管理するGameManagerとGameState（NetworkVariable群）について。  
   * [**./Features/Game/Player/Player-Design.md**](./Features/Game/Player/Player-Design.md): プレイヤーの入力、状態管理（StateMachine）、ネットワーク同期（Facade）、永続ステータス（StatusSystem）について。  
 * **ゲーム世界を構成する要素**  
