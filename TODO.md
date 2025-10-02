@@ -16,8 +16,10 @@
 
 - [x] **Matchmaking機能の設計**:
     - [x] `Matchmaking-Design.md` を作成し、UGSのMatchmakerとRelayを利用したシステムの全体像を設計した。
-- [ ] **Matchmaking機能の実装**:
-    - [ ] `Matchmaking-Design.md`に基づき、`MatchmakingService`と`MatchmakingController`を実装する。
+- [x] **Matchmaking機能の実装**:
+    - [x] `MatchmakingService`と`MatchmakingController`を実装し、公開マッチと合言葉マッチのロジックを構築した。
+- [ ] **Matchmaking UIの接続**:
+    - [ ] Unity Editor上で、`MainMenuManager`と`MatchmakingController`に、実際のUIコンポーネント（ボタン、入力フィールドなど）を接続する。
 
 ---
 

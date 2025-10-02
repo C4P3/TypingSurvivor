@@ -6,7 +6,8 @@
         "Unity.Services.Core",
         "Unity.Services.Authentication",
         "Unity.Netcode.Runtime",
-        "Unity.Networking.Transport"
+        "Unity.Networking.Transport",
+        "Unity.Services.Multiplayer"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

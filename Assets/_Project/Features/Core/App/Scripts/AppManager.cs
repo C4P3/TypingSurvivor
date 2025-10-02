@@ -5,11 +5,12 @@ using System.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using TypingSurvivor.Features.Core.PlayerStatus;
-using UnityEngine.SceneManagement;
-using Unity.Netcode;
-
+using TypingSurvivor.Features.Core.Matchmaking;
+using Unity.Netcode.Transports.UTP;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
+using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 namespace TypingSurvivor.Features.Core.App
 {
@@ -28,6 +29,7 @@ namespace TypingSurvivor.Features.Core.App
         }
         
         public IAuthenticationService AuthService { get; private set; }
+        public MatchmakingService MatchmakingService { get; private set; }
         public IPlayerStatusSystemReader StatusReader { get; private set; }
         public IPlayerStatusSystemWriter StatusWriter { get; private set; }
 
@@ -130,6 +132,8 @@ namespace TypingSurvivor.Features.Core.App
         {
             await InitializeUgsAsync();
             AuthService = new ClientAuthenticationService();
+            MatchmakingService = new MatchmakingService();
+            RegisterService(MatchmakingService);
             
             IsCoreServicesInitialized = true;
             // Notify listeners that core services are ready
@@ -208,6 +212,17 @@ namespace TypingSurvivor.Features.Core.App
             NetworkManager.Singleton.StartClient();
         }
 
+        public void StartClient(string ipAddress, ushort port)
+        {
+            if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
+
+            MusicManager.Instance.Stop(0f);
+            SetGameMode(GameModeType.MultiPlayer);
+
+            NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(ipAddress, port);
+            NetworkManager.Singleton.StartClient();
+        }
+
         public void StartServer()
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
@@ -224,3 +239,4 @@ namespace TypingSurvivor.Features.Core.App
         #endregion
     }
 }
+

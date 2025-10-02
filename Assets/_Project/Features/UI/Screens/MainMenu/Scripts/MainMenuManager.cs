@@ -1,53 +1,50 @@
 using UnityEngine;
 using TMPro;
 using TypingSurvivor.Features.Core.App;
-using TypingSurvivor.Features.Core.Auth;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.UI.Common;
+using TypingSurvivor.Features.Core.Matchmaking;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
-    /// <summary>
-    /// Manages the main menu UI, including screen and panel transitions.
-    /// </summary>
     [RequireComponent(typeof(UIManager))]
     public class MainMenuManager : MonoBehaviour
     {
         [Header("UI System")]
         [SerializeField] private UIManager _uiManager;
 
-        [Header("Screens")]
-        [SerializeField] private ScreenBase _titleScreen; // Assuming a title screen exists
+        [Header("Controllers")]
+        [SerializeField] private MatchmakingController _matchmakingController;
+
+        [Header("Screens & Panels")]
+        [SerializeField] private ScreenBase _titleScreen;
         [SerializeField] private ScreenBase _mainMenuScreen;
         [SerializeField] private ScreenBase _levelSelectPanel;
         [SerializeField] private ScreenBase _multiplayerModeSelectPanel;
-        [SerializeField] private ScreenBase _matchmakingPanel;
+        [SerializeField] private ScreenBase _roomCodePanel;
         [SerializeField] private ScreenBase _rankingScreen;
         [SerializeField] private ScreenBase _settingsScreen;
         [SerializeField] private ScreenBase _shopScreen;
         [SerializeField] private ScreenBase _creditsScreen;
 
-        [Header("Title Screen")]
-        [SerializeField] private InteractiveButton _titleScreenButton; // Button to proceed from title
-
-        [Header("Main Menu Screen")]
+        [Header("Buttons")]
+        [SerializeField] private InteractiveButton _titleScreenButton;
         [SerializeField] private InteractiveButton _singlePlayerButton;
         [SerializeField] private InteractiveButton _multiplayerButton;
         [SerializeField] private InteractiveButton _rankingButton;
         [SerializeField] private InteractiveButton _settingsButton;
         [SerializeField] private InteractiveButton _shopButton;
         [SerializeField] private InteractiveButton _creditsButton;
-
-        [Header("Level Select Panel")]
         [SerializeField] private InteractiveButton _difficultyEasyButton;
         [SerializeField] private InteractiveButton _closeLevelSelectButton;
-
-        [Header("Multiplayer Mode Select Screen")]
         [SerializeField] private InteractiveButton _freeMatchButton;
+        [SerializeField] private InteractiveButton _privateMatchButton; // Button to open the room code panel
         [SerializeField] private InteractiveButton _closeMultiplayerModeSelectButton;
-
-        [Header("Matchmaking Panel")]
         [SerializeField] private InteractiveButton _cancelMatchmakingButton;
+
+        [Header("Private Match UI")]
+        [SerializeField] private TMP_InputField _roomCodeInput;
+        [SerializeField] private InteractiveButton _joinPrivateMatchButton;
 
         private void Awake()
         {
@@ -57,93 +54,91 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         private void Start()
         {
             // --- Event Listeners ---
-            // Title
             _titleScreenButton.onClick.AddListener(TitleScreen_OnClick);
-            // Main Menu
             _singlePlayerButton.onClick.AddListener(SinglePlayerButton_OnClick);
             _multiplayerButton.onClick.AddListener(MultiplayerButton_OnClick);
             _rankingButton.onClick.AddListener(RankingButton_OnClick);
             _settingsButton.onClick.AddListener(SettingsButton_OnClick);
             _shopButton.onClick.AddListener(ShopButton_OnClick);
             _creditsButton.onClick.AddListener(CreditsButton_OnClick);
-
-            // Level Select
             _difficultyEasyButton.onClick.AddListener(DifficultyEasyButton_OnClick);
             _closeLevelSelectButton.onClick.AddListener(CloseTopOverlay_OnClick);
-            // Multiplayer Select
-            _freeMatchButton.onClick.AddListener(FreeMatchButton_OnClick);
+            _freeMatchButton.onClick.AddListener(PublicMatchmaking_OnClick);
+            _privateMatchButton?.onClick.AddListener(PrivateMatchPanel_OnClick);
+            _joinPrivateMatchButton?.onClick.AddListener(JoinPrivateMatch_OnClick);
             _closeMultiplayerModeSelectButton.onClick.AddListener(GoToMainMenu_OnClick);
-            // Matchmaking
-            _cancelMatchmakingButton.onClick.AddListener(CloseTopOverlay_OnClick);
+            _cancelMatchmakingButton.onClick.AddListener(CancelMatchmaking_OnClick);
 
             // --- Initial State ---
             MusicManager.Instance.Play(SoundId.MainMenuMusic, 0f);
-            // Assuming anonymous sign-in happens automatically on App start or is handled elsewhere.
             _uiManager.ShowScreen(_titleScreen);
+
+            if (AppManager.Instance.IsCoreServicesInitialized)
+            {
+                InitializeControllers();
+            }
+            else
+            {
+                AppManager.Instance.OnCoreServicesInitialized += InitializeControllers;
+            }
         }
 
         private void OnDestroy()
         {
-            // Unsubscribe from all events to prevent memory leaks
+            if (AppManager.Instance != null)
+            {
+                AppManager.Instance.OnCoreServicesInitialized -= InitializeControllers;
+            }
+        }
+
+        private void InitializeControllers()
+        {
+            var appManager = AppManager.Instance;
+            var matchmakingService = appManager.MatchmakingService;
+            if (matchmakingService != null && _matchmakingController != null)
+            {
+                _matchmakingController.Initialize(matchmakingService, _uiManager, appManager);
+            }
         }
 
         // --- OnClick Handlers ---
 
-        private void TitleScreen_OnClick()
-        {
-            _uiManager.ShowScreen(_mainMenuScreen);
-        }
-
-        private void SinglePlayerButton_OnClick()
-        {
-            _uiManager.PushPanel(_levelSelectPanel);
-        }
-
-        private void MultiplayerButton_OnClick()
-        {
-            _uiManager.ShowScreen(_multiplayerModeSelectPanel);
-        }
-
-        private void RankingButton_OnClick()
-        {
-            _uiManager.ShowScreen(_rankingScreen);
-        }
-
-        private void SettingsButton_OnClick()
-        {
-            _uiManager.ShowScreen(_settingsScreen);
-        }
-
-        private void ShopButton_OnClick()
-        {
-            _uiManager.ShowScreen(_shopScreen);
-        }
-
-        private void CreditsButton_OnClick()
-        {
-            _uiManager.ShowScreen(_creditsScreen);
-        }
+        private void TitleScreen_OnClick() => _uiManager.ShowScreen(_mainMenuScreen);
+        private void SinglePlayerButton_OnClick() => _uiManager.PushPanel(_levelSelectPanel);
+        private void MultiplayerButton_OnClick() => _uiManager.ShowScreen(_multiplayerModeSelectPanel);
+        private void RankingButton_OnClick() => _uiManager.ShowScreen(_rankingScreen);
+        private void SettingsButton_OnClick() => _uiManager.ShowScreen(_settingsScreen);
+        private void ShopButton_OnClick() => _uiManager.ShowScreen(_shopScreen);
+        private void CreditsButton_OnClick() => _uiManager.ShowScreen(_creditsScreen);
+        private void GoToMainMenu_OnClick() => _uiManager.ShowScreen(_mainMenuScreen);
+        private void CloseTopOverlay_OnClick() => _uiManager.PopPanel();
 
         private void DifficultyEasyButton_OnClick()
         {
-            // TODO: Set difficulty level in a service
             AppManager.Instance.StartHost(GameModeType.SinglePlayer);
         }
 
-        private void FreeMatchButton_OnClick()
+        private void PublicMatchmaking_OnClick()
         {
-            _uiManager.PushPanel(_matchmakingPanel);
-            // TODO: Call matchmaking service
+            _matchmakingController?.StartPublicMatchmaking("FreeMatchQueue");
         }
 
-        private void GoToMainMenu_OnClick()
+        private void PrivateMatchPanel_OnClick()
         {
-            _uiManager.ShowScreen(_mainMenuScreen);
+            if (_roomCodePanel != null) _uiManager.PushPanel(_roomCodePanel);
         }
 
-        private void CloseTopOverlay_OnClick()
+        private void JoinPrivateMatch_OnClick()
         {
-            _uiManager.PopPanel();
+            if (_roomCodeInput != null)
+            {
+                _matchmakingController?.StartPrivateMatch(_roomCodeInput.text);
+            }
+        }
+
+        private void CancelMatchmaking_OnClick()
+        {
+            _matchmakingController?.Cancel();
         }
     }
 }
