@@ -42,7 +42,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private InteractiveButton _difficultyEasyButton;
         [SerializeField] private InteractiveButton _closeLevelSelectButton;
 
-        [Header("Multiplayer Mode Select Panel")]
+        [Header("Multiplayer Mode Select Screen")]
         [SerializeField] private InteractiveButton _freeMatchButton;
         [SerializeField] private InteractiveButton _closeMultiplayerModeSelectButton;
 
