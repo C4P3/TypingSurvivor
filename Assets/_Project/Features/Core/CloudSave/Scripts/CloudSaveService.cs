@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Unity.Services.CloudSave;
+using Unity.Services.CloudCode;
 using UnityEngine;
 
 namespace TypingSurvivor.Features.Core.CloudSave
@@ -10,13 +11,14 @@ namespace TypingSurvivor.Features.Core.CloudSave
     {
         private const string PLAYER_DATA_KEY = "PLAYER_SAVE_DATA";
 
+        // --- Client-Side Methods --- //
         public async Task<bool> SavePlayerDataAsync(PlayerSaveData data)
         {
             try
             {
                 var dataToSave = new Dictionary<string, object> { { PLAYER_DATA_KEY, data } };
                 await Unity.Services.CloudSave.CloudSaveService.Instance.Data.Player.SaveAsync(dataToSave);
-                Debug.Log($"[CloudSaveService] Successfully saved player data.");
+                Debug.Log($"[CloudSaveService] Successfully saved player data for current player.");
                 return true;
             }
             catch (Exception e)
@@ -30,21 +32,17 @@ namespace TypingSurvivor.Features.Core.CloudSave
         {
             try
             {
-                var results = await Unity.Services.CloudSave.CloudSaveService.Data.Player.LoadAsync(new HashSet<string> { PLAYER_DATA_KEY });
-
+                var results = await Unity.Services.CloudSave.CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { PLAYER_DATA_KEY });
                 if (results.TryGetValue(PLAYER_DATA_KEY, out var item))
                 {
                     return item.Value.GetAs<PlayerSaveData>();
                 }
-                else
-                {
-                    Debug.Log($"[CloudSaveService] No player data found for key: {PLAYER_DATA_KEY}");
-                    return null;
-                }
+                Debug.Log($"[CloudSaveService] No player data found for current player.");
+                return null;
             }
-            catch (CloudSaveException e) when (e.Reason == CloudSaveExceptionReason.DataNotFound)
+            catch (CloudSaveException e) when (e.Reason == CloudSaveExceptionReason.NotFound)
             {
-                Debug.Log($"[CloudSaveService] No player data found (exception): {e}");
+                Debug.Log($"[CloudSaveService] No player data found for current player (exception): {e}");
                 return null;
             }
             catch (Exception e)
@@ -54,18 +52,23 @@ namespace TypingSurvivor.Features.Core.CloudSave
             }
         }
 
+        // --- Server-Side Methods (via Cloud Code) --- //
         public async Task SavePlayerDataForPlayerAsync(string playerId, PlayerSaveData data)
         {
             try
             {
-                var dataToSave = new Dictionary<string, object> { { PLAYER_DATA_KEY, data } };
-                // Use the Server API
-                await Unity.Services.CloudSave.CloudSaveService.Data.Server.SaveAsync(playerId, dataToSave);
-                Debug.Log($"[CloudSaveService] Successfully saved data for player {playerId}.");
+                var args = new Dictionary<string, object>
+                {
+                    { "playerId", playerId },
+                    { "playerDataKey", PLAYER_DATA_KEY },
+                    { "playerData", data }
+                };
+                await CloudCodeService.Instance.CallEndpointAsync("SavePlayerData", args);
+                Debug.Log($"[CloudSaveService] Successfully requested save for player {playerId}.");
             }
             catch (Exception e)
             {
-                Debug.LogError($"[CloudSaveService] Failed to save data for player {playerId}: {e}");
+                Debug.LogError($"[CloudSaveService] Failed to call SavePlayerData Cloud Code for player {playerId}: {e}");
             }
         }
 
@@ -73,23 +76,22 @@ namespace TypingSurvivor.Features.Core.CloudSave
         {
             try
             {
-                var keys = new HashSet<string> { PLAYER_DATA_KEY };
-                // Use the Server API
-                var results = await Unity.Services.CloudSave.CloudSaveService.Data.Server.LoadAsync(playerId, keys);
-
-                if (results.TryGetValue(PLAYER_DATA_KEY, out var item))
+                var args = new Dictionary<string, object>
                 {
-                    return item.Value.GetAs<PlayerSaveData>();
-                }
-                else
-                {
-                    Debug.Log($"[CloudSaveService] No player data found for player {playerId}.");
-                    return null;
-                }
+                    { "playerId", playerId },
+                    { "playerDataKey", PLAYER_DATA_KEY }
+                };
+                var result = await CloudCodeService.Instance.CallEndpointAsync<PlayerSaveData>("LoadPlayerData", args);
+                return result;
+            }
+            catch (CloudCodeException e) when (e.Message.Contains("Not Found")) // Simple check for not found
+            {
+                 Debug.Log($"[CloudSaveService] No player data found for player {playerId} via Cloud Code.");
+                 return null;
             }
             catch (Exception e)
             {
-                Debug.LogError($"[CloudSaveService] Failed to load data for player {playerId}: {e}");
+                Debug.LogError($"[CloudSaveService] Failed to call LoadPlayerData Cloud Code for player {playerId}: {e}");
                 return null;
             }
         }

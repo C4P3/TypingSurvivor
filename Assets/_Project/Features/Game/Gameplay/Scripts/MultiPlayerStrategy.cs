@@ -11,7 +11,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             int aliveCount = 0;
             foreach (var player in gameState.PlayerDatas)
             {
-                if (player.CurrentOxygen > 0)
+                if (player.Oxygen > 0)
                 {
                     aliveCount++;
                 }
@@ -25,7 +25,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             ulong winnerId = 0;
             foreach (var player in gameState.PlayerDatas)
             {
-                if (player.CurrentOxygen > 0)
+                if (player.Oxygen > 0)
                 {
                     aliveCount++;
                     winnerId = player.ClientId;

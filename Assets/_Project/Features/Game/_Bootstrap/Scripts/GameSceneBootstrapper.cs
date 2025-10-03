@@ -150,9 +150,20 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 var ratingService = new RatingService(
                     serviceLocator.GetService<ICloudSaveService>(),
-                    serviceLocator.GetService<IGameStateReader>()
+                    serviceLocator.GetService<IGameStateReader>(),
+                    _gameManager
                 );
-                _gameManager.OnGameFinished += ratingService.HandleGameFinished;
+                _gameManager.OnGameFinished += async (result) =>
+                {
+                    try
+                    {
+                        await ratingService.HandleGameFinished(result);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogError($"[GameSceneBootstrapper] Error executing RatingService: {e}");
+                    }
+                };
             }
 
             // --- Inject dependencies into CameraManager ---

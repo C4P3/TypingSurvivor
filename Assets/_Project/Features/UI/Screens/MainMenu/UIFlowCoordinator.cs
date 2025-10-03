@@ -45,10 +45,6 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private ShopScreen _shopScreen;
         [SerializeField] private SettingsScreen _settingsScreen;
         
-        [Header("Audio")]
-        [SerializeField] private MusicData _titleMusic;
-        [SerializeField] private MusicData _mainMenuMusic;
-
         private PlayerUIState _currentState;
         private bool _isInitialized = false;
         private bool _hasProfile = false;
@@ -123,7 +119,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             switch (_currentState)
             {
                 case PlayerUIState.SigningIn:
-                    MusicManager.Instance.Play(_titleMusic, 0f);
+                    MusicManager.Instance.Play(SoundId.TitleMusic, 0f);
                     _uiManager.ShowScreen(_titleScreen);
                     _titleScreen.UpdateView("Signing In...", false);
                     break;
@@ -139,7 +135,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                     _uiManager.PushPanel(_profileCreationScreen);
                     break;
                 case PlayerUIState.InMainMenu:
-                    MusicManager.Instance.Play(_mainMenuMusic, 0f);
+                    MusicManager.Instance.Play(SoundId.MainMenuMusic, 0f);
                     _uiManager.ShowScreen(_mainMenuScreen);
                     break;
                 case PlayerUIState.SelectingSinglePlayer:

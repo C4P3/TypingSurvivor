@@ -6,7 +6,9 @@
         "TypingSurvivor.Settings",
         "TypingSurvivor.InputSystem",
         "Unity.Netcode.Runtime",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.Services.Authentication",
+        "Unity.Services.Core.Networking"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

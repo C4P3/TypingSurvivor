@@ -15,6 +15,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
 {
     public class GameManager : NetworkBehaviour, IGameStateWriter
     {
+        public static GameManager Instance { get; private set; }
+
         private GameState _gameState;
         private IGameModeStrategy _gameModeStrategy;
         private ILevelService _levelService;
@@ -22,6 +24,14 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private IPlayerStatusSystemWriter _statusWriter;
         private Grid _grid;
         private readonly Dictionary<ulong, PlayerFacade> _playerInstances = new();
+        private readonly Dictionary<ulong, string> _clientIdToPlayerIdMap = new();
+
+        public string GetPlayerId(ulong clientId)
+        {
+            _clientIdToPlayerIdMap.TryGetValue(clientId, out var playerId);
+            return playerId;
+        }
+
         private readonly HashSet<ulong> _rematchRequesters = new();
         private Coroutine _serverGameLoop;
         private GameConfig _gameConfig;
@@ -30,6 +40,16 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private readonly HashSet<ulong> _playersInLowOxygen = new();
         public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
         public event System.Action<GameResult> OnGameFinished;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
 
         public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig, Grid grid)
         {
@@ -89,6 +109,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
             // Clean up low oxygen tracking
             _playersInLowOxygen.Remove(clientId);
+            _clientIdToPlayerIdMap.Remove(clientId);
 
             // Netcode automatically despawns the player object. We just need to clean up our game state.
             if (_playerInstances.TryGetValue(clientId, out var playerFacade))
@@ -469,6 +490,17 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     _gameState.PlayerDatas[i] = data;
                     return;
                 }
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void RegisterPlayerIdServerRpc(string playerId, ServerRpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (!_clientIdToPlayerIdMap.ContainsKey(clientId))
+            {
+                _clientIdToPlayerIdMap[clientId] = playerId;
+                Debug.Log($"[GameManager] Registered PlayerId {playerId} for ClientId {clientId}");
             }
         }
         

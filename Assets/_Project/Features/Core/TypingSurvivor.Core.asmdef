@@ -8,7 +8,8 @@
         "Unity.Netcode.Runtime",
         "Unity.Networking.Transport",
         "Unity.Services.Multiplayer",
-        "Unity.Services.CloudSave"
+        "Unity.Services.CloudSave",
+        "Unity.Services.CloudCode"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

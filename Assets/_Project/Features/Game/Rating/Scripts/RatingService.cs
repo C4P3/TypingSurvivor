@@ -10,13 +10,15 @@ namespace TypingSurvivor.Features.Game.Rating
     {
         private readonly ICloudSaveService _cloudSaveService;
         private readonly IGameStateReader _gameStateReader;
+        private readonly GameManager _gameManager;
 
-        private const int RatingChangeAmount = 10; // Simple +/- for now
+        private const int RatingChangeAmount = 10;
 
-        public RatingService(ICloudSaveService cloudSaveService, IGameStateReader gameStateReader)
+        public RatingService(ICloudSaveService cloudSaveService, IGameStateReader gameStateReader, GameManager gameManager)
         {
             _cloudSaveService = cloudSaveService;
             _gameStateReader = gameStateReader;
+            _gameManager = gameManager;
         }
 
         public async Task HandleGameFinished(GameResult result)
@@ -27,7 +29,6 @@ namespace TypingSurvivor.Features.Game.Rating
                 return;
             }
 
-            // Identify winner and loser
             ulong winnerClientId = result.WinnerClientId;
             ulong loserClientId = 0;
 
@@ -46,33 +47,38 @@ namespace TypingSurvivor.Features.Game.Rating
                 return;
             }
 
-            // --- Placeholder for ClientId -> PlayerId mapping ---
-            // In a real dedicated server, the server would have a mapping of Netcode ClientIds to UGS PlayerIds.
-            // For now, we will ASSUME ClientId can be converted directly to PlayerId for testing purposes.
-            string winnerPlayerId = winnerClientId.ToString();
-            string loserPlayerId = loserClientId.ToString();
-            Debug.LogWarning($"[RatingService] Using a placeholder mapping from ClientId to PlayerId. This may not work in a real server environment.");
-            // --- End Placeholder ---
+            // Get the real PlayerIds from the GameManager
+            string winnerPlayerId = _gameManager.GetPlayerId(winnerClientId);
+            string loserPlayerId = _gameManager.GetPlayerId(loserClientId);
 
-            // Load data for both players
-            var winnerData = await _cloudSaveService.LoadPlayerDataForPlayerAsync(winnerPlayerId);
-            var loserData = await _cloudSaveService.LoadPlayerDataForPlayerAsync(loserPlayerId);
+            if (string.IsNullOrEmpty(winnerPlayerId) || string.IsNullOrEmpty(loserPlayerId))
+            {
+                Debug.LogError($"[RatingService] Could not find PlayerId for a client. Winner: {winnerPlayerId}, Loser: {loserPlayerId}. Aborting rating change.");
+                return;
+            }
+
+            TypingSurvivor.Features.Core.CloudSave.PlayerSaveData winnerData = await _cloudSaveService.LoadPlayerDataForPlayerAsync(winnerPlayerId);
+            TypingSurvivor.Features.Core.CloudSave.PlayerSaveData loserData = await _cloudSaveService.LoadPlayerDataForPlayerAsync(loserPlayerId);
 
             // If data doesn't exist, create it with default values
-            winnerData ??= new PlayerSaveData();
-            loserData ??= new PlayerSaveData();
+            if (winnerData == null)
+            {
+                winnerData = new TypingSurvivor.Features.Core.CloudSave.PlayerSaveData();
+            }
+            if (loserData == null)
+            {
+                loserData = new TypingSurvivor.Features.Core.CloudSave.PlayerSaveData();
+            }
 
-            // Calculate new ratings
             int oldWinnerRating = winnerData.Rating;
             int oldLoserRating = loserData.Rating;
 
             winnerData.Rating += RatingChangeAmount;
-            loserData.Rating = Mathf.Max(0, loserData.Rating - RatingChangeAmount); // Prevent negative rating
+            loserData.Rating = Mathf.Max(0, loserData.Rating - RatingChangeAmount);
 
             Debug.Log($"[RatingService] Winner ({winnerPlayerId}): {oldWinnerRating} -> {winnerData.Rating}");
             Debug.Log($"[RatingService] Loser ({loserPlayerId}): {oldLoserRating} -> {loserData.Rating}");
 
-            // Save data for both players
             await _cloudSaveService.SavePlayerDataForPlayerAsync(winnerPlayerId, winnerData);
             await _cloudSaveService.SavePlayerDataForPlayerAsync(loserPlayerId, loserData);
         }

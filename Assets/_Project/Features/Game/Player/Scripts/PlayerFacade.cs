@@ -3,6 +3,7 @@ using System.Collections;
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
+using Unity.Services.Authentication;
 using UnityEngine.Tilemaps;
 using TypingSurvivor.Features.Game.Player.Input;
 using TypingSurvivor.Features.Core.App;
@@ -12,6 +13,7 @@ using TypingSurvivor.Features.Game.Level;
 
 
 using TypingSurvivor.Features.Game.Level.Data;
+using TypingSurvivor.Features.Game.Gameplay;
 
 namespace TypingSurvivor.Features.Game.Player
 {
@@ -104,6 +106,17 @@ namespace TypingSurvivor.Features.Game.Player
                 else
                 {
                     Debug.LogError("ITypingServiceの実装が見つかりません。");
+                }
+
+                // Register this client's PlayerId with the server
+                if (GameManager.Instance != null)
+                {
+                    var playerId = AuthenticationService.Instance.PlayerId;
+                    GameManager.Instance.RegisterPlayerIdServerRpc(playerId);
+                }
+                else
+                {
+                    Debug.LogError("GameManager instance not found! Cannot register PlayerId.");
                 }
                 
                 if(IsServer) OnPlayerSpawned_Server?.Invoke(OwnerClientId, transform.position);
