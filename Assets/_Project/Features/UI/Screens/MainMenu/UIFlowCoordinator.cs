@@ -4,7 +4,6 @@ using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.UI.Common;
-using TypingSurvivor.Features.Core.Audio.Data;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -20,6 +19,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             Initializing,                // 初期化中
             SigningIn,                   // ログイン試行中
             SignInFailed,                // ログイン失敗
+            OnTitle,                     // タイトル画面でクリック待ち
             NeedsProfile,                // 名前入力が必要
             InMainMenu,                  // メインメニュー表示中
             SelectingSinglePlayer,       // 一人で遊ぶ モード選択
@@ -52,30 +52,26 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private ScreenBase _shopScreen;
         [SerializeField] private ScreenBase _settingsScreen;
         
-        [Header("Audio")]
-        [SerializeField] private MusicData _titleMusic;
-        [SerializeField] private MusicData _mainMenuMusic;
-
         // --- Screen-specific Controllers ---
         // 各パネルにアタッチされているコントローラーへの参照
         [Header("Screen-Specific Controllers")]
         [SerializeField] private TitleScreenController _titleScreenController;
         [SerializeField] private ProfileCreationController _profileCreationController;
         [SerializeField] private MainMenuController _mainMenuController;
-        // 他の画面のコントローラーも必要に応じて追加
 
         private PlayerUIState _currentState;
         private bool _isInitialized = false;
+        private bool _hasProfile = false;
 
         private void Start()
         {
             if (AppManager.Instance.IsCoreServicesInitialized)
             {
-                HandleCoreServicesInitialized();
+                InitializeFlow();
             }
             else
             {
-                AppManager.Instance.OnCoreServicesInitialized += HandleCoreServicesInitialized;
+                AppManager.Instance.OnCoreServicesInitialized += InitializeFlow;
             }
         }
 
@@ -83,11 +79,11 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         {
             if (AppManager.Instance != null)
             {
-                AppManager.Instance.OnCoreServicesInitialized -= HandleCoreServicesInitialized;
+                AppManager.Instance.OnCoreServicesInitialized -= InitializeFlow;
             }
         }
 
-        private void HandleCoreServicesInitialized()
+        private void InitializeFlow()
         {
             if (_isInitialized) return;
             _isInitialized = true;
@@ -100,15 +96,31 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _multiplayerSelectScreen.Initialize(this);
             _matchCodeScreen.Initialize(this);
 
-            _matchmakingController.Initialize(AppManager.Instance.MatchmakingService, _uiManager, AppManager.Instance);
+            // _matchmakingController.Initialize(AppManager.Instance.MatchmakingService, _uiManager, AppManager.Instance);
 
-            RequestStateChange(PlayerUIState.SigningIn);
+            _ = CheckAuthenticationAndProceed();
         }
 
-        /// <summary>
-        /// UIの状態を変更し、関連するUI表示を更新します。
-        /// </summary>
-        /// <param name="newState">遷移先の新しい状態</param>
+        private async Task CheckAuthenticationAndProceed()
+        {
+            RequestStateChange(PlayerUIState.SigningIn);
+
+            if (!AppManager.Instance.AuthService.IsSignedIn)
+            {
+                bool success = await AppManager.Instance.AuthService.SignInAnonymouslyAsync();
+                if (!success)
+                {
+                    RequestStateChange(PlayerUIState.SignInFailed);
+                    return;
+                }
+            }
+
+            var playerData = await AppManager.Instance.CloudSaveService.LoadPlayerDataAsync();
+            _hasProfile = playerData != null && !string.IsNullOrWhiteSpace(playerData.PlayerName);
+
+            RequestStateChange(PlayerUIState.OnTitle);
+        }
+
         public void RequestStateChange(PlayerUIState newState)
         {
             _currentState = newState;
@@ -120,14 +132,17 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                     MusicManager.Instance.Play(SoundId.TitleMusic, 0f);
                     _uiManager.ShowScreen(_titleScreen);
                     _titleScreen.UpdateView("Signing In...", false);
-                    _ = TrySignInAsync();
                     break;
                 case PlayerUIState.SignInFailed:
                     _uiManager.ShowScreen(_titleScreen);
                     _titleScreen.UpdateView("Sign-In Failed. Click to Retry.", true);
                     break;
+                case PlayerUIState.OnTitle:
+                    _uiManager.ShowScreen(_titleScreen);
+                    _titleScreen.UpdateView("Click to Start", true);
+                    break;
                 case PlayerUIState.NeedsProfile:
-                    _uiManager.ShowScreen(_profileCreationScreen);
+                    _uiManager.PushPanel(_profileCreationScreen);
                     break;
                 case PlayerUIState.InMainMenu:
                     MusicManager.Instance.Play(SoundId.MainMenuMusic, 0f);
@@ -158,24 +173,23 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                     _uiManager.ShowScreen(_settingsScreen);
                     break;
                 default:
-                    // For unhandled states, default to the main menu.
                     Debug.LogWarning($"Unhandled UI state '{_currentState}', defaulting to MainMenu.");
                     _uiManager.ShowScreen(_mainMenuScreen);
                     break;
             }
         }
-
-        private async Task TrySignInAsync()
+        
+        public void OnTitleScreenAction()
         {
-            // ログイン試行
-            bool success = await AppManager.Instance.AuthService.SignInAnonymouslyAsync();
-
-            if (success)
+            if (_currentState == PlayerUIState.SignInFailed)
             {
-                var playerData = await AppManager.Instance.CloudSaveService.LoadPlayerDataAsync();
-                bool hasProfile = playerData != null && !string.IsNullOrWhiteSpace(playerData.PlayerName);
+                _ = CheckAuthenticationAndProceed();
+                return;
+            }
 
-                if (hasProfile)
+            if (AppManager.Instance.AuthService.IsSignedIn)
+            {
+                if (_hasProfile)
                 {
                     RequestStateChange(PlayerUIState.InMainMenu);
                 }
@@ -184,66 +198,30 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                     RequestStateChange(PlayerUIState.NeedsProfile);
                 }
             }
-            else
-            {
-                RequestStateChange(PlayerUIState.SignInFailed);
-            }
-        }
-        
-        // --- 各コントローラーからの通知を受け取るメソッド ---
-
-        /// <summary>
-        /// タイトルスクリーンがクリックされたときに呼ばれます。
-        /// </summary>
-        public void OnTitleScreenAction()
-        {
-            // ログイン失敗時、または未ログイン状態なら再度ログインを試みる
-            if (_currentState == PlayerUIState.SignInFailed || !AppManager.Instance.AuthService.IsSignedIn)
-            {
-                RequestStateChange(PlayerUIState.SigningIn);
-            }
         }
 
-        /// <summary>
-        /// プロフィール作成が完了したときに呼ばれます。
-        /// </summary>
         public void OnProfileCreated()
         {
+            _hasProfile = true; // Update our cached status
             RequestStateChange(PlayerUIState.InMainMenu);
         }
 
-
-        /// <summary>
-        /// 現在のパネルを閉じて前の画面に戻るようUIManagerに要求します。
-        /// </summary>
         public void CloseCurrentPanel()
         {
             _uiManager.PopPanel();
         }
 
-        /// <summary>
-        /// ゲームシーンを開始します。
-        /// </summary>
-        /// <param name="mode">ゲームモード</param>
         public void StartGame(GameModeType mode)
         {
             AppManager.Instance.StartGame(mode);
         }
 
-        /// <summary>
-        /// Starts public matchmaking.
-        /// </summary>
-        /// <param name="queueName">The name of the matchmaking queue to join.</param>
         public void StartPublicMatchmaking(string queueName)
         {
             RequestStateChange(PlayerUIState.WaitingInMatchmakingQueue);
             // _matchmakingController.StartPublicMatchmaking(queueName);
         }
 
-        /// <summary>
-        /// Starts private matchmaking by joining a room with a code.
-        /// </summary>
-        /// <param name="roomCode">The room code to join.</param>
         public void StartPrivateMatchmaking(string roomCode)
         {
             RequestStateChange(PlayerUIState.WaitingInMatchmakingQueue);
