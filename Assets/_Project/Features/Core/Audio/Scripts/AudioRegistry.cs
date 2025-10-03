@@ -29,6 +29,7 @@ namespace TypingSurvivor.Features.Core.Audio
         PoisonEffect = 207,
         UnchiEffect = 208,
         // BGM & Jingles
+        TitleMusic = 299,
         MainMenuMusic = 300,
         GameMusic = 301,
         ResultsMusic = 302,

@@ -1,7 +1,9 @@
 using UnityEngine;
 using System.Threading.Tasks;
 using TypingSurvivor.Features.Core.App;
+using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.UI.Common;
+using TypingSurvivor.Features.Core.Audio.Data;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -48,6 +50,10 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private ScreenBase _rankingScreen;
         [SerializeField] private ScreenBase _shopScreen;
         [SerializeField] private ScreenBase _settingsScreen;
+        
+        [Header("Audio")]
+        [SerializeField] private MusicData _titleMusic;
+        [SerializeField] private MusicData _mainMenuMusic;
 
         // --- Screen-specific Controllers ---
         // 各パネルにアタッチされているコントローラーへの参照
@@ -110,6 +116,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             switch (_currentState)
             {
                 case PlayerUIState.SigningIn:
+                    MusicManager.Instance.Play(SoundId.TitleMusic, 0f);
                     _uiManager.ShowScreen(_titleScreen);
                     _titleScreen.UpdateView("Signing In...", false);
                     _ = TrySignInAsync();
@@ -122,6 +129,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                     _uiManager.ShowScreen(_profileCreationScreen);
                     break;
                 case PlayerUIState.InMainMenu:
+                    MusicManager.Instance.Play(SoundId.MainMenuMusic, 0f);
                     _uiManager.ShowScreen(_mainMenuScreen);
                     break;
                 case PlayerUIState.SelectingSinglePlayer:
@@ -203,6 +211,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         {
             RequestStateChange(PlayerUIState.InMainMenu);
         }
+
 
         /// <summary>
         /// 現在のパネルを閉じて前の画面に戻るようUIManagerに要求します。

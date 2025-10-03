@@ -56,3 +56,5 @@ MonoBehaviour:
     MusicData: {fileID: 11400000, guid: 73cda2c050b78c740aeb59f48147304f, type: 2}
   - Id: 304
     MusicData: {fileID: 11400000, guid: 605cfcf1c00b15943830acfad187ff70, type: 2}
+  - Id: 299
+    MusicData: {fileID: 11400000, guid: eadb12da83324fa4bbd89fc1d8d6eb0c, type: 2}
