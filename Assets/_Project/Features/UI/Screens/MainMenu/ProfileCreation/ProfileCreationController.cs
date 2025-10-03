@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using TypingSurvivor.Features.UI.Common;
+using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.Core.App;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
@@ -58,9 +59,8 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 return;
             }
 
-            // プレイヤー名を保存 (CloudSaveServiceにメソッドがある想定)
-            // bool success = await _appManager.CloudSaveService.SavePlayerName(playerName);
-            bool success = true; // 仮実装：保存は必ず成功する
+            var newPlayerData = new PlayerSaveData(playerName);
+            bool success = await _appManager.CloudSaveService.SavePlayerDataAsync(newPlayerData);
 
             if (success)
             {

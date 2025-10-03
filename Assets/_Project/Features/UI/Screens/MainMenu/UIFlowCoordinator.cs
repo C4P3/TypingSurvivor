@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Threading.Tasks;
 using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Audio;
+using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.UI.Common;
 using TypingSurvivor.Features.Core.Audio.Data;
 
@@ -171,9 +172,8 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
             if (success)
             {
-                // プレイヤー名が登録されているかチェック (CloudSaveServiceにメソッドがある想定)
-                // bool hasProfile = await AppManager.Instance.CloudSaveService.HasProfileData();
-                bool hasProfile = false; // 仮実装：初回は必ず名前入力へ
+                var playerData = await AppManager.Instance.CloudSaveService.LoadPlayerDataAsync();
+                bool hasProfile = playerData != null && !string.IsNullOrWhiteSpace(playerData.PlayerName);
 
                 if (hasProfile)
                 {

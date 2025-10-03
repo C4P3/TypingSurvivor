@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Core.Matchmaking;
+using TypingSurvivor.Features.Core.CloudSave;
 using Unity.Netcode.Transports.UTP;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
@@ -29,6 +30,7 @@ namespace TypingSurvivor.Features.Core.App
         }
         
         public IAuthenticationService AuthService { get; private set; }
+        public ICloudSaveService CloudSaveService { get; private set; }
         public MatchmakingService MatchmakingService { get; private set; }
         public IPlayerStatusSystemReader StatusReader { get; private set; }
         public IPlayerStatusSystemWriter StatusWriter { get; private set; }
@@ -132,6 +134,10 @@ namespace TypingSurvivor.Features.Core.App
         {
             await InitializeUgsAsync();
             AuthService = new ClientAuthenticationService();
+
+            CloudSaveService = new CloudSaveService();
+            RegisterService(CloudSaveService);
+
             MatchmakingService = new MatchmakingService();
             RegisterService(MatchmakingService);
             
