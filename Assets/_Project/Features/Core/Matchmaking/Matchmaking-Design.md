@@ -128,6 +128,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Host as ホスト (作成者)
+    participant HostUI as Host UI
     participant Client as クライアント (参加者)
     participant Controller as MatchmakingController
     participant Service as MatchmakingService
@@ -136,7 +137,9 @@ sequenceDiagram
     Host->>Controller: StartPrivateMatch("MY-SECRET-CODE")
     Controller->>Service: CreatePrivateTicketAsync("MY-SECRET-CODE")
     Service->>UGS: RoomID "MY-SECRET-CODE" を持つチケットを作成
-    note right of Host: 待機画面で "MY-SECRET-CODE" を表示
+    
+    Controller->>HostUI: ShowPrivateLobbyPanel("MY-SECRET-CODE")
+    note right of Host: 待機画面で "MY-SECRET-CODE" を表示し、参加者を待つ
 
     Client->>Controller: JoinPrivateMatch("MY-SECRET-CODE")
     Controller->>Service: FindPrivateTicketAsync("MY-SECRET-CODE")
