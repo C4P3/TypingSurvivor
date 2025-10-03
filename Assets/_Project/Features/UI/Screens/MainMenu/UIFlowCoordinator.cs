@@ -133,12 +133,24 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 case PlayerUIState.EnteringMatchCode:
                     _uiManager.PushPanel(_matchCodeScreen);
                     break;
+                case PlayerUIState.WaitingInMatchmakingQueue:
+                    _uiManager.PushPanel(_matchmakingWaitScreen);
+                    break;
+                case PlayerUIState.InHowToPlay:
+                    _uiManager.ShowScreen(_howToPlayScreen);
+                    break;
                 case PlayerUIState.InRanking:
                     _uiManager.ShowScreen(_rankingScreen);
                     break;
-                 // 他のケースも同様に追加...
+                case PlayerUIState.InShop:
+                    _uiManager.ShowScreen(_shopScreen);
+                    break;
+                case PlayerUIState.InSettings:
+                    _uiManager.ShowScreen(_settingsScreen);
+                    break;
                 default:
-                    // デフォルトではメインメニューに戻るなど
+                    // For unhandled states, default to the main menu.
+                    Debug.LogWarning($"Unhandled UI state '{_currentState}', defaulting to MainMenu.");
                     _uiManager.ShowScreen(_mainMenuScreen);
                     break;
             }
@@ -206,7 +218,27 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         /// <param name="mode">ゲームモード</param>
         public void StartGame(GameModeType mode)
         {
-            AppManager.Instance.StartHost(mode);
+            AppManager.Instance.StartGame(mode);
+        }
+
+        /// <summary>
+        /// Starts public matchmaking.
+        /// </summary>
+        /// <param name="queueName">The name of the matchmaking queue to join.</param>
+        public void StartPublicMatchmaking(string queueName)
+        {
+            RequestStateChange(PlayerUIState.WaitingInMatchmakingQueue);
+            // _matchmakingController.StartPublicMatchmaking(queueName);
+        }
+
+        /// <summary>
+        /// Starts private matchmaking by joining a room with a code.
+        /// </summary>
+        /// <param name="roomCode">The room code to join.</param>
+        public void StartPrivateMatchmaking(string roomCode)
+        {
+            RequestStateChange(PlayerUIState.WaitingInMatchmakingQueue);
+            // _matchmakingController.StartPrivateMatchmaking(roomCode);
         }
     }
 }

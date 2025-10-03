@@ -185,13 +185,14 @@ namespace TypingSurvivor.Features.Core.App
 
         #region Network Start-up
 
-        public void StartHost(GameModeType gameMode)
+        public void StartGame(GameModeType gameMode)
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
             
             MusicManager.Instance.Stop(0f);
             SetGameMode(gameMode);
             
+            // For single player or private matches, we start as a host.
             if (NetworkManager.Singleton.StartHost())
             {
                 NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
