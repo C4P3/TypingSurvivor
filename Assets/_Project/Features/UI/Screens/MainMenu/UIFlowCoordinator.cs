@@ -4,6 +4,7 @@ using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.UI.Common;
+using TypingSurvivor.Features.UI.Screens;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -47,10 +48,10 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private MultiplayerSelectController _multiplayerSelectScreen;
         [SerializeField] private MatchCodeController _matchCodeScreen;
         [SerializeField] private ScreenBase _matchmakingWaitScreen;
-        [SerializeField] private ScreenBase _howToPlayScreen;
-        [SerializeField] private ScreenBase _rankingScreen;
-        [SerializeField] private ScreenBase _shopScreen;
-        [SerializeField] private ScreenBase _settingsScreen;
+        [SerializeField] private HowToPlayScreen _howToPlayScreen;
+        [SerializeField] private RankingScreen _rankingScreen;
+        [SerializeField] private ShopScreen _shopScreen;
+        [SerializeField] private SettingsScreen _settingsScreen;
         
         // --- Screen-specific Controllers ---
         // 各パネルにアタッチされているコントローラーへの参照
@@ -95,6 +96,10 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _singlePlayerSelectScreen.Initialize(this);
             _multiplayerSelectScreen.Initialize(this);
             _matchCodeScreen.Initialize(this);
+            _shopScreen.Initialize(this);
+            _settingsScreen.Initialize(this);
+            _rankingScreen.Initialize(this);
+            _howToPlayScreen.Initialize(this);
 
             // _matchmakingController.Initialize(AppManager.Instance.MatchmakingService, _uiManager, AppManager.Instance);
 

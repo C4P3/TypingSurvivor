@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace TypingSurvivor.Features.UI.Screens
 {
-    public class SettingsScreen : ScreenBase
+    public class HowToPlayScreen : ScreenBase
     {
         [SerializeField] private InteractiveButton _backButton;
 
