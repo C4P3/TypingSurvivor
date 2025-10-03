@@ -48,6 +48,31 @@ GameManagerは、現在のゲームフェーズをNetworkVariable\<GamePhase\>�
 
 GameManagerは、ゲーム起動モード（シングル/マルチ）に応じて、適切なStrategyインスタンスをDIなどで受け取り、ルールの判定をそのStrategyに完全に委譲します。これにより、GameManager自身は具体的なルールを知る必要がなくなります。
 
+### **3.3. ランクマッチ戦略 (`RankedMatchStrategy`)**
+
+ランクマッチのルールは、`RankedMatchStrategy`クラスにカプセル化されます。
+
+*   **責務:**
+    *   `IsGameOver()`: `MultiPlayerStrategy`と同様に、生存プレイヤー数に基づいてゲームの終了を判定します。
+    *   `CalculateResult()`: ゲームの最終状態のみを考慮し、勝者と敗者を決定する**同期処理**に専念します。レート計算のような非同期処理は行いません。
+
+*   **選択フロー:**
+    *   `GameSceneBootstrapper`は、`AppManager.GameMode`が`RankedMatch`である場合、この`RankedMatchStrategy`を`GameManager`に注入します。
+
+### (新規追加) 3.4. レート計算サービス (`RatingService`)
+
+レート計算と保存のロジックは、ゲームプレイのルールから完全に分離された、専門の`RatingService`が担当します。
+
+*   **役割:** サーバーサイドで動作する、レート計算と永続化のためのサービス。
+*   **処理フロー:**
+    1.  `GameManager`が発行する**ゲーム終了イベント** (`OnGameFinished(GameResult result)`) を購読します。
+    2.  イベントを受け取ると、`GameResult`から勝者と敗者を特定します。
+    3.  **非同期で**`ICloudSaveService`を呼び出し、両プレイヤーの現在のレートを取得します。
+    4.  Eloレーティングシステム等のアルゴリズムで、新しいレートを算出します。
+    5.  算出した新しいレートを、`ICloudSaveService`を通じてCloud Saveに保存します。
+
+この設計により、ゲームルール（同期処理）と、外部サービスとの通信（非同期処理）を明確に分離し、それぞれを独立してテスト・保守することが可能になります。
+
 ## **4\. サーバーのメインゲームループ**
 
 GameManagerは、サーバー上でコルーチンとしてメインゲームループを実行します。このループは、**「一度きりのセットアップフェーズ」**と、再戦を可能にする**「繰り返し可能なゲームラウンドループ」**に明確に分離されています。

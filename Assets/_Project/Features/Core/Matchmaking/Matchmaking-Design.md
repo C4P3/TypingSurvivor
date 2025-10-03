@@ -87,68 +87,80 @@ graph TD
 
 ---
 
-## **4. データフロー**
+## 4. データフロー
 
-### **フロー①: フリーマッチ**
+### **フロー①: 公開マッチング (フリー / ランク)**
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant MainMenuManager
-    participant MatchmakingController
-    participant MatchmakingService
-    participant UGS_Matchmaker
-    participant AppManager
+    participant UI as MainMenu UI
+    participant Controller as MatchmakingController
+    participant Service as MatchmakingService
+    participant UGS as UGS Matchmaker
+    participant Server as Dedicated Server
 
-    User->>MainMenuManager: 「フリーマッチ」ボタンをクリック
-    MainMenuManager->>MatchmakingController: StartMatchmaking("FreeMatch")
+    User->>UI: 「ランクマッチ」ボタンをクリック
+    UI->>Controller: StartPublicMatchmaking("ranked-match")
     
-    MatchmakingController->>MatchmakingService: CreateTicketAsync("FreeMatch")
-    MatchmakingController->>MainMenuManager: "マッチング中..."パネル表示を依頼
+    Controller->>Service: CreateTicketAsync("ranked-match")
+    Controller->>UI: "対戦相手を検索中..."パネル表示
     
-    MatchmakingService->>UGS_Matchmaker: チケット作成リクエスト
+    Service->>UGS: チケット作成リクエスト
     
-    loop チケットステータス確認 (数秒ごと)
-        MatchmakingService->>UGS_Matchmaker: チケットステータス確認リクエスト
-        UGS_Matchmaker-->>MatchmakingService: (ステータス: 検索中)
-        MatchmakingService->>MatchmakingController: OnStatusUpdated("検索中...")
+    loop ステータス確認
+        UGS-->>Service: (ステータス: 検索中)
+        Service->>Controller: OnStatusUpdated("検索中...")
     end
     
-    UGS_Matchmaker-->>MatchmakingService: (ステータス: 成功, Relay情報)
-    MatchmakingService->>MatchmakingController: OnMatchSuccess(RelayInfo)
+    UGS-->>Server: (プレイヤー発見) サーバー起動を指示
+    UGS-->>Service: (マッチ成功) サーバー接続情報を通知
     
-    MatchmakingController->>AppManager: StartClientWithRelay(RelayInfo)
-    AppManager->>AppManager: Gameシーンへ遷移
+    Service->>Controller: OnMatchSuccess(ServerInfo)
+    Controller->>UI: "対戦相手が見つかりました！"
+    Controller->>AppManager: StartClient(ServerInfo)
 ```
 
-### **フロー②: 合言葉マッチ (ホスト)**
+### **フロー②: プライベートマッチ (合言葉)**
+
+このフローでは、Matchmakerを「特定の合言葉を持つプレイヤー同士を引き合わせる」ためだけに使います。
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant MainMenuManager
-    participant MatchmakingController
-    participant MatchmakingService
-    participant UGS_Relay
-    participant AppManager
+    participant Host as ホスト (作成者)
+    participant Client as クライアント (参加者)
+    participant Controller as MatchmakingController
+    participant Service as MatchmakingService
+    participant UGS as UGS Matchmaker
 
-    User->>MainMenuManager: 「合言葉マッチ」→「ルーム作成」をクリック
-    MainMenuManager->>MatchmakingController: StartPrivateMatch()
+    Host->>Controller: StartPrivateMatch("MY-SECRET-CODE")
+    Controller->>Service: CreatePrivateTicketAsync("MY-SECRET-CODE")
+    Service->>UGS: RoomID "MY-SECRET-CODE" を持つチケットを作成
+    note right of Host: 待機画面で "MY-SECRET-CODE" を表示
+
+    Client->>Controller: JoinPrivateMatch("MY-SECRET-CODE")
+    Controller->>Service: FindPrivateTicketAsync("MY-SECRET-CODE")
+    Service->>UGS: RoomID "MY-SECRET-CODE" を持つチケットを検索・参加
     
-    MatchmakingController->>MatchmakingService: CreateRelayHostAsync()
-    MatchmakingService->>UGS_Relay: ルーム作成リクエスト
-    UGS_Relay-->>MatchmakingService: (成功, JoinCode)
-    
-    MatchmakingService->>MatchmakingController: OnPrivateRoomCreated(JoinCode)
-    MatchmakingController->>MainMenuManager: UIにJoinCodeを表示させる
-    
-    MatchmakingController->>AppManager: StartHostWithRelay(RelayInfo)
-    AppManager->>AppManager: Gameシーンへ遷移
+    UGS-->>Service: (両者が揃った) マッチ成功を両者に通知
+    Service->>Controller: OnMatchSuccess(ServerInfo)
+    Controller->>AppManager: StartClient(ServerInfo)
 ```
 
 ---
 
-## **5. 実装ステップ**
+## 5. UGSキューとゲームモード
+
+本プロジェクトのマッチングは、UGS Matchmakerの**キュー(Queue)**を使い分けることで、異なるゲーム体験を提供します。
+
+*   **`free-match`キュー:** レートの変動がない、気軽なフリーマッチ用のキューです。
+*   **`ranked-match`キュー:** レートの変動がある、真剣勝負用のキューです。
+
+クライアントは、選択したモードに応じて、`MatchmakingService`に適切なキュー名を渡してチケットを作成します。Matchmakerは、同じキューにいるプレイヤー同士を引き合わせ、Game Server Hostingに適切なゲームモード（例: `-gameMode RankedMatch`）を伝えて専用サーバーを起動させます。
+
+---
+
+## 6. 実装ステップ
 
 1.  **UGS SDKの導入**: `com.unity.services.matchmaker` と `com.unity.services.relay` パッケージをプロジェクトに追加する。
 2.  **`MatchmakingService`の実装**: UGSのドキュメントを参考に、チケット作成、ステータス確認、Relayのホスト/参加などの非同期メソッドを実装する。
