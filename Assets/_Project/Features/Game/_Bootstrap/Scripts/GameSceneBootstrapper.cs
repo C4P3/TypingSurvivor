@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using TypingSurvivor.Features.Game.Level;
 using TypingSurvivor.Features.Game.Camera;
 using TypingSurvivor.Features.UI;
+using TypingSurvivor.Features.Game.Rating;
+using TypingSurvivor.Features.Core.CloudSave;
 
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
@@ -124,7 +126,11 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 strategy = new SinglePlayerStrategy();
             }
-            else
+            else if (gameMode == GameModeType.RankedMatch)
+            {
+                strategy = new RankedMatchStrategy();
+            }
+            else // Default to MultiPlayer for any other multiplayer modes
             {
                 strategy = new MultiPlayerStrategy();
             }
@@ -135,9 +141,19 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 serviceLocator.GetService<ILevelService>(),
                 serviceLocator.GetService<IPlayerStatusSystemReader>(),
                 serviceLocator.GetService<IPlayerStatusSystemWriter>(),
-                _gameConfig, // Pass the whole config for now, can be refined later
+                _gameConfig,
                 _grid
                 );
+
+            // --- Initialize Rating Service for Ranked Matches ---
+            if (gameMode == GameModeType.RankedMatch)
+            {
+                var ratingService = new RatingService(
+                    serviceLocator.GetService<ICloudSaveService>(),
+                    serviceLocator.GetService<IGameStateReader>()
+                );
+                _gameManager.OnGameFinished += ratingService.HandleGameFinished;
+            }
 
             // --- Inject dependencies into CameraManager ---
             if (_cameraManager != null)

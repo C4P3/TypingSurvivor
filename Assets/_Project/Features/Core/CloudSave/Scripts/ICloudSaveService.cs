@@ -4,15 +4,16 @@ namespace TypingSurvivor.Features.Core.CloudSave
 {
     public interface ICloudSaveService
     {
-        /// <summary>
-        /// Saves the entire PlayerSaveData object to the cloud.
-        /// </summary>
+        // For client to save its own data
         Task<bool> SavePlayerDataAsync(PlayerSaveData data);
 
-        /// <summary>
-        /// Loads the entire PlayerSaveData object from the cloud.
-        /// </summary>
-        /// <returns>The loaded PlayerSaveData, or null if not found.</returns>
+        // For client to load its own data
         Task<PlayerSaveData> LoadPlayerDataAsync();
+
+        // For server to save any player's data
+        Task SavePlayerDataForPlayerAsync(string playerId, PlayerSaveData data);
+
+        // For server to load any player's data
+        Task<PlayerSaveData> LoadPlayerDataForPlayerAsync(string playerId);
     }
 }

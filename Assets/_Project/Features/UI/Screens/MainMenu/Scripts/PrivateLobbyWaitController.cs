@@ -1,30 +1,29 @@
 using TypingSurvivor.Features.UI.Common;
 using TMPro;
 using UnityEngine;
+using System;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
-    /// <summary>
-    /// Controls the UI for the private lobby waiting screen.
-    /// Displays the room code and allows the host to cancel.
-    /// </summary>
     public class PrivateLobbyWaitController : ScreenBase
     {
         [SerializeField] private TextMeshProUGUI _roomCodeText;
         [SerializeField] private TextMeshProUGUI _statusText;
         [SerializeField] private InteractiveButton _cancelButton;
 
-        private MatchmakingController _matchmakingController;
+        public event Action OnCancelClicked;
 
-        public void Initialize(MatchmakingController matchmakingController)
+        protected override void Awake()
         {
-            _matchmakingController = matchmakingController;
-            _cancelButton.onClick.AddListener(OnCancelButtonClicked);
+            base.Awake();
+            _cancelButton.onClick.AddListener(() => 
+            {
+                _cancelButton.interactable = false;
+                UpdateStatus("Cancelling...");
+                OnCancelClicked?.Invoke();
+            });
         }
 
-        /// <summary>
-        /// Shows the panel and displays the given room code.
-        /// </summary>
         public void ShowWithRoomCode(string roomCode)
         {
             if (_roomCodeText != null)
@@ -44,18 +43,11 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             }
         }
 
-        private void OnCancelButtonClicked()
-        {
-            _cancelButton.interactable = false;
-            UpdateStatus("Cancelling...");
-            _matchmakingController.Cancel();
-        }
-
         private void OnDestroy()
         {
             if (_cancelButton != null)
             {
-                _cancelButton.onClick.RemoveListener(OnCancelButtonClicked);
+                _cancelButton.onClick.RemoveAllListeners();
             }
         }
     }

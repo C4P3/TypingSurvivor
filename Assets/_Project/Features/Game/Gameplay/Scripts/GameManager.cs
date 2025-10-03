@@ -29,6 +29,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private const float LowOxygenThreshold = 0.3f; // 30%
         private readonly HashSet<ulong> _playersInLowOxygen = new();
         public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
+        public event System.Action<GameResult> OnGameFinished;
 
         public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig, Grid grid)
         {
@@ -302,24 +303,14 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             _gameState.CurrentPhase.Value = GamePhase.Finished;
 
-            // Determine winner
-            ulong winnerId = ulong.MaxValue;
-            var alivePlayers = new List<PlayerData>();
-            foreach (var p in _gameState.PlayerDatas)
-            {
-                if (!p.IsGameOver)
-                {
-                    alivePlayers.Add(p);
-                }
-            }
-            
-            if (alivePlayers.Count == 1)
-            {
-                winnerId = alivePlayers[0].ClientId;
-            }
+            // Ask the current strategy to calculate the result.
+            GameResult result = _gameModeStrategy.CalculateResult(_gameState);
+
+            // Invoke the event for other systems (like RatingService) to consume.
+            OnGameFinished?.Invoke(result);
             
             // Play jingle and Result BGM on clients
-            PlayJingleThenMusicClientRpc(winnerId);
+            PlayJingleThenMusicClientRpc(result.WinnerClientId);
 
             _rematchRequesters.Clear();
 

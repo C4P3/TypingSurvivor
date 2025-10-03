@@ -7,7 +7,7 @@ namespace TypingSurvivor.Features.Core.CloudSave
     public class PlayerSaveData
     {
         public string PlayerName;
-        // public int Rating;
+        public int Rating = 1500; // Default starting rating
 
         // Default constructor for deserialization
         public PlayerSaveData()

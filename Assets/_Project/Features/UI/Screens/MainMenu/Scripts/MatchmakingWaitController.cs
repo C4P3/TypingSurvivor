@@ -1,43 +1,34 @@
 using TypingSurvivor.Features.UI.Common;
 using TMPro;
 using UnityEngine;
+using System;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
-    /// <summary>
-    /// Controls the UI for the matchmaking wait screen.
-    /// Displays the current matchmaking status and handles cancellation.
-    /// </summary>
     public class MatchmakingWaitController : ScreenBase
     {
         [SerializeField] private TextMeshProUGUI _statusText;
         [SerializeField] private InteractiveButton _cancelButton;
 
-        private MatchmakingController _matchmakingController;
+        public event Action OnCancelClicked;
 
-        public void Initialize(MatchmakingController matchmakingController)
+        protected override void Awake()
         {
-            _matchmakingController = matchmakingController;
-            _cancelButton.onClick.AddListener(OnCancelButtonClicked);
+            base.Awake();
+            _cancelButton.onClick.AddListener(() => 
+            {
+                _cancelButton.interactable = false;
+                UpdateStatus("Cancelling...");
+                OnCancelClicked?.Invoke();
+            });
         }
 
-        /// <summary>
-        /// Updates the status message displayed on the screen.
-        /// </summary>
-        /// <param name="status">The new status message.</param>
         public void UpdateStatus(string status)
         {
             if (_statusText != null)
             {
                 _statusText.text = status;
             }
-        }
-
-        private void OnCancelButtonClicked()
-        {
-            _cancelButton.interactable = false; // Prevent double clicks
-            UpdateStatus("Cancelling...");
-            _matchmakingController.Cancel();
         }
 
         public override void Show()
@@ -50,7 +41,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         {
             if (_cancelButton != null)
             {
-                _cancelButton.onClick.RemoveListener(OnCancelButtonClicked);
+                _cancelButton.onClick.RemoveAllListeners();
             }
         }
     }

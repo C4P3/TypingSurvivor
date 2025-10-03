@@ -8,29 +8,23 @@ using TypingSurvivor.Features.UI.Screens;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
-    /// <summary>
-    /// UIの状態遷移全体を管理する交通整理役。
-    /// ログイン状態やプレイヤーのアクションに応じて、どの画面を表示するかを決定しUIManagerに指示します。
-    /// </summary>
     public class UIFlowCoordinator : MonoBehaviour
     {
-        // プレイヤーのUI状態を定義
         public enum PlayerUIState
         {
-            Initializing,                // 初期化中
-            SigningIn,                   // ログイン試行中
-            SignInFailed,                // ログイン失敗
-            OnTitle,                     // タイトル画面でクリック待ち
-            NeedsProfile,                // 名前入力が必要
-            InMainMenu,                  // メインメニュー表示中
-            SelectingSinglePlayer,       // 一人で遊ぶ モード選択
-            SelectingMultiplayer,        // みんなで遊ぶ モード選択
-            InHowToPlay,                 // 遊び方
-            InRanking,                   // ランキング
-            InShop,                      // ショップ
-            InSettings,                  // 設定
-            EnteringMatchCode,           // 合言葉入力
-            WaitingInMatchmakingQueue    // マッチング待機中
+            Initializing,
+            SigningIn,
+            SignInFailed,
+            OnTitle,
+            NeedsProfile,
+            InMainMenu,
+            SelectingSinglePlayer,
+            SelectingMultiplayer,
+            InHowToPlay,
+            InRanking,
+            InShop,
+            InSettings,
+            EnteringMatchCode
         }
 
         [Header("UI System")]
@@ -40,25 +34,20 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private MatchmakingController _matchmakingController;
 
         [Header("Screens & Panels")]
-        [Header("Screen Controllers")]
         [SerializeField] private TitleScreenController _titleScreen;
         [SerializeField] private ProfileCreationController _profileCreationScreen;
         [SerializeField] private MainMenuController _mainMenuScreen;
         [SerializeField] private SinglePlayerSelectController _singlePlayerSelectScreen;
         [SerializeField] private MultiplayerSelectController _multiplayerSelectScreen;
         [SerializeField] private MatchCodeController _matchCodeScreen;
-        [SerializeField] private MatchmakingWaitController _matchmakingWaitScreen;
         [SerializeField] private HowToPlayScreen _howToPlayScreen;
         [SerializeField] private RankingScreen _rankingScreen;
         [SerializeField] private ShopScreen _shopScreen;
         [SerializeField] private SettingsScreen _settingsScreen;
         
-        // --- Screen-specific Controllers ---
-        // 各パネルにアタッチされているコントローラーへの参照
-        [Header("Screen-Specific Controllers")]
-        [SerializeField] private TitleScreenController _titleScreenController;
-        [SerializeField] private ProfileCreationController _profileCreationController;
-        [SerializeField] private MainMenuController _mainMenuController;
+        [Header("Audio")]
+        [SerializeField] private MusicData _titleMusic;
+        [SerializeField] private MusicData _mainMenuMusic;
 
         private PlayerUIState _currentState;
         private bool _isInitialized = false;
@@ -89,7 +78,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             if (_isInitialized) return;
             _isInitialized = true;
 
-            // 各画面コントローラーを初期化
+            // Initialize all child controllers
             _titleScreen.Initialize(this);
             _profileCreationScreen.Initialize(this, AppManager.Instance);
             _mainMenuScreen.Initialize(this);
@@ -100,7 +89,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _settingsScreen.Initialize(this);
             _rankingScreen.Initialize(this);
             _howToPlayScreen.Initialize(this);
-
+            
             _matchmakingController.Initialize(AppManager.Instance.MatchmakingService, _uiManager, AppManager.Instance);
 
             _ = CheckAuthenticationAndProceed();
@@ -134,7 +123,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             switch (_currentState)
             {
                 case PlayerUIState.SigningIn:
-                    MusicManager.Instance.Play(SoundId.TitleMusic, 0f);
+                    MusicManager.Instance.Play(_titleMusic, 0f);
                     _uiManager.ShowScreen(_titleScreen);
                     _titleScreen.UpdateView("Signing In...", false);
                     break;
@@ -150,7 +139,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                     _uiManager.PushPanel(_profileCreationScreen);
                     break;
                 case PlayerUIState.InMainMenu:
-                    MusicManager.Instance.Play(SoundId.MainMenuMusic, 0f);
+                    MusicManager.Instance.Play(_mainMenuMusic, 0f);
                     _uiManager.ShowScreen(_mainMenuScreen);
                     break;
                 case PlayerUIState.SelectingSinglePlayer:
@@ -161,9 +150,6 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                     break;
                 case PlayerUIState.EnteringMatchCode:
                     _uiManager.PushPanel(_matchCodeScreen);
-                    break;
-                case PlayerUIState.WaitingInMatchmakingQueue:
-                    _uiManager.PushPanel(_matchmakingWaitScreen);
                     break;
                 case PlayerUIState.InHowToPlay:
                     _uiManager.ShowScreen(_howToPlayScreen);
@@ -207,7 +193,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         public void OnProfileCreated()
         {
-            _hasProfile = true; // Update our cached status
+            _hasProfile = true;
             RequestStateChange(PlayerUIState.InMainMenu);
         }
 
@@ -223,13 +209,11 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         public void StartPublicMatchmaking(string queueName)
         {
-            RequestStateChange(PlayerUIState.WaitingInMatchmakingQueue);
             _matchmakingController.StartPublicMatchmaking(queueName);
         }
 
         public void StartPrivateMatchmaking(string roomCode)
         {
-            RequestStateChange(PlayerUIState.WaitingInMatchmakingQueue);
             _matchmakingController.StartPrivateMatchmaking(roomCode);
         }
     }

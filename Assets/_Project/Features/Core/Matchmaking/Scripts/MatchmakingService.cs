@@ -5,7 +5,6 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Matchmaker;
 using Unity.Services.Matchmaker.Models;
-using StatusOptions = Unity.Services.Matchmaker.Models.MultiplayAssignment.StatusOptions;
 using UnityEngine;
 
 namespace TypingSurvivor.Features.Core.Matchmaking
@@ -23,10 +22,12 @@ namespace TypingSurvivor.Features.Core.Matchmaking
         public event Action<string> OnStatusUpdated;
 
         private const int TicketCheckIntervalMs = 3000; // 3 seconds
+        private const float MatchmakingTimeoutSeconds = 60f; // Overall timeout
 
         private string _currentTicketId;
         private bool _isMatchmaking;
         private Task _pollingTask;
+        private float _timeStarted;
 
         public async Task<bool> CreateTicketAsync(string queueName, string roomCode = null)
         {
@@ -43,6 +44,7 @@ namespace TypingSurvivor.Features.Core.Matchmaking
             }
 
             OnStatusUpdated?.Invoke("Creating matchmaking ticket...");
+            _timeStarted = Time.time;
 
             try
             {
@@ -74,6 +76,14 @@ namespace TypingSurvivor.Features.Core.Matchmaking
         {
             while (_isMatchmaking && !string.IsNullOrEmpty(_currentTicketId))
             {
+                // Check for overall timeout first
+                if (Time.time - _timeStarted > MatchmakingTimeoutSeconds)
+                {
+                    OnMatchFailure?.Invoke("Matchmaking timed out.");
+                    await CancelMatchmaking();
+                    return;
+                }
+
                 try
                 {
                     OnStatusUpdated?.Invoke("Searching for match...");
@@ -112,22 +122,26 @@ namespace TypingSurvivor.Features.Core.Matchmaking
             }
         }
 
-        public async void CancelMatchmaking()
+        public async Task CancelMatchmaking()
         {
             if (!_isMatchmaking || string.IsNullOrEmpty(_currentTicketId)) return;
 
-            _isMatchmaking = false;
-            OnStatusUpdated?.Invoke("Cancelling matchmaking...");
+            var ticketId = _currentTicketId;
+            _isMatchmaking = false; // Stop the polling loop
+            _currentTicketId = null;
 
             try
             {
-                await MatchmakerService.Instance.DeleteTicketAsync(_currentTicketId);
-                _currentTicketId = null;
-                OnStatusUpdated?.Invoke("Matchmaking cancelled.");
+                OnStatusUpdated?.Invoke("Cancelling matchmaking...");
+                await MatchmakerService.Instance.DeleteTicketAsync(ticketId);
+                // On failure/cancellation, let the controller know so it can close the UI.
+                OnMatchFailure?.Invoke("Matchmaking cancelled by user.");
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"Failed to delete ticket: {e.Message}");
+                // Still notify of failure so the UI can be closed.
+                OnMatchFailure?.Invoke("Failed to cancel matchmaking.");
             }
         }
     }

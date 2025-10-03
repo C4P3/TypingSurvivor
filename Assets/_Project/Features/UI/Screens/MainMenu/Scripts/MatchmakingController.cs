@@ -2,7 +2,7 @@ using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Matchmaking;
 using TypingSurvivor.Features.UI.Common;
 using UnityEngine;
-using System.Collections; // For Coroutines
+using System.Collections;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -11,9 +11,11 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         private MatchmakingService _matchmakingService;
         private UIManager _uiManager;
         private AppManager _appManager;
+        private bool _isPrivateMatch;
 
         [Header("UI Panels")]
-        [SerializeField] private MatchmakingWaitController _matchmakingWaitPanel;
+        [SerializeField] private MatchmakingWaitController _publicWaitPanel;
+        [SerializeField] private PrivateLobbyWaitController _privateLobbyWaitPanel;
 
         public void Initialize(MatchmakingService matchmakingService, UIManager uiManager, AppManager appManager)
         {
@@ -21,14 +23,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _uiManager = uiManager;
             _appManager = appManager;
             
-            _matchmakingWaitPanel.Initialize(this); // Initialize the wait panel
-            
             SubscribeToEvents();
-        }
-
-        private void OnDestroy()
-        {
-            UnsubscribeFromEvents();
         }
 
         private void SubscribeToEvents()
@@ -37,6 +32,9 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _matchmakingService.OnMatchSuccess += HandleMatchSuccess;
             _matchmakingService.OnMatchFailure += HandleMatchFailure;
             _matchmakingService.OnStatusUpdated += HandleStatusUpdate;
+
+            _publicWaitPanel.OnCancelClicked += Cancel;
+            _privateLobbyWaitPanel.OnCancelClicked += Cancel;
         }
 
         private void UnsubscribeFromEvents()
@@ -45,41 +43,43 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _matchmakingService.OnMatchSuccess -= HandleMatchSuccess;
             _matchmakingService.OnMatchFailure -= HandleMatchFailure;
             _matchmakingService.OnStatusUpdated -= HandleStatusUpdate;
+
+            if(_publicWaitPanel != null) _publicWaitPanel.OnCancelClicked -= Cancel;
+            if(_privateLobbyWaitPanel != null) _privateLobbyWaitPanel.OnCancelClicked -= Cancel;
         }
 
         public void StartPublicMatchmaking(string queueName)
         {
-            // The UIFlowCoordinator is responsible for pushing the panel, 
-            // so we just update the status of the (now visible) panel.
-            _matchmakingWaitPanel.UpdateStatus("Searching for a match...");
+            _isPrivateMatch = false;
+            _uiManager.PushPanel(_publicWaitPanel);
+            _publicWaitPanel.UpdateStatus("Searching for a match...");
             _matchmakingService.CreateTicketAsync(queueName);
         }
 
         public void StartPrivateMatchmaking(string roomCode)
         {
+            _isPrivateMatch = true;
             if (string.IsNullOrEmpty(roomCode)) 
             {
-                HandleMatchFailure("Room code cannot be empty.");
+                Debug.LogError("Room code cannot be empty.");
                 return;
             }
-            _matchmakingWaitPanel.UpdateStatus("Joining private room...");
-            // Note: This logic might be incorrect for private matches as per design docs (Relay vs Matchmaker).
-            // Assuming ticket-based system for now for simplicity.
-            _matchmakingService.CreateTicketAsync("PrivateQueue", roomCode);
+            _uiManager.PushPanel(_privateLobbyWaitPanel);
+            _privateLobbyWaitPanel.ShowWithRoomCode(roomCode);
+            _matchmakingService.CreateTicketAsync("PrivateQueue", roomCode); // Using a placeholder queue name
         }
 
         public void Cancel()
         {
-            // This will trigger the OnMatchFailure event with a "Cancelled" reason.
             _matchmakingService.CancelMatchmaking();
         }
 
         private void HandleMatchSuccess(MatchmakingResult result)
         {
-            _matchmakingWaitPanel.UpdateStatus("Match Found! Connecting...");
+            string status = "Match Found! Connecting...";
+            if (_isPrivateMatch) _privateLobbyWaitPanel.UpdateStatus(status);
+            else _publicWaitPanel.UpdateStatus(status);
             
-            // Short delay for user to read the message, then connect.
-            // The panel will be hidden automatically by the scene change.
             StartCoroutine(ConnectAfterDelay(result, 1.5f));
         }
 
@@ -92,10 +92,11 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         private void HandleMatchFailure(string reason)
         {
-            _matchmakingWaitPanel.UpdateStatus($"Failed: {reason}");
+            string status = $"Failed: {reason}";
+            if (_isPrivateMatch) _privateLobbyWaitPanel.UpdateStatus(status);
+            else _publicWaitPanel.UpdateStatus(status);
             
-            // After showing the error for a moment, close the panel.
-            StartCoroutine(ClosePanelAfterDelay(2.0f));
+            StartCoroutine(ClosePanelAfterDelay(2.5f));
         }
 
         private IEnumerator ClosePanelAfterDelay(float delay)
@@ -106,7 +107,9 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         private void HandleStatusUpdate(string status)
         {            
-            _matchmakingWaitPanel.UpdateStatus(status);
+            if (_isPrivateMatch) _privateLobbyWaitPanel.UpdateStatus(status);
+            else _publicWaitPanel.UpdateStatus(status);
+            
             Debug.Log($"Matchmaking Status: {status}");
         }
     }

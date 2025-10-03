@@ -1,5 +1,4 @@
 using TypingSurvivor.Features.Game.Gameplay.Data;
-using System.Linq;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -10,7 +9,15 @@ namespace TypingSurvivor.Features.Game.Gameplay
         public bool IsGameOver(IGameStateReader gameState)
         {
             // Game is over if only one or fewer players are left with oxygen > 0.
-            return gameState.PlayerDatas.Count(p => p.CurrentOxygen > 0) <= 1;
+            int aliveCount = 0;
+            foreach (var player in gameState.PlayerDatas)
+            {
+                if (player.Oxygen > 0)
+                {
+                    aliveCount++;
+                }
+            }
+            return aliveCount <= 1;
         }
 
         public GameResult CalculateResult(IGameStateReader gameState)
@@ -18,15 +25,24 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // This strategy's responsibility is to determine the outcome based on the game state.
             // The actual rating calculation will be handled by a separate system.
 
-            var alivePlayers = gameState.PlayerDatas.Where(p => p.CurrentOxygen > 0).ToList();
+            int aliveCount = 0;
+            ulong winnerId = 0;
+            foreach (var player in gameState.PlayerDatas)
+            {
+                if (player.Oxygen > 0)
+                {
+                    aliveCount++;
+                    winnerId = player.ClientId;
+                }
+            }
 
-            if (alivePlayers.Count == 1)
+            if (aliveCount == 1)
             {
                 // A single winner
                 return new GameResult
                 {
                     IsDraw = false,
-                    WinnerClientId = alivePlayers[0].ClientId
+                    WinnerClientId = winnerId
                 };
             }
             else

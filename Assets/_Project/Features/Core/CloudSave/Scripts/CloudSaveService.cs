@@ -30,7 +30,7 @@ namespace TypingSurvivor.Features.Core.CloudSave
         {
             try
             {
-                var results = await Unity.Services.CloudSave.CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { PLAYER_DATA_KEY });
+                var results = await Unity.Services.CloudSave.CloudSaveService.Data.Player.LoadAsync(new HashSet<string> { PLAYER_DATA_KEY });
 
                 if (results.TryGetValue(PLAYER_DATA_KEY, out var item))
                 {
@@ -42,7 +42,7 @@ namespace TypingSurvivor.Features.Core.CloudSave
                     return null;
                 }
             }
-            catch (CloudSaveException e) when (e.Reason == CloudSaveExceptionReason.NotFound)
+            catch (CloudSaveException e) when (e.Reason == CloudSaveExceptionReason.DataNotFound)
             {
                 Debug.Log($"[CloudSaveService] No player data found (exception): {e}");
                 return null;
@@ -50,6 +50,46 @@ namespace TypingSurvivor.Features.Core.CloudSave
             catch (Exception e)
             {
                 Debug.LogError($"[CloudSaveService] Failed to load player data: {e}");
+                return null;
+            }
+        }
+
+        public async Task SavePlayerDataForPlayerAsync(string playerId, PlayerSaveData data)
+        {
+            try
+            {
+                var dataToSave = new Dictionary<string, object> { { PLAYER_DATA_KEY, data } };
+                // Use the Server API
+                await Unity.Services.CloudSave.CloudSaveService.Data.Server.SaveAsync(playerId, dataToSave);
+                Debug.Log($"[CloudSaveService] Successfully saved data for player {playerId}.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[CloudSaveService] Failed to save data for player {playerId}: {e}");
+            }
+        }
+
+        public async Task<PlayerSaveData> LoadPlayerDataForPlayerAsync(string playerId)
+        {
+            try
+            {
+                var keys = new HashSet<string> { PLAYER_DATA_KEY };
+                // Use the Server API
+                var results = await Unity.Services.CloudSave.CloudSaveService.Data.Server.LoadAsync(playerId, keys);
+
+                if (results.TryGetValue(PLAYER_DATA_KEY, out var item))
+                {
+                    return item.Value.GetAs<PlayerSaveData>();
+                }
+                else
+                {
+                    Debug.Log($"[CloudSaveService] No player data found for player {playerId}.");
+                    return null;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[CloudSaveService] Failed to load data for player {playerId}: {e}");
                 return null;
             }
         }

@@ -16,10 +16,15 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // If no player data exists, the game can't continue.
             return true;
         }
-        // TODO: 実装
         public GameResult CalculateResult(IGameStateReader gameState)
         {
-            return new GameResult();
+            // In single player, the game ends when the player runs out of oxygen, so it's always a loss.
+            // We return a result indicating no draw and an invalid winner ID to signify no one won.
+            return new GameResult
+            {
+                IsDraw = false,
+                WinnerClientId = ulong.MaxValue 
+            };
         }
     }
 }
