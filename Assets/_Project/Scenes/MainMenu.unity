@@ -944,8 +944,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32efd33a0ff97ab4b8767cff4fe9bb03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Screens.MainMenu.MatchmakingController
-  _matchmakingPanel: {fileID: 1180556155}
-  _roomCodePanel: {fileID: 1081688008}
+  _matchmakingWaitPanel: {fileID: 1180556155}
 --- !u!1 &383472813
 GameObject:
   m_ObjectHideFlags: 0
@@ -4129,11 +4128,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1180556149}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5422678f0312ed644a28f25459b8ed67, type: 3}
+  m_Script: {fileID: 11500000, guid: d36f2e862cafd2c4da16851d41d23cee, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Common.ConcreteScreen
+  m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Screens.MainMenu.MatchmakingWaitController
   _fadeDuration: 0.2
   _canvasGroup: {fileID: 1180556152}
+  _statusText: {fileID: 1007500313}
+  _cancelButton: {fileID: 1871164376}
 --- !u!1 &1225992419
 GameObject:
   m_ObjectHideFlags: 0

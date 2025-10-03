@@ -47,7 +47,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private SinglePlayerSelectController _singlePlayerSelectScreen;
         [SerializeField] private MultiplayerSelectController _multiplayerSelectScreen;
         [SerializeField] private MatchCodeController _matchCodeScreen;
-        [SerializeField] private ScreenBase _matchmakingWaitScreen;
+        [SerializeField] private MatchmakingWaitController _matchmakingWaitScreen;
         [SerializeField] private HowToPlayScreen _howToPlayScreen;
         [SerializeField] private RankingScreen _rankingScreen;
         [SerializeField] private ShopScreen _shopScreen;
@@ -101,7 +101,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _rankingScreen.Initialize(this);
             _howToPlayScreen.Initialize(this);
 
-            // _matchmakingController.Initialize(AppManager.Instance.MatchmakingService, _uiManager, AppManager.Instance);
+            _matchmakingController.Initialize(AppManager.Instance.MatchmakingService, _uiManager, AppManager.Instance);
 
             _ = CheckAuthenticationAndProceed();
         }
@@ -224,13 +224,13 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         public void StartPublicMatchmaking(string queueName)
         {
             RequestStateChange(PlayerUIState.WaitingInMatchmakingQueue);
-            // _matchmakingController.StartPublicMatchmaking(queueName);
+            _matchmakingController.StartPublicMatchmaking(queueName);
         }
 
         public void StartPrivateMatchmaking(string roomCode)
         {
             RequestStateChange(PlayerUIState.WaitingInMatchmakingQueue);
-            // _matchmakingController.StartPrivateMatchmaking(roomCode);
+            _matchmakingController.StartPrivateMatchmaking(roomCode);
         }
     }
 }

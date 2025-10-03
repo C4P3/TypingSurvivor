@@ -2,6 +2,7 @@ using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Matchmaking;
 using TypingSurvivor.Features.UI.Common;
 using UnityEngine;
+using System.Collections; // For Coroutines
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -12,14 +13,16 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         private AppManager _appManager;
 
         [Header("UI Panels")]
-        [SerializeField] private ScreenBase _matchmakingPanel;
-        [SerializeField] private ScreenBase _roomCodePanel; // For private matches
+        [SerializeField] private MatchmakingWaitController _matchmakingWaitPanel;
 
         public void Initialize(MatchmakingService matchmakingService, UIManager uiManager, AppManager appManager)
         {
             _matchmakingService = matchmakingService;
             _uiManager = uiManager;
             _appManager = appManager;
+            
+            _matchmakingWaitPanel.Initialize(this); // Initialize the wait panel
+            
             SubscribeToEvents();
         }
 
@@ -46,44 +49,64 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         public void StartPublicMatchmaking(string queueName)
         {
-            _uiManager.PushPanel(_matchmakingPanel);
+            // The UIFlowCoordinator is responsible for pushing the panel, 
+            // so we just update the status of the (now visible) panel.
+            _matchmakingWaitPanel.UpdateStatus("Searching for a match...");
             _matchmakingService.CreateTicketAsync(queueName);
         }
 
-        public void StartPrivateMatch(string roomCode)
+        public void StartPrivateMatchmaking(string roomCode)
         {
             if (string.IsNullOrEmpty(roomCode)) 
             {
                 HandleMatchFailure("Room code cannot be empty.");
                 return;
             }
-            _uiManager.PushPanel(_matchmakingPanel);
+            _matchmakingWaitPanel.UpdateStatus("Joining private room...");
+            // Note: This logic might be incorrect for private matches as per design docs (Relay vs Matchmaker).
+            // Assuming ticket-based system for now for simplicity.
             _matchmakingService.CreateTicketAsync("PrivateQueue", roomCode);
         }
 
         public void Cancel()
         {
+            // This will trigger the OnMatchFailure event with a "Cancelled" reason.
             _matchmakingService.CancelMatchmaking();
-            _uiManager.PopPanel();
         }
 
         private void HandleMatchSuccess(MatchmakingResult result)
         {
-            // TODO: Update UI to show "Match Found!"
+            _matchmakingWaitPanel.UpdateStatus("Match Found! Connecting...");
+            
+            // Short delay for user to read the message, then connect.
+            // The panel will be hidden automatically by the scene change.
+            StartCoroutine(ConnectAfterDelay(result, 1.5f));
+        }
+
+        private IEnumerator ConnectAfterDelay(MatchmakingResult result, float delay)
+        {            
+            yield return new WaitForSeconds(delay);
             Debug.Log($"Match found! Connecting to {result.Ip}:{result.Port}");
             _appManager.StartClient(result.Ip, (ushort)result.Port);
         }
 
         private void HandleMatchFailure(string reason)
         {
-            // TODO: Update UI to show the error message
-            Debug.LogError($"Matchmaking Failed: {reason}");
+            _matchmakingWaitPanel.UpdateStatus($"Failed: {reason}");
+            
+            // After showing the error for a moment, close the panel.
+            StartCoroutine(ClosePanelAfterDelay(2.0f));
+        }
+
+        private IEnumerator ClosePanelAfterDelay(float delay)
+        {
+            yield return new WaitForSeconds(delay);
             _uiManager.PopPanel();
         }
 
         private void HandleStatusUpdate(string status)
-        {
-            // TODO: Update the text on the _matchmakingPanel
+        {            
+            _matchmakingWaitPanel.UpdateStatus(status);
             Debug.Log($"Matchmaking Status: {status}");
         }
     }
