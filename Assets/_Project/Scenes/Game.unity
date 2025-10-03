@@ -1123,7 +1123,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 1
-  m_AdditionalShaderChannelsFlag: 25
+  m_AdditionalShaderChannelsFlag: 1
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -1166,7 +1166,6 @@ MonoBehaviour:
   _inGameHUD: {fileID: 1271839609}
   _resultScreen: {fileID: 164408816}
   _countdownScreen: {fileID: 1553501988}
-  _cameraManager: {fileID: 344080966}
   _lowOxygenPitch: 1.2
 --- !u!114 &763480458
 MonoBehaviour:

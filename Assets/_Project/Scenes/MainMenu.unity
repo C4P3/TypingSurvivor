@@ -436,7 +436,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Common.ConcreteScreen
   _fadeDuration: 0.2
-  _canvasGroup: {fileID: 0}
+  _canvasGroup: {fileID: 290219167}
 --- !u!225 &290219167
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -836,6 +836,7 @@ GameObject:
   - component: {fileID: 333156816}
   - component: {fileID: 333156819}
   - component: {fileID: 333156818}
+  - component: {fileID: 333156820}
   m_Layer: 5
   m_Name: MainMenuScreen
   m_TagString: Untagged
@@ -932,6 +933,24 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &333156820
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 333156814}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a25b8dc00c8e204db83c970911f072d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Screens.MainMenu.MainMenuController
+  _singlePlayerButton: {fileID: 2128055906}
+  _multiplayerButton: {fileID: 924356658}
+  _rankingButton: {fileID: 1225992421}
+  _shopButton: {fileID: 1439405002}
+  _settingsButton: {fileID: 108315653}
+  _howToPlayButton: {fileID: 709404536}
 --- !u!1 &381288397
 GameObject:
   m_ObjectHideFlags: 0
@@ -981,30 +1000,19 @@ MonoBehaviour:
   _uiManager: {fileID: 381288400}
   _matchmakingController: {fileID: 381288401}
   _titleScreen: {fileID: 1630696413}
+  _profileCreationScreen: {fileID: 0}
   _mainMenuScreen: {fileID: 333156818}
-  _levelSelectPanel: {fileID: 290219166}
-  _multiplayerModeSelectPanel: {fileID: 1747574313}
-  _roomCodePanel: {fileID: 1081688004}
-  _rankingScreen: {fileID: 922004159}
+  _singlePlayerSelectScreen: {fileID: 0}
+  _multiplayerSelectScreen: {fileID: 0}
+  _matchCodeScreen: {fileID: 0}
+  _matchmakingWaitScreen: {fileID: 0}
+  _howToPlayScreen: {fileID: 0}
+  _rankingScreen: {fileID: 0}
+  _shopScreen: {fileID: 0}
   _settingsScreen: {fileID: 1937257063}
-  _shopScreen: {fileID: 1561369514}
-  _creditsScreen: {fileID: 1951215801}
-  _titleScreenButton: {fileID: 828426979}
-  _titleStatusText: {fileID: 1630443690}
-  _singlePlayerButton: {fileID: 2128055906}
-  _multiplayerButton: {fileID: 924356658}
-  _rankingButton: {fileID: 1225992421}
-  _settingsButton: {fileID: 108315653}
-  _shopButton: {fileID: 1439405002}
-  _creditsButton: {fileID: 709404536}
-  _difficultyEasyButton: {fileID: 1659509077}
-  _closeLevelSelectButton: {fileID: 401074387}
-  _freeMatchButton: {fileID: 383472815}
-  _privateMatchButton: {fileID: 679621254}
-  _closeMultiplayerModeSelectButton: {fileID: 1590894823}
-  _cancelMatchmakingButton: {fileID: 327282751}
-  _roomCodeInput: {fileID: 729297952}
-  _joinPrivateMatchButton: {fileID: 980836659}
+  _titleScreenController: {fileID: 0}
+  _profileCreationController: {fileID: 0}
+  _mainMenuController: {fileID: 0}
 --- !u!114 &381288400
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2412,9 +2420,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 922004154}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c24f75f860c635c4fa51dcb5d2f3d463, type: 3}
+  m_Script: {fileID: 11500000, guid: 5422678f0312ed644a28f25459b8ed67, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Screens.ShopScreen
+  m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Common.ConcreteScreen
   _fadeDuration: 0.2
   _canvasGroup: {fileID: 922004156}
 --- !u!1 &924356656
@@ -3761,9 +3769,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1561369508}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c24f75f860c635c4fa51dcb5d2f3d463, type: 3}
+  m_Script: {fileID: 11500000, guid: 5422678f0312ed644a28f25459b8ed67, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Screens.ShopScreen
+  m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Common.ConcreteScreen
   _fadeDuration: 0.2
   _canvasGroup: {fileID: 1561369511}
 --- !u!1 &1590894821
@@ -4040,6 +4048,7 @@ GameObject:
   - component: {fileID: 1630696411}
   - component: {fileID: 1630696414}
   - component: {fileID: 1630696413}
+  - component: {fileID: 1630696415}
   m_Layer: 5
   m_Name: TitleScreen
   m_TagString: Untagged
@@ -4133,6 +4142,20 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &1630696415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1630696409}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e67836756327f9f4d9527cbe05dcd8db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Screens.MainMenu.TitleScreenController
+  _actionButton: {fileID: 828426979}
+  _statusText: {fileID: 1630443690}
 --- !u!1 &1659509075
 GameObject:
   m_ObjectHideFlags: 0
@@ -4354,7 +4377,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Common.ConcreteScreen
   _fadeDuration: 0.2
-  _canvasGroup: {fileID: 0}
+  _canvasGroup: {fileID: 1747574314}
 --- !u!225 &1747574314
 CanvasGroup:
   m_ObjectHideFlags: 0
