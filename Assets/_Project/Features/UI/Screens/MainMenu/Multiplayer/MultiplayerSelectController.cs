@@ -31,14 +31,12 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         private void OnFreeMatchClicked()
         {
-            // TODO: 正式なキュー名を指定する
-            _flowCoordinator.StartPublicMatchmaking("FreeMatchQueue");
+            _flowCoordinator.StartPublicMatchmaking("free-match");
         }
 
         private void OnRankedMatchClicked()
         {
-            // TODO: 正式なキュー名を指定する
-            _flowCoordinator.StartPublicMatchmaking("RankedMatchQueue");
+            _flowCoordinator.StartPublicMatchmaking("ranked-match");
         }
         
         private void OnPrivateMatchClicked()
