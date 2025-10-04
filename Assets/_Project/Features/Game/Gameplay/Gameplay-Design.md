@@ -59,17 +59,15 @@ GameManagerは、ゲーム起動モード（シングル/マルチ）に応じ�
 *   **選択フロー:**
     *   `GameSceneBootstrapper`は、`AppManager.GameMode`が`RankedMatch`である場合、この`RankedMatchStrategy`を`GameManager`に注入します。
 
-### (新規追加) 3.4. レート計算サービス (`RatingService`)
+### (新規追加) 3.4. スコア送信サービス (`LeaderboardService`)
 
-レート計算と保存のロジックは、ゲームプレイのルールから完全に分離された、専門の`RatingService`が担当します。
+スコアの送信と管理は、ゲームプレイのルールから完全に分離された、専門の`LeaderboardService`が担当します。
 
-*   **役割:** サーバーサイドで動作する、レート計算と永続化のためのサービス。
+*   **役割:** サーバーサイドで動作する、Unity Leaderboardへのスコア送信サービス。
 *   **処理フロー:**
     1.  `GameManager`が発行する**ゲーム終了イベント** (`OnGameFinished(GameResult result)`) を購読します。
-    2.  イベントを受け取ると、`GameResult`から勝者と敗者を特定します。
-    3.  **非同期で**`ICloudSaveService`を呼び出し、両プレイヤーの現在のレートを取得します。
-    4.  Eloレーティングシステム等のアルゴリズムで、新しいレートを算出します。
-    5.  算出した新しいレートを、`ICloudSaveService`を通じてCloud Saveに保存します。
+    2.  イベントを受け取ると、`GameResult`から各プレイヤーの最終スコアを特定します。
+    3.  **非同期で**`LeaderboardService.SubmitScoreAsync()`を呼び出し、スコアをUnity Leaderboardに送信します。
 
 この設計により、ゲームルール（同期処理）と、外部サービスとの通信（非同期処理）を明確に分離し、それぞれを独立してテスト・保守することが可能になります。
 

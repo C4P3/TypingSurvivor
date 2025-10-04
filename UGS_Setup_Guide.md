@@ -19,26 +19,16 @@
 
 ---
 
-### 3. Cloud Code (クラウドコード)
+### 3. Leaderboards (リーダーボード)
 
-1.  Unity Dashboardの「Cloud Code」セクションに移動します。
-2.  「Modules」タブを選択し、「Create module」をクリックします。
-3.  **Module name**を `RatingModule` とし、**Language** を `JavaScript` に設定します。
-4.  プロジェクトのルートに作成された `RatingModule.js` ファイルの中身を全てコピーし、エディタに貼り付けます。
-5.  「Publish」をクリックしてモジュールを公開します。
-
-#### パラメータの設定
-
-公開後、作成した各関数にパラメータを定義する必要があります。
-
-*   **`SavePlayerData` 関数:**
-    *   `playerId` (Type: `string`)
-    *   `playerDataKey` (Type: `string`)
-    *   `playerData` (Type: `any`)
-
-*   **`LoadPlayerData` 関数:**
-    *   `playerId` (Type: `string`)
-    *   `playerDataKey` (Type: `string`)
+1.  Unity Dashboardの「Leaderboards」セクションに移動します。
+2.  「Create new leaderboard」をクリックします。
+3.  以下の通りに設定します:
+    *   **Leaderboard ID**: `high-scores` (コードからこのIDで参照します)
+    *   **Leaderboard Name**: `High Scores` (表示名)
+    *   **Sort Order**: `Highest to Lowest` (スコアが高い順)
+    *   **Aggregation Strategy**: `Best Score` (プレイヤーの自己ベストを保持)
+4.  「Save」をクリックして作成します。
 
 ---
 
