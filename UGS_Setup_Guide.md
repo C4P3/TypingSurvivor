@@ -23,8 +23,8 @@
 
 1.  Unity Dashboardの「Cloud Code」セクションに移動します。
 2.  「Modules」タブを選択し、「Create module」をクリックします。
-3.  **Module name**を `RatingModule` とし、**Language** を `C#` に設定します。
-4.  プロジェクトのルートにある `CloudCode_RatingModule.cs` ファイルの中身を全てコピーし、エディタに貼り付けます。
+3.  **Module name**を `RatingModule` とし、**Language** を `JavaScript` に設定します。
+4.  プロジェクトのルートに作成された `RatingModule.js` ファイルの中身を全てコピーし、エディタに貼り付けます。
 5.  「Publish」をクリックしてモジュールを公開します。
 
 #### パラメータの設定
