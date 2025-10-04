@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Unity.Services.CloudSave;
+
 using Unity.Services.CloudCode;
 using UnityEngine;
 
@@ -51,7 +52,6 @@ namespace TypingSurvivor.Features.Core.CloudSave
                 return null;
             }
         }
-
         // --- Server-Side Methods (via Cloud Code) --- //
         public async Task SavePlayerDataForPlayerAsync(string playerId, PlayerSaveData data)
         {
@@ -73,7 +73,7 @@ namespace TypingSurvivor.Features.Core.CloudSave
         }
 
         public async Task<PlayerSaveData> LoadPlayerDataForPlayerAsync(string playerId)
-        {
+        { 
             try
             {
                 var args = new Dictionary<string, object>
@@ -84,7 +84,7 @@ namespace TypingSurvivor.Features.Core.CloudSave
                 var result = await CloudCodeService.Instance.CallEndpointAsync<PlayerSaveData>("LoadPlayerData", args);
                 return result;
             }
-            catch (CloudCodeException e) when (e.Message.Contains("Not Found")) // Simple check for not found
+            catch (CloudCodeException e) when (e.Message.Contains("Not Found") || e.Message.Contains("PLAYER_DATA_NOT_FOUND"))
             {
                  Debug.Log($"[CloudSaveService] No player data found for player {playerId} via Cloud Code.");
                  return null;
@@ -95,5 +95,6 @@ namespace TypingSurvivor.Features.Core.CloudSave
                 return null;
             }
         }
+
     }
 }

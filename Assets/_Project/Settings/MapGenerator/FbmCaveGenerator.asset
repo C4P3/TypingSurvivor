@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: TypingSurvivor.Game::FbmCaveGenerator
   _width: 100
   _height: 100
-  _noiseScale: 0.1
+  _noiseScale: 0.3
   _octaves: 4
   _lacunarity: 2
   _persistence: 0.5

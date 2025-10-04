@@ -8,7 +8,8 @@
         "Unity.Netcode.Runtime",
         "Unity.InputSystem",
         "Unity.Services.Authentication",
-        "Unity.Services.Core.Networking"
+        "Unity.Services.Core.Networking",
+        "Unity.Services.Leaderboards"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

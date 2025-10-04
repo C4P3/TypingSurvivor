@@ -29,4 +29,4 @@ MonoBehaviour:
     weight: 1
   - itemName: Unchi
     weight: 1
-  _placementChancePerTile: 0.2
+  _placementChancePerTile: 0.15

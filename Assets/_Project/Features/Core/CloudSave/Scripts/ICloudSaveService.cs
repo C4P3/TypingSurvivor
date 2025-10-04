@@ -15,5 +15,6 @@ namespace TypingSurvivor.Features.Core.CloudSave
 
         // For server to load any player's data
         Task<PlayerSaveData> LoadPlayerDataForPlayerAsync(string playerId);
+
     }
 }

@@ -1,18 +1,19 @@
 using System.Threading.Tasks;
+using UnityEngine;
 using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.Game.Gameplay;
 using TypingSurvivor.Features.Game.Gameplay.Data;
-using UnityEngine;
 
 namespace TypingSurvivor.Features.Game.Rating
 {
     public class RatingService : IRatingService
     {
+        private const int K_FACTOR = 32;
+        private const int DEFAULT_RATING = 1500;
+
         private readonly ICloudSaveService _cloudSaveService;
         private readonly IGameStateReader _gameStateReader;
-        private readonly GameManager _gameManager;
-
-        private const int RatingChangeAmount = 10;
+        private readonly GameManager _gameManager; // To get authentication IDs
 
         public RatingService(ICloudSaveService cloudSaveService, IGameStateReader gameStateReader, GameManager gameManager)
         {
@@ -29,58 +30,57 @@ namespace TypingSurvivor.Features.Game.Rating
                 return;
             }
 
-            ulong winnerClientId = result.WinnerClientId;
-            ulong loserClientId = 0;
+            PlayerData? winnerData = null;
+            PlayerData? loserData = null;
 
-            foreach (var player in _gameStateReader.PlayerDatas)
+            foreach (var pData in _gameStateReader.PlayerDatas)
             {
-                if (player.ClientId != winnerClientId)
+                if (pData.ClientId == result.WinnerClientId)
                 {
-                    loserClientId = player.ClientId;
-                    break;
+                    winnerData = pData;
+                }
+                else
+                {
+                    loserData = pData;
                 }
             }
 
-            if (loserClientId == 0 && _gameStateReader.PlayerDatas.Count > 1)
+            if (winnerData == null || loserData == null)
             {
-                Debug.LogError($"[RatingService] Could not find loser. Winner was {winnerClientId}.");
+                Debug.LogError("[RatingService] Could not determine winner and loser. Aborting rating change.");
                 return;
             }
 
-            // Get the real PlayerIds from the GameManager
-            string winnerPlayerId = _gameManager.GetPlayerId(winnerClientId);
-            string loserPlayerId = _gameManager.GetPlayerId(loserClientId);
+            // Use the correct method name: GetPlayerId
+            string winnerAuthId = _gameManager.GetPlayerId(winnerData.Value.ClientId);
+            string loserAuthId = _gameManager.GetPlayerId(loserData.Value.ClientId);
 
-            if (string.IsNullOrEmpty(winnerPlayerId) || string.IsNullOrEmpty(loserPlayerId))
+            if (string.IsNullOrEmpty(winnerAuthId) || string.IsNullOrEmpty(loserAuthId))
             {
-                Debug.LogError($"[RatingService] Could not find PlayerId for a client. Winner: {winnerPlayerId}, Loser: {loserPlayerId}. Aborting rating change.");
+                Debug.LogError("[RatingService] Could not find AuthenticationId for a client. Aborting rating change.");
                 return;
             }
 
-            TypingSurvivor.Features.Core.CloudSave.PlayerSaveData winnerData = await _cloudSaveService.LoadPlayerDataForPlayerAsync(winnerPlayerId);
-            TypingSurvivor.Features.Core.CloudSave.PlayerSaveData loserData = await _cloudSaveService.LoadPlayerDataForPlayerAsync(loserPlayerId);
+            // Use a safe null check instead of the '??' operator to avoid compiler issues
+            var winnerSaveData = await _cloudSaveService.LoadPlayerDataForPlayerAsync(winnerAuthId);
+            if (winnerSaveData == null) winnerSaveData = new PlayerSaveData();
 
-            // If data doesn't exist, create it with default values
-            if (winnerData == null)
-            {
-                winnerData = new TypingSurvivor.Features.Core.CloudSave.PlayerSaveData();
-            }
-            if (loserData == null)
-            {
-                loserData = new TypingSurvivor.Features.Core.CloudSave.PlayerSaveData();
-            }
+            var loserSaveData = await _cloudSaveService.LoadPlayerDataForPlayerAsync(loserAuthId);
+            if (loserSaveData == null) loserSaveData = new PlayerSaveData();
 
-            int oldWinnerRating = winnerData.Rating;
-            int oldLoserRating = loserData.Rating;
+            int oldWinnerRating = winnerSaveData.Progress.Rating > 0 ? winnerSaveData.Progress.Rating : DEFAULT_RATING;
+            int oldLoserRating = loserSaveData.Progress.Rating > 0 ? loserSaveData.Progress.Rating : DEFAULT_RATING;
 
-            winnerData.Rating += RatingChangeAmount;
-            loserData.Rating = Mathf.Max(0, loserData.Rating - RatingChangeAmount);
+            double expectedWinner = 1.0 / (1.0 + System.Math.Pow(10, (double)(oldLoserRating - oldWinnerRating) / 400.0));
 
-            Debug.Log($"[RatingService] Winner ({winnerPlayerId}): {oldWinnerRating} -> {winnerData.Rating}");
-            Debug.Log($"[RatingService] Loser ({loserPlayerId}): {oldLoserRating} -> {loserData.Rating}");
+            winnerSaveData.Progress.Rating = oldWinnerRating + (int)(K_FACTOR * (1.0 - expectedWinner));
+            loserSaveData.Progress.Rating = oldLoserRating - (int)(K_FACTOR * expectedWinner);
 
-            await _cloudSaveService.SavePlayerDataForPlayerAsync(winnerPlayerId, winnerData);
-            await _cloudSaveService.SavePlayerDataForPlayerAsync(loserPlayerId, loserData);
+            Debug.Log($"[RatingService] Winner ({winnerAuthId}): {oldWinnerRating} -> {winnerSaveData.Progress.Rating}");
+            Debug.Log($"[RatingService] Loser ({loserAuthId}): {oldLoserRating} -> {loserSaveData.Progress.Rating}");
+
+            await _cloudSaveService.SavePlayerDataForPlayerAsync(winnerAuthId, winnerSaveData);
+            await _cloudSaveService.SavePlayerDataForPlayerAsync(loserAuthId, loserSaveData);
         }
     }
 }

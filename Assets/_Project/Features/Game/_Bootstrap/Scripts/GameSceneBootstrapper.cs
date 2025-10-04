@@ -7,11 +7,12 @@ using System.Collections.Generic;
 using TypingSurvivor.Features.Game.Level;
 using TypingSurvivor.Features.Game.Camera;
 using TypingSurvivor.Features.UI;
-using TypingSurvivor.Features.Game.Rating;
 using TypingSurvivor.Features.Core.CloudSave;
 
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
+using TypingSurvivor.Features.Game.Rating;
+using System;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -148,22 +149,27 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // --- Initialize Rating Service for Ranked Matches ---
             if (gameMode == GameModeType.RankedMatch)
             {
+            // --- Initialize Rating Service for Ranked Matches ---
+            if (gameMode == GameModeType.RankedMatch)
+            {
                 var ratingService = new RatingService(
                     serviceLocator.GetService<ICloudSaveService>(),
-                    serviceLocator.GetService<IGameStateReader>(),
+                    _gameState,
                     _gameManager
                 );
+
                 _gameManager.OnGameFinished += async (result) =>
                 {
                     try
                     {
                         await ratingService.HandleGameFinished(result);
                     }
-                    catch (System.Exception e)
+                    catch (Exception e)
                     {
                         Debug.LogError($"[GameSceneBootstrapper] Error executing RatingService: {e}");
                     }
                 };
+            }
             }
 
             // --- Inject dependencies into CameraManager ---
