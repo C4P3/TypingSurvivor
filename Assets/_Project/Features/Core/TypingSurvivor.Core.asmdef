@@ -9,7 +9,8 @@
         "Unity.Networking.Transport",
         "Unity.Services.Multiplayer",
         "Unity.Services.CloudSave",
-        "Unity.Services.CloudCode"
+        "Unity.Services.CloudCode",
+        "Unity.Services.Authentication.Server"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

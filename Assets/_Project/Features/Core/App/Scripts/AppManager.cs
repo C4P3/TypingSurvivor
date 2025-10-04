@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Core.Matchmaking;
 using TypingSurvivor.Features.Core.CloudSave;
+using Unity.Services.Authentication.Server;
 using Unity.Netcode.Transports.UTP;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
@@ -29,7 +30,7 @@ namespace TypingSurvivor.Features.Core.App
             GameMode = mode;
         }
         
-        public IAuthenticationService AuthService { get; private set; }
+        public TypingSurvivor.Features.Core.Auth.IAuthenticationService AuthService { get; private set; }
         public ICloudSaveService CloudSaveService { get; private set; }
         public MatchmakingService MatchmakingService { get; private set; }
         public IPlayerStatusSystemReader StatusReader { get; private set; }
@@ -60,35 +61,26 @@ namespace TypingSurvivor.Features.Core.App
 
         private async void Start()
         {
-            // Asynchronously initialize services in the background for both paths
-            await InitializeCoreServicesAsync();
-
             var args = System.Environment.GetCommandLineArgs();
             bool isDedicatedServer = System.Array.Exists(args, arg => arg == "-dedicatedServer");
+
+            // Asynchronously initialize services in the background
+            await InitializeCoreServicesAsync(isDedicatedServer);
 
             if (isDedicatedServer)
             {
                 // --- Dedicated Server Path ---
                 ushort serverPort = 7777;
-                string externalServerIP = "0.0.0.0"; // Listen on all available network interfaces
+                string externalServerIP = "0.0.0.0";
                 GameModeType gameMode = GameModeType.MultiPlayer;
 
                 for (int i = 0; i < args.Length; i++)
                 {
-                    if (args[i] == "-port" && i + 1 < args.Length)
-                    {
-                        ushort.TryParse(args[i + 1], out serverPort);
-                    }
-                    else if (args[i] == "-ip" && i + 1 < args.Length)
-                    {
-                        externalServerIP = args[i + 1];
-                    }
+                    if (args[i] == "-port" && i + 1 < args.Length) ushort.TryParse(args[i + 1], out serverPort);
+                    else if (args[i] == "-ip" && i + 1 < args.Length) externalServerIP = args[i + 1];
                     else if (args[i] == "-gameMode" && i + 1 < args.Length)
                     {
-                        if (Enum.TryParse<GameModeType>(args[i + 1], true, out var parsedMode))
-                        {
-                            gameMode = parsedMode;
-                        }
+                        if (Enum.TryParse<GameModeType>(args[i + 1], true, out var parsedMode)) gameMode = parsedMode;
                     }
                 }
                 
@@ -130,10 +122,18 @@ namespace TypingSurvivor.Features.Core.App
             _musicManager.Initialize(_audioRegistry); 
         }
 
-        private async Task InitializeCoreServicesAsync()
+        private async Task InitializeCoreServicesAsync(bool isDedicatedServer)
         {
             await InitializeUgsAsync();
-            AuthService = new ClientAuthenticationService();
+            if (isDedicatedServer)
+            {
+                await ServerAuthenticationService.Instance.SignInFromServerAsync();
+                Debug.Log("Server signed in successfully.");
+            }
+            else
+            {
+                AuthService = new ClientAuthenticationService();
+            }
 
             CloudSaveService = new CloudSaveService();
             RegisterService(CloudSaveService);
