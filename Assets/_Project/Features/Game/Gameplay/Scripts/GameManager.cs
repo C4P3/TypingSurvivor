@@ -365,7 +365,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             var request = new MapGenerationRequest();
             var clientIds = _playerInstances.Keys.ToList();
 
-            if (_gameModeStrategy is MultiPlayerStrategy)
+            if (_gameModeStrategy is MultiPlayerStrategy || _gameModeStrategy is RankedMatchStrategy)
             {
                 for (int i = 0; i < clientIds.Count; i++)
                 {
