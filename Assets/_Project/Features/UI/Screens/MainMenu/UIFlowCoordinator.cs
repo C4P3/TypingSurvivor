@@ -5,6 +5,7 @@ using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.UI.Common;
 using TypingSurvivor.Features.UI.Screens;
+using Unity.Netcode;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -203,14 +204,38 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             AppManager.Instance.StartGame(mode);
         }
 
-        public void StartPublicMatchmaking(string queueName)
+        public void StartPublicMatchmaking(string queueName, GameModeType gameMode)
         {
-            _matchmakingController.StartPublicMatchmaking(queueName);
+            _matchmakingController.StartPublicMatchmaking(queueName, gameMode);
         }
 
         public void StartPrivateMatchmaking(string roomCode)
         {
             _matchmakingController.StartPrivateMatchmaking(roomCode);
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private void OnGUI()
+        {
+            // Only show the buttons if we are in the main menu and not connected
+            if (_currentState == PlayerUIState.InMainMenu && !NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
+            {
+                // Position the buttons in the top-left corner
+                GUILayout.BeginArea(new Rect(10, 10, 200, 200));
+
+                if (GUILayout.Button("Client (Ranked)"))
+                {
+                    AppManager.Instance.StartClient("127.0.0.1", 7777, GameModeType.RankedMatch);
+                }
+
+                if (GUILayout.Button("Client (Free Match)"))
+                {
+                    AppManager.Instance.StartClient("127.0.0.1", 7777, GameModeType.MultiPlayer);
+                }
+
+                GUILayout.EndArea();
+            }
+        }
+#endif
     }
 }

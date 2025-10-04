@@ -208,23 +208,15 @@ namespace TypingSurvivor.Features.Core.App
         public void StartClient()
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
-
-            MusicManager.Instance.Stop(0f);
-            SetGameMode(GameModeType.MultiPlayer);
-
-            const string ipAddress = "127.0.0.1";
-            const ushort port = 7777;
-
-            NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData(ipAddress, port);
-            NetworkManager.Singleton.StartClient();
+            StartClient("127.0.0.1", 7777, GameModeType.MultiPlayer);
         }
 
-        public void StartClient(string ipAddress, ushort port)
+        public void StartClient(string ipAddress, ushort port, GameModeType gameMode)
         {
             if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer) return;
 
             MusicManager.Instance.Stop(0f);
-            SetGameMode(GameModeType.MultiPlayer);
+            SetGameMode(gameMode);
 
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(ipAddress, port);
             NetworkManager.Singleton.StartClient();

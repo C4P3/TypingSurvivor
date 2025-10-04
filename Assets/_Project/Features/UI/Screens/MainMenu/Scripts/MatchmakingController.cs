@@ -12,6 +12,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         private UIManager _uiManager;
         private AppManager _appManager;
         private bool _isPrivateMatch;
+        private GameModeType _currentGameMode;
 
         [Header("UI Panels")]
         [SerializeField] private MatchmakingWaitController _publicWaitPanel;
@@ -48,9 +49,10 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             if(_privateLobbyWaitPanel != null) _privateLobbyWaitPanel.OnCancelClicked -= Cancel;
         }
 
-        public void StartPublicMatchmaking(string queueName)
+        public void StartPublicMatchmaking(string queueName, GameModeType gameMode)
         {
             _isPrivateMatch = false;
+            _currentGameMode = gameMode;
             _uiManager.PushPanel(_publicWaitPanel);
             _publicWaitPanel.UpdateStatus("Searching for a match...");
             _matchmakingService.CreateTicketAsync(queueName);
@@ -84,10 +86,10 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         }
 
         private IEnumerator ConnectAfterDelay(MatchmakingResult result, float delay)
-        {            
+        {
             yield return new WaitForSeconds(delay);
             Debug.Log($"Match found! Connecting to {result.Ip}:{result.Port}");
-            _appManager.StartClient(result.Ip, (ushort)result.Port);
+            _appManager.StartClient(result.Ip, (ushort)result.Port, _currentGameMode);
         }
 
         private void HandleMatchFailure(string reason)

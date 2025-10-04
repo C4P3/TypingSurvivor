@@ -177,11 +177,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private IEnumerator WaitingForPlayersPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.WaitingForPlayers;
-
-            // Wait until the number of connected clients matches the expected player count for the mode.
-            // Also, ensure all connected clients have registered their PlayerId.
-            while (NetworkManager.Singleton.ConnectedClients.Count < _gameModeStrategy.PlayerCount || 
-                   _clientIdToPlayerIdMap.Count < _gameModeStrategy.PlayerCount)
+            Debug.LogError($"[GameManager] Waiting for players. Strategy: {_gameModeStrategy.GetType().Name}, Required PlayerCount: {_gameModeStrategy.PlayerCount}");
+            while (_gameState.PlayerDatas.Count < _gameModeStrategy.PlayerCount)
             {
                 yield return null;
             }
@@ -268,8 +265,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             var request = new MapGenerationRequest();
             var clientIds = NetworkManager.Singleton.ConnectedClientsIds.ToList();
 
-            // For now, use a simple logic. This can be expanded for different modes.
-            if (_gameModeStrategy is MultiPlayerStrategy)
+            if (_gameModeStrategy is MultiPlayerStrategy || _gameModeStrategy is RankedMatchStrategy)
             {
                 for (int i = 0; i < clientIds.Count; i++)
                 {

@@ -1,5 +1,6 @@
 using UnityEngine;
 using TypingSurvivor.Features.UI.Common;
+using TypingSurvivor.Features.Core.App;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -31,12 +32,12 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         private void OnFreeMatchClicked()
         {
-            _flowCoordinator.StartPublicMatchmaking("free-match");
+            _flowCoordinator.StartPublicMatchmaking("free-match", GameModeType.MultiPlayer);
         }
 
         private void OnRankedMatchClicked()
         {
-            _flowCoordinator.StartPublicMatchmaking("ranked-match");
+            _flowCoordinator.StartPublicMatchmaking("ranked-match", GameModeType.RankedMatch);
         }
         
         private void OnPrivateMatchClicked()
