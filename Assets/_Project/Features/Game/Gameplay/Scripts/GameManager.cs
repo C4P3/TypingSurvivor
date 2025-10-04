@@ -177,7 +177,11 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private IEnumerator WaitingForPlayersPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.WaitingForPlayers;
-            while (_gameState.PlayerDatas.Count < _gameModeStrategy.PlayerCount)
+
+            // Wait until the number of connected clients matches the expected player count for the mode.
+            // Also, ensure all connected clients have registered their PlayerId.
+            while (NetworkManager.Singleton.ConnectedClients.Count < _gameModeStrategy.PlayerCount || 
+                   _clientIdToPlayerIdMap.Count < _gameModeStrategy.PlayerCount)
             {
                 yield return null;
             }
