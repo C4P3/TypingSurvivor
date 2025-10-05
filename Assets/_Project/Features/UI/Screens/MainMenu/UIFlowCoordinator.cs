@@ -204,9 +204,9 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             AppManager.Instance.StartGame(mode);
         }
 
-        public void StartPublicMatchmaking(string queueName, GameModeType gameMode)
+        public async Task StartPublicMatchmaking(string queueName, GameModeType gameMode)
         {
-            _matchmakingController.StartPublicMatchmaking(queueName, gameMode);
+            await _matchmakingController.StartPublicMatchmaking(queueName, gameMode);
         }
 
         public void StartPrivateMatchmaking(string roomCode)

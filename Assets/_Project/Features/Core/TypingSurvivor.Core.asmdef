@@ -10,7 +10,9 @@
         "Unity.Services.Multiplayer",
         "Unity.Services.CloudSave",
         "Unity.Services.CloudCode",
-        "Unity.Services.Authentication.Server"
+        "Unity.Services.Authentication.Server",
+        "Unity.Services.Multiplayer.Editor.Matchmaker.Authoring",
+        "Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

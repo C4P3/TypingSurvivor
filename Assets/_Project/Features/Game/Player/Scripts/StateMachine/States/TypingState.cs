@@ -15,7 +15,6 @@ namespace TypingSurvivor.Features.Game.Player
 
         public void Enter(PlayerState stateFrom)
         {
-            Debug.Log("Entering Typing State");
             // TypingManagerに新しいお題の取得とタイピング開始を要求する
             _facade.TypingService?.StartTyping();
         }
@@ -27,7 +26,6 @@ namespace TypingSurvivor.Features.Game.Player
 
         public void Exit(PlayerState stateTo)
         {
-            Debug.Log("Exiting Typing State");
             _facade.TypingService?.StopTyping();
         }
 

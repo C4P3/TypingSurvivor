@@ -48,14 +48,16 @@ namespace TypingSurvivor.Features.Core.Matchmaking
 
             try
             {
-                var attributes = new Dictionary<string, object>();
-                if (!string.IsNullOrEmpty(roomCode))
+                if (string.IsNullOrEmpty(roomCode))
                 {
-                    attributes["room_code"] = roomCode;
+                    roomCode = "publicRoom";
                 }
 
-                var options = new CreateTicketOptions(queueName, attributes);
-                var players = new List<Player> { new Player(AuthenticationService.Instance.PlayerId) };
+                var options = new CreateTicketOptions(queueName);
+                var players = new List<Player> { new Player(AuthenticationService.Instance.PlayerId
+                    , new MatchmakingPlayerData { room_code = roomCode }
+                    )
+                };
                 var ticketResponse = await MatchmakerService.Instance.CreateTicketAsync(players, options);
 
                 _currentTicketId = ticketResponse.Id;

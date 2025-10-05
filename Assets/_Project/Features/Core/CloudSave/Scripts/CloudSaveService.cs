@@ -93,7 +93,6 @@ namespace TypingSurvivor.Features.Core.CloudSave
                 // Newtonsoft.Jsonなどのライブラリを使用する必要があります。
                 // ここでは、プロジェクトにNewtonsoft.Jsonがインポートされていることを前提とします。
                 var jsonPayload = Newtonsoft.Json.JsonConvert.SerializeObject(new { @params = args });
-                Debug.Log($"[CloudSaveService] UpdateRatings payload: {jsonPayload}");
                 request.Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json");
 
                 var response = await _httpClient.SendAsync(request);
@@ -125,7 +124,6 @@ namespace TypingSurvivor.Features.Core.CloudSave
 
                 var args = new Dictionary<string, object> { { "targetPlayerId", playerId } };
                 var jsonPayload = JsonConvert.SerializeObject(new { @params = args });
-                Debug.Log($"[CloudSaveService] GetRating payload: {jsonPayload}");
                 request.Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json");
 
                 var response = await _httpClient.SendAsync(request);

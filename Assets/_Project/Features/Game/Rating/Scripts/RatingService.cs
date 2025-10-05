@@ -67,7 +67,13 @@ namespace TypingSurvivor.Features.Game.Rating
             double expectedWinner = 1.0 / (1.0 + System.Math.Pow(10, (double)(oldLoserRating - oldWinnerRating) / 400.0));
 
             int newWinnerRating = oldWinnerRating + (int)(K_FACTOR * (1.0 - expectedWinner));
-            int newLoserRating = oldLoserRating - (int)(K_FACTOR * expectedWinner);
+            int newLoserRating = oldLoserRating - (int)(K_FACTOR * (1.0 - expectedWinner));
+
+            // Ensure rating does not fall below zero.
+            if (newLoserRating < 0)
+            {
+                newLoserRating = 0;
+            }
 
             Debug.Log($"[RatingService] Winner ({winnerAuthId}): {oldWinnerRating} -> {newWinnerRating}");
             Debug.Log($"[RatingService] Loser ({loserAuthId}): {oldLoserRating} -> {newLoserRating}");

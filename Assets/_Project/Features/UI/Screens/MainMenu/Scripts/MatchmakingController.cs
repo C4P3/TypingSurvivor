@@ -3,6 +3,7 @@ using TypingSurvivor.Features.Core.Matchmaking;
 using TypingSurvivor.Features.UI.Common;
 using UnityEngine;
 using System.Collections;
+using System.Threading.Tasks;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -49,13 +50,13 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             if(_privateLobbyWaitPanel != null) _privateLobbyWaitPanel.OnCancelClicked -= Cancel;
         }
 
-        public void StartPublicMatchmaking(string queueName, GameModeType gameMode)
+        public async Task StartPublicMatchmaking(string queueName, GameModeType gameMode)
         {
             _isPrivateMatch = false;
             _currentGameMode = gameMode;
             _uiManager.PushPanel(_publicWaitPanel);
             _publicWaitPanel.UpdateStatus("Searching for a match...");
-            _matchmakingService.CreateTicketAsync(queueName);
+            await _matchmakingService.CreateTicketAsync(queueName);
         }
 
         public void StartPrivateMatchmaking(string roomCode)
