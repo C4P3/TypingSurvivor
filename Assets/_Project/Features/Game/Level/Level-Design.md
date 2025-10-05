@@ -80,6 +80,9 @@ public class SpawnArea
 
 ### **3.4. 多様なマップ生成アルゴリズム (Strategy Pattern)**
 
+**クラス図:**
+* [Level機能 クラス図](./Level-Class-Diagram.md)
+
 地形の生成ロジックは`IMapGenerator`インターフェースを実装した`ScriptableObject`に完全にカプセル化されており、`GameConfig`から差し替えるだけで様々な種類のマップを簡単に試すことができます。
 
 -   **`TerrainPreset`による設定の共通化**:

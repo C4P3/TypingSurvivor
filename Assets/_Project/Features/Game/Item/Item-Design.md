@@ -39,6 +39,9 @@ Item機能は、ゲーム内に登場する全てのアイテム（消耗品、�
   * ILevelService LevelService: ブロックを破壊する。  
   * IPlayerStatusSystemWriter PlayerStatusSystemWriter: プレイヤーの永続ステータスを変更する。
 
+**クラス図:**
+* [Item機能 クラス図](./Item-Class-Diagram.md)
+
 ## **3\. サービスとレジストリ**
 
 ### **3.1. ItemService.cs**
