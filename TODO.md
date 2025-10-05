@@ -5,31 +5,9 @@
 
 
 ## 急ぎ
-- [ ] **バグ修正**:
-    - Failed to delete ticket: The object of type 'TypingSurvivor.Features.UI.Screens.MainMenu.MatchmakingController' has been destroyed but you are still trying to access it.
-Your script should either check if it is null or you should not destroy the object. Parameter name: obj
-UnityEngine.Debug:LogWarning (object)
-TypingSurvivor.Features.Core.Matchmaking.MatchmakingService/<CancelMatchmaking>d__17:MoveNext () (at Assets/_Project/Features/Core/Matchmaking/Scripts/MatchmakingService.cs:144)
-System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetResult ()
-Unity.Services.Matchmaker.WrappedMatchmakerService/<DeleteTicketAsync>d__9:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/SDK/WrappedMatchmakerService.cs:136)
-System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Response>:SetResult (Unity.Services.Matchmaker.Response)
-Unity.Services.Matchmaker.WrappedMatchmakerService/<TryCatchRequest>d__16`1<Unity.Services.Matchmaker.Tickets.DeleteTicketRequest>:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/SDK/WrappedMatchmakerService.cs:264)
-System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Response>:SetResult (Unity.Services.Matchmaker.Response)
-Unity.Services.Matchmaker.Apis.Tickets.TicketsApiClient/<DeleteTicketAsync>d__8:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Apis/TicketsApi.cs:150)
-System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
-Unity.Services.Matchmaker.Http.HttpClient/<MakeRequestAsync>d__1:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/HttpClient.cs:41)
-System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
-Unity.Services.Matchmaker.Http.HttpClient/<CreateWebRequestAsync>d__3:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/HttpClient.cs:56)
-System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
-Unity.Services.Matchmaker.Http.HttpClient/<CreateHttpClientResponse>d__4:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/HttpClient.cs:84)
-System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
-Unity.Services.Matchmaker.Http.HttpClient/<>c__DisplayClass4_0/<<CreateHttpClientResponse>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/HttpClient.cs:81)
-System.Threading.Tasks.TaskCompletionSource`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
-Unity.Services.Matchmaker.Http.UnityWebRequestHelpers/<>c__DisplayClass0_0:<GetAwaiter>b__0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/UnityWebRequestHelpers.cs:34)
-UnityEngine.AsyncOperation:InvokeCompletionEvent ()
-　- メインメニューシーンに戻って再度マッチングを開始するとマッチングが永遠に終わらず、マッチングをキャンセルしようとすると発生。
-- [ ] **フリーマッチでもレート計算しちゃう**:
-  - Strategyで分岐を追加。というか、Strategyに計算式があってもいい
+
+- [x] **フリーマッチでもレート計算しちゃう**:
+  - `GameSceneBootstrapper`の現在の実装で、RankedMatch以外では`RatingService`がフックされないことを確認。問題は解決済み。
 ---
 
 ## 🚀 フェーズ1: ゲームフロー基盤の実装 (完了)
@@ -45,8 +23,6 @@ UnityEngine.AsyncOperation:InvokeCompletionEvent ()
     - [x] `Matchmaking-Design.md` を作成し、UGSのMatchmakerとRelayを利用したシステムの全体像を設計した。
 - [x] **Matchmaking機能の実装**:
     - [x] `MatchmakingService`と`MatchmakingController`を実装し、公開マッチと合言葉マッチのロジックを構築した。
-- [ ] **Matchmaking UIの接続**:
-    - [ ] Unity Editor上で、`MainMenuManager`と`MatchmakingController`に、実際のUIコンポーネント（ボタン、入力フィールドなど）を接続する。
 
 ---
 
@@ -95,6 +71,9 @@ UnityEngine.AsyncOperation:InvokeCompletionEvent ()
 
 ## ✅ 完了済みタスク (Completed)
 
+- [x] **マッチング処理の改善**:
+    - UI層からサービス層まで`async/await`を徹底し、警告を解消。
+    - `MatchmakingController`の`OnDestroy`でイベント購読を解除し、オブジェクト破棄後のコールバックによるエラーを修正。
 - [x] **UIナビゲーションシステムの本格実装**:
     - [x] `MainMenuManager`の責務を`UIFlowCoordinator`に集約し、`UI-Design.md`に記載された画面フローを完全に実装した。
     - [x] `UIFlowCoordinator`にステートマシンを実装し、ランキング、設定、ショップなど全ての画面への遷移ロジックを実装した。

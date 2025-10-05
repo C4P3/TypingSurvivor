@@ -39,6 +39,11 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _privateLobbyWaitPanel.OnCancelClicked += Cancel;
         }
 
+        private void OnDestroy()
+        {
+            UnsubscribeFromEvents();
+        }
+
         private void UnsubscribeFromEvents()
         {
             if (_matchmakingService == null) return;
@@ -59,17 +64,17 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             await _matchmakingService.CreateTicketAsync(queueName);
         }
 
-        public void StartPrivateMatchmaking(string roomCode)
+        public async Task StartPrivateMatchmaking(string roomCode)
         {
             _isPrivateMatch = true;
-            if (string.IsNullOrEmpty(roomCode)) 
+            if (string.IsNullOrEmpty(roomCode))
             {
                 Debug.LogError("Room code cannot be empty.");
                 return;
             }
             _uiManager.PushPanel(_privateLobbyWaitPanel);
             _privateLobbyWaitPanel.ShowWithRoomCode(roomCode);
-            _matchmakingService.CreateTicketAsync("PrivateQueue", roomCode); // Using a placeholder queue name
+            await _matchmakingService.CreateTicketAsync("PrivateQueue", roomCode); // Using a placeholder queue name
         }
 
         public void Cancel()

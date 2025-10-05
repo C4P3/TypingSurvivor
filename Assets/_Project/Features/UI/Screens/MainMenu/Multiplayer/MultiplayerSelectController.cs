@@ -30,14 +30,14 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _backButton.onClick.AddListener(OnBackButtonClicked);
         }
 
-        private void OnFreeMatchClicked()
+        private async void OnFreeMatchClicked()
         {
-            _flowCoordinator.StartPublicMatchmaking("free-match", GameModeType.MultiPlayer);
+            await _flowCoordinator.StartPublicMatchmaking("free-match", GameModeType.MultiPlayer);
         }
 
-        private void OnRankedMatchClicked()
+        private async void OnRankedMatchClicked()
         {
-            _flowCoordinator.StartPublicMatchmaking("ranked-match", GameModeType.RankedMatch);
+            await _flowCoordinator.StartPublicMatchmaking("ranked-match", GameModeType.RankedMatch);
         }
         
         private void OnPrivateMatchClicked()

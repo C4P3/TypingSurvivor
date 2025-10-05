@@ -209,9 +209,9 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             await _matchmakingController.StartPublicMatchmaking(queueName, gameMode);
         }
 
-        public void StartPrivateMatchmaking(string roomCode)
+        public async Task StartPrivateMatchmaking(string roomCode)
         {
-            _matchmakingController.StartPrivateMatchmaking(roomCode);
+            await _matchmakingController.StartPrivateMatchmaking(roomCode);
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

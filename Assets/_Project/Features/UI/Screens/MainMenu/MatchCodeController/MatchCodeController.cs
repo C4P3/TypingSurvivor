@@ -37,7 +37,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _roomCodeInputField.text = "";
         }
 
-        private void OnJoinButtonClicked()
+        private async void OnJoinButtonClicked()
         {
             string roomCode = _roomCodeInputField.text;
             if (string.IsNullOrWhiteSpace(roomCode))
@@ -50,7 +50,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 return;
             }
             
-            _flowCoordinator.StartPrivateMatchmaking(roomCode.ToUpper());
+            await _flowCoordinator.StartPrivateMatchmaking(roomCode.ToUpper());
         }
 
         private void OnBackButtonClicked()
