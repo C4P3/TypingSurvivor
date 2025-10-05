@@ -30,11 +30,11 @@
 
 コアなゲーム体験が固まった後、本格的なマルチプレイ体験の構築と、長期的な運用を見据えた改善を行います。
 
-- [ ] **ランクマッチとプライベートマッチの設計・実装**:
-    - [ ] `Matchmaking-Design.md` と `Gameplay-Design.md` を更新し、ランクマッチとプライベートマッチのフローを定義する。
-    - [ ] `GameModeType` enumに `RankedMatch` を追加する。
-    - [ ] ランクマッチの勝敗とレート計算ロジックを持つ `RankedMatchStrategy.cs` を作成する。
-    - [ ] Matchmakerサービスを利用したプライベートマッチ（合言葉マッチ）のロジックを `MatchmakingService` と `MatchmakingController` に実装する。
+- [x] **ランクマッチとプライベートマッチの設計・実装**:
+    - [x] `Matchmaking-Design.md` と `Gameplay-Design.md` を更新し、ランクマッチとプライベートマッチのフローを定義する。
+    - [x] `GameModeType` enumに `RankedMatch` を追加する。
+    - [x] ランクマッチの勝敗とレート計算ロジックを持つ `RankedMatchStrategy.cs` を作成する。
+    - [x] Matchmakerサービスを利用したプライベートマッチ（合言葉マッチ）のロジックを `MatchmakingService` と `MatchmakingController` に実装する。
 
 - [x] **Unity Gaming Services連携 (Matchmaker, Hosting)**:
     - [x] UGSの各サービスを導入し、マッチング接続の基盤を構築する。
