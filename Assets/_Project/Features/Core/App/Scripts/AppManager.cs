@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Core.Matchmaking;
 using TypingSurvivor.Features.Core.CloudSave;
+#if UNITY_SERVER
 using Unity.Services.Authentication.Server;
+#endif
 using Unity.Netcode.Transports.UTP;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
@@ -127,8 +129,10 @@ namespace TypingSurvivor.Features.Core.App
             await InitializeUgsAsync();
             if (isDedicatedServer)
             {
+#if UNITY_SERVER
                 await ServerAuthenticationService.Instance.SignInFromServerAsync();
                 Debug.Log("Server signed in successfully.");
+#endif
             }
             else
             {
