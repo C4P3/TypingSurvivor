@@ -1,34 +1,28 @@
-const axios = require("axios-1.6");
+const { DataApi, Configuration } = require("@unity-services/cloud-save-1.4");
 
 module.exports = async ({ context, params }) => {
-    const { projectId, playerId, accessToken } = context;
-    let { playerDataKey } = params;
-
-    // The Test Runner may wrap the string parameter in extra quotes. 
-    // We parse it to get the actual string value.
-    try {
-        playerDataKey = JSON.parse(playerDataKey);
-    } catch (e) { /* Ignore if it's not a JSON-formatted string */ }
-
-    const url = `https://cloud-save.services.api.unity.com/v1/data/projects/${projectId}/players/${playerId}/items?keys=${playerDataKey}`;
-
-    const response = await axios.get(url, {
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        }
+    // 1. Correctly initialize the API using the Configuration class
+    const apiConfig = new Configuration({
+        projectId: context.projectId,
+        accessToken: context.accessToken,
     });
+    const dataApi = new DataApi(apiConfig);
 
-    if (response.status < 200 || response.status >= 300) {
-        throw new Error(`Failed to load data: ${response.status} - ${JSON.stringify(response.data)}`);
+    // 2. Extract playerId from CONTEXT, and other arguments from PARAMS
+    const { playerId } = context;
+    const { playerDataKey } = params;
+
+    // 3. Call the method with the correct playerId from the context
+    const response = await dataApi.getProtectedItems(playerId, [playerDataKey]);
+
+    // 4. Process the response
+    if (response.data && response.data.results && response.data.results.length > 0) {
+        const item = response.data.results.find(r => r.key === playerDataKey);
+        if (item) {
+            return item.value;
+        }
     }
 
-    const responseData = response.data;
-
-    if (responseData.results && responseData.results.length > 0) {
-        return responseData.results[0].value;
-    }
-
-    // To align with the C# code, we throw an error that can be caught.
-    // The C# side specifically looks for "Not Found" or "PLAYER_DATA_NOT_FOUND".
+    // If not found, throw the expected error
     throw new Error("PLAYER_DATA_NOT_FOUND");
 };
