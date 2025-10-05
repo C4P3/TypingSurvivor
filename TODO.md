@@ -27,11 +27,7 @@ Unity.Services.Matchmaker.Http.HttpClient/<>c__DisplayClass4_0/<<CreateHttpClien
 System.Threading.Tasks.TaskCompletionSource`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
 Unity.Services.Matchmaker.Http.UnityWebRequestHelpers/<>c__DisplayClass0_0:<GetAwaiter>b__0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/UnityWebRequestHelpers.cs:34)
 UnityEngine.AsyncOperation:InvokeCompletionEvent ()
-　- メインメニューシーンに戻って再度ゲームを開始する
-- [ ] **ゲームマネージャーの破損を修正**:
-  - 再戦が上手く行かない
-  - スポーンの場所が上手く行かない
-  - BGMが上手く行かない
+　- メインメニューシーンに戻って再度マッチングを開始するとマッチングが永遠に終わらず、マッチングをキャンセルしようとすると発生。
 - [ ] **フリーマッチでもレート計算しちゃう**:
   - Strategyで分岐を追加。というか、Strategyに計算式があってもいい
 ---
