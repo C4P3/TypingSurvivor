@@ -61,26 +61,20 @@ namespace TypingSurvivor.Features.Game.Rating
                 return;
             }
 
-            // Use a safe null check instead of the '??' operator to avoid compiler issues
-            var winnerSaveData = await _cloudSaveService.LoadPlayerDataForPlayerAsync(winnerAuthId);
-            if (winnerSaveData == null) winnerSaveData = new PlayerSaveData();
-
-            var loserSaveData = await _cloudSaveService.LoadPlayerDataForPlayerAsync(loserAuthId);
-            if (loserSaveData == null) loserSaveData = new PlayerSaveData();
-
-            int oldWinnerRating = winnerSaveData.Progress.Rating > 0 ? winnerSaveData.Progress.Rating : DEFAULT_RATING;
-            int oldLoserRating = loserSaveData.Progress.Rating > 0 ? loserSaveData.Progress.Rating : DEFAULT_RATING;
+            // Load ratings directly using the new service method
+            int oldWinnerRating = await _cloudSaveService.GetRatingAsync(winnerAuthId);
+            int oldLoserRating = await _cloudSaveService.GetRatingAsync(loserAuthId);
 
             double expectedWinner = 1.0 / (1.0 + System.Math.Pow(10, (double)(oldLoserRating - oldWinnerRating) / 400.0));
 
-            winnerSaveData.Progress.Rating = oldWinnerRating + (int)(K_FACTOR * (1.0 - expectedWinner));
-            loserSaveData.Progress.Rating = oldLoserRating - (int)(K_FACTOR * expectedWinner);
+            int newWinnerRating = oldWinnerRating + (int)(K_FACTOR * (1.0 - expectedWinner));
+            int newLoserRating = oldLoserRating - (int)(K_FACTOR * expectedWinner);
 
-            Debug.Log($"[RatingService] Winner ({winnerAuthId}): {oldWinnerRating} -> {winnerSaveData.Progress.Rating}");
-            Debug.Log($"[RatingService] Loser ({loserAuthId}): {oldLoserRating} -> {loserSaveData.Progress.Rating}");
+            Debug.Log($"[RatingService] Winner ({winnerAuthId}): {oldWinnerRating} -> {newWinnerRating}");
+            Debug.Log($"[RatingService] Loser ({loserAuthId}): {oldLoserRating} -> {newLoserRating}");
 
-            await _cloudSaveService.SavePlayerDataForPlayerAsync(winnerAuthId, winnerSaveData);
-            await _cloudSaveService.SavePlayerDataForPlayerAsync(loserAuthId, loserSaveData);
+            // Atomically update both players' ratings and leaderboard scores with a single call
+            await _cloudSaveService.UpdateRatingsAsync(winnerAuthId, loserAuthId, newWinnerRating, newLoserRating);
         }
     }
 }

@@ -17,37 +17,70 @@
 1.  Unity Dashboardの「Cloud Save」セクションに移動します。
 2.  Cloud Saveを有効化します。
 
----
-
-### 3. Cloud Code (クラウドコード)
-
-本プロジェクトでは、Cloud Codeとして2つのJavaScriptスクリプトを使用します。以下の手順でそれぞれを登録してください。
-
-#### A. SavePlayerData スクリプトの登録
-
-1.  Unity Dashboardの「Cloud Code」セクションに移動します。
-2.  「Create script」をクリックします。
-3.  **Script name**を `SavePlayerData` とします。
-4.  プロジェクトのルートにある `SavePlayerData.js` ファイルの中身を全てコピーし、エディタに貼り付けます。
-5.  「Publish」をクリックして公開します。
-6.  **Parameters** を設定します:
-    *   `playerId` (Type: `string`)
-    *   `playerDataKey` (Type: `string`)
-    *   `playerData` (Type: `any`)
-
-#### B. LoadPlayerData スクリプトの登録
-
-1.  再度「Create script」をクリックします。
-2.  **Script name**を `LoadPlayerData` とします。
-3.  プロジェクトのルートにある `LoadPlayerData.js` ファイルの中身を全てコピーし、エディタに貼り付けます。
-4.  「Publish」をクリックして公開します。
-5.  **Parameters** を設定します:
-    *   `playerId` (Type: `string`)
-    *   `playerDataKey` (Type: `string`)
+*注: 新しいレート・ランキングシステムでは、Cloud Saveはサーバーからの権限が必要なデータ管理には使用しません。プレイヤー名など、クライアント側で完結する小規模なデータの保存に利用できます。*
 
 ---
 
-### 4. Matchmaker (マッチメーカー)
+### 3. Economy (エコノミー)
+
+プレイヤーのレート値を管理するために使用します。
+
+1.  Unity Dashboardの `LiveOps` > `Economy` に移動します。
+2.  `Currency` タブを選択し、「Add new currency」ボタンを押します。
+3.  以下の通りに新しい通貨を作成します。
+    *   **ID**: `RATING`
+    *   **Initial balance**: `1500`
+    *   **Max balance**: (任意)
+
+---
+
+### 4. Leaderboards (リーダーボード)
+
+プレイヤーのレートに基づいたランキングを実現するために使用します。
+
+1.  Unity Dashboardの `LiveOps` > `Leaderboards` に移動します。
+2.  「Create leaderboard」ボタンを押します。
+3.  以下の通りに新しいリーダーボードを作成します。
+    *   **ID**: `RATING_LEADERBOARD`
+    *   **Sort Order**: `High to Low`
+
+---
+
+### 5. Cloud Code (クラウドコード)
+
+本プロジェクトでは、Cloud Codeとして3つのJavaScriptスクリプトを使用します。以下の手順でそれぞれを登録してください。
+
+#### A. UpdateRatings スクリプトの登録
+
+*   **説明**: 試合終了後、サーバーから呼び出され、両プレイヤーのレートとランキングを更新します。
+*   **Script name**: `UpdateRatings`
+*   **コード**: プロジェクトのルートにある `UpdateRatings.js` の内容を貼り付けます。
+*   **Parameters**:
+    *   `winnerId` (Type: `string`)
+    *   `loserId` (Type: `string`)
+    *   `newWinnerRating` (Type: `number`)
+    *   `newLoserRating` (Type: `number`)
+
+#### B. GetRating スクリプトの登録
+
+*   **説明**: クライアントまたはサーバーから呼び出され、指定したプレイヤーの現在のレートを取得します。
+*   **Script name**: `GetRating`
+*   **コード**: プロジェクトのルートにある `GetRating.js` の内容を貼り付けます。
+*   **Parameters**:
+    *   `targetPlayerId` (Type: `string`)
+
+#### C. GetLeaderboard スクリプトの登録
+
+*   **説明**: クライアントから呼び出され、ランキング情報を取得します。
+*   **Script name**: `GetLeaderboard`
+*   **コード**: プロジェクトのルートにある `GetLeaderboard.js` の内容を貼り付けます。
+*   **Parameters**:
+    *   `offset` (Type: `number`, optional)
+    *   `limit` (Type: `number`, optional)
+
+---
+
+### 6. Matchmaker (マッチメーカー)
 
 1.  Unity Dashboardの「Matchmaker」セクションに移動します。
 

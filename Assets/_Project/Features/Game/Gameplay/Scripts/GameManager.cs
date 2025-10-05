@@ -177,7 +177,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private IEnumerator WaitingForPlayersPhase()
         {
             _gameState.CurrentPhase.Value = GamePhase.WaitingForPlayers;
-            Debug.LogError($"[GameManager] Waiting for players. Strategy: {_gameModeStrategy.GetType().Name}, Required PlayerCount: {_gameModeStrategy.PlayerCount}");
             while (_gameState.PlayerDatas.Count < _gameModeStrategy.PlayerCount)
             {
                 yield return null;

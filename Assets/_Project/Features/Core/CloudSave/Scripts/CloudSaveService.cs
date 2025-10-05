@@ -52,49 +52,51 @@ namespace TypingSurvivor.Features.Core.CloudSave
                 return null;
             }
         }
-        // --- Server-Side Methods (via Cloud Code) --- //
-        public async Task SavePlayerDataForPlayerAsync(string playerId, PlayerSaveData data)
+        // --- Server-Side Methods (via Cloud Code) ---
+        public async Task UpdateRatingsAsync(string winnerId, string loserId, int newWinnerRating, int newLoserRating)
         {
             try
             {
                 var args = new Dictionary<string, object>
                 {
-                    { "playerId", playerId },
-                    { "playerDataKey", PLAYER_DATA_KEY },
-                    { "playerData", data }
+                    { "winnerId", winnerId },
+                    { "loserId", loserId },
+                    { "newWinnerRating", newWinnerRating },
+                    { "newLoserRating", newLoserRating }
                 };
-                await CloudCodeService.Instance.CallEndpointAsync("SavePlayerData", args);
-                Debug.Log($"[CloudSaveService] Successfully requested save for player {playerId}.");
+                await CloudCodeService.Instance.CallEndpointAsync("UpdateRatings", args);
             }
             catch (Exception e)
             {
-                Debug.LogError($"[CloudSaveService] Failed to call SavePlayerData Cloud Code for player {playerId}: {e}");
+                Debug.LogError($"[CloudSaveService] Failed to call UpdateRatings Cloud Code: {e}");
             }
         }
 
-        public async Task<PlayerSaveData> LoadPlayerDataForPlayerAsync(string playerId)
-        { 
+        public async Task<int> GetRatingAsync(string playerId)
+        {
             try
             {
                 var args = new Dictionary<string, object>
                 {
-                    { "playerId", playerId },
-                    { "playerDataKey", PLAYER_DATA_KEY }
+                    { "targetPlayerId", playerId }
                 };
-                var result = await CloudCodeService.Instance.CallEndpointAsync<PlayerSaveData>("LoadPlayerData", args);
-                return result;
-            }
-            catch (CloudCodeException e) when (e.Message.Contains("Not Found") || e.Message.Contains("PLAYER_DATA_NOT_FOUND"))
-            {
-                 Debug.Log($"[CloudSaveService] No player data found for player {playerId} via Cloud Code.");
-                 return null;
+                var result = await CloudCodeService.Instance.CallEndpointAsync<GetRatingResult>("GetRating", args);
+                return result.Rating;
             }
             catch (Exception e)
             {
-                Debug.LogError($"[CloudSaveService] Failed to call LoadPlayerData Cloud Code for player {playerId}: {e}");
-                return null;
+                Debug.LogError($"[CloudSaveService] Failed to call GetRating Cloud Code for player {playerId}: {e}");
+                // Return default rating on failure
+                return 1500;
             }
         }
+
+        // Helper class to deserialize the result from GetRating Cloud Code
+        private class GetRatingResult
+        {
+            public int Rating { get; set; }
+        }
+
 
     }
 }
