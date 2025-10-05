@@ -158,17 +158,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     _gameManager
                 );
 
-                _gameManager.OnGameFinished += async (result) =>
-                {
-                    try
-                    {
-                        await ratingService.HandleGameFinished(result);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError($"[GameSceneBootstrapper] Error executing RatingService: {e}");
-                    }
-                };
+                // Assign the method directly. The signature now matches the event's Func delegate.
+                _gameManager.OnGameFinished += ratingService.HandleGameFinished;
             }
             }
 

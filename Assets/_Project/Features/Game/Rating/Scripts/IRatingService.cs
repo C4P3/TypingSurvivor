@@ -5,6 +5,6 @@ namespace TypingSurvivor.Features.Game.Rating
 {
     public interface IRatingService
     {
-        Task HandleGameFinished(GameResult result);
+        Task<(int, int)> HandleGameFinished(GameResult result);
     }
 }

@@ -10,6 +10,7 @@ using TypingSurvivor.Features.Game.Gameplay.Data;
 using System.Collections;
 using TypingSurvivor.Features.Game.Settings;
 using TypingSurvivor.Features.Game.Level.Data;
+using System.Threading.Tasks;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -39,7 +40,28 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private const float LowOxygenThreshold = 0.3f; // 30%
         private readonly HashSet<ulong> _playersInLowOxygen = new();
         public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
-        public event System.Action<GameResult> OnGameFinished;
+        public event System.Func<GameResult, System.Threading.Tasks.Task<(int, int)>> OnGameFinished;
+        private Coroutine _shutdownCoroutine;
+
+        // DTO to send all relevant result info to clients
+        public struct GameResultDto : INetworkSerializable
+        {
+            public bool IsDraw;
+            public ulong WinnerClientId;
+            public ulong LoserClientId;
+            public int NewWinnerRating;
+            public int NewLoserRating;
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref IsDraw);
+                serializer.SerializeValue(ref WinnerClientId);
+                serializer.SerializeValue(ref LoserClientId);
+                serializer.SerializeValue(ref NewWinnerRating);
+                serializer.SerializeValue(ref NewLoserRating);
+            }
+        }
+
 
         private void Awake()
         {
@@ -138,6 +160,13 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 }
             }
 
+            // --- If the last player disconnects, start shutdown sequence ---
+            if (_playerInstances.Count == 0 && _shutdownCoroutine == null)
+            {
+                Debug.Log("[GameManager] Last player disconnected. Server will shut down.");
+                _shutdownCoroutine = StartCoroutine(ShutdownServerCoroutine());
+            }
+
             // --- Re-evaluate Game State based on the current phase ---
             var currentPhase = _gameState.CurrentPhase.Value;
 
@@ -158,6 +187,23 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 }
             }
         }
+
+        [ClientRpc]
+        private void SendResultsToClientsClientRpc(GameResultDto resultDto)
+        {
+            // Client-side logic to display results will be handled by a UI manager subscribing to an event.
+            // For now, we can just log it.
+            Debug.Log($"[Client] Received game results: Winner={resultDto.WinnerClientId}, Loser={resultDto.LoserClientId}, New Ratings: Winner={resultDto.NewWinnerRating}, Loser={resultDto.NewLoserRating}");
+        }
+
+        private IEnumerator ShutdownServerCoroutine()
+        {
+            // Wait a short period to ensure all final messages are sent.
+            yield return new WaitForSeconds(15);
+            Debug.Log("[GameManager] Shutting down server.");
+            Application.Quit();
+        }
+
 
         private IEnumerator ServerGameLoop()
         {
@@ -321,93 +367,83 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
         private IEnumerator FinishedPhase()
         {
-            _gameState.CurrentPhase.Value = GamePhase.Finished;
-
-            // Ask the current strategy to calculate the result.
-            GameResult result = _gameModeStrategy.CalculateResult(_gameState);
-
-            // Invoke the event for other systems (like RatingService) to consume.
-            OnGameFinished?.Invoke(result);
-            
-            // Play jingle and Result BGM on clients
-            PlayJingleThenMusicClientRpc(result.WinnerClientId);
-
-            _rematchRequesters.Clear();
-
-            // This loop will naturally terminate if all players request a rematch OR if a player disconnects
-            // (because _playerInstances.Count will decrease).
-            while (_rematchRequesters.Count < _playerInstances.Count)
+            Task finishedTask = FinishedPhaseAsync();
+            while (!finishedTask.IsCompleted)
             {
                 yield return null;
             }
 
-            // FINAL GATEKEEPER: After the loop, check if we have enough players to start a rematch.
-            // This prevents a rematch if the loop was exited due to a disconnection.
-            if (_playerInstances.Count < _gameModeStrategy.PlayerCount)
+            if (finishedTask.IsFaulted)
             {
-                Debug.Log("A player disconnected while waiting for rematch. Rematch is cancelled.");
-                // Wait indefinitely on the results screen.
-                while (true)
+                Debug.LogError(finishedTask.Exception);
+            }
+        }
+
+        private async System.Threading.Tasks.Task FinishedPhaseAsync()
+        {
+            _gameState.CurrentPhase.Value = GamePhase.Finished;
+
+            GameResult result = _gameModeStrategy.CalculateResult(_gameState);
+
+            ulong loserClientId = 0;
+            if (!result.IsDraw)
+            {
+                loserClientId = _playerInstances.Keys.FirstOrDefault(id => id != result.WinnerClientId);
+            }
+
+
+            int newWinnerRating = 0;
+            int newLoserRating = 0;
+
+            if (OnGameFinished != null)
+            {
+                // Await the rating calculation and update
+                var ratings = await OnGameFinished.Invoke(result);
+                newWinnerRating = ratings.Item1;
+                newLoserRating = ratings.Item2;
+            }
+            
+            // Broadcast results to all clients
+            var resultDto = new GameResultDto
+            {
+                IsDraw = result.IsDraw,
+                WinnerClientId = result.WinnerClientId,
+                LoserClientId = loserClientId,
+                NewWinnerRating = newWinnerRating,
+                NewLoserRating = newLoserRating
+            };
+            SendResultsToClientsClientRpc(resultDto);
+
+            _rematchRequesters.Clear();
+
+            // Wait for rematch requests. This loop has a 30-second timeout.
+            float rematchWaitStartTime = Time.time;
+            while (Time.time < rematchWaitStartTime + 30.0f && _rematchRequesters.Count < _playerInstances.Count)
+            {
+                await System.Threading.Tasks.Task.Yield(); // Use Task.Yield instead of yield return null in an async method
+            }
+
+            // After the loop, check if we have enough players for a rematch.
+            if (_playerInstances.Count < _gameModeStrategy.PlayerCount || _rematchRequesters.Count < _gameModeStrategy.PlayerCount)
+            {
+                Debug.Log("Not enough players for a rematch, or timeout reached. Server will shut down.");
+                if (_shutdownCoroutine == null)
                 {
-                    yield return null;
+                    _shutdownCoroutine = StartCoroutine(ShutdownServerCoroutine());
+                }
+                // Wait indefinitely until shutdown
+                while (true)
+                { 
+                    await System.Threading.Tasks.Task.Delay(1000);
                 }
             }
             
-            // If we passed the check, it means everyone requested a rematch. Proceed.
-            // 再戦開始の前に現在のBGMを停止 (フェードアウト 0秒)
+            // If we passed the check, proceed with rematch.
             StopBgmClientRpc(0f);
-
-            // --- Prepare for the next round ---
             ResetPlayersForRematch();
-
-            // Regenerate world using the same request logic as initial spawn
-            var request = new MapGenerationRequest();
-            var clientIds = _playerInstances.Keys.ToList();
-
-            if (_gameModeStrategy is MultiPlayerStrategy || _gameModeStrategy is RankedMatchStrategy)
-            {
-                for (int i = 0; i < clientIds.Count; i++)
-                {
-                    request.SpawnAreas.Add(new SpawnArea
-                    {
-                        PlayerClientIds = new List<ulong> { clientIds[i] },
-                        WorldOffset = new Vector2Int(i * 1000, 0),
-                        MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
-                    });
-                }
-            }
-            else
-            {
-                    request.SpawnAreas.Add(new SpawnArea
-                {
-                    PlayerClientIds = new List<ulong> { clientIds[0] },
-                    WorldOffset = new Vector2Int(0, 0),
-                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
-                });
-            }
-            _levelService.GenerateWorld(request);
-            yield return null;
-
-            // Reposition players
-            foreach (var area in request.SpawnAreas)
-            {
-                var spawnPoints = _levelService.GetSpawnPoints(area);
-                for (int i = 0; i < area.PlayerClientIds.Count; i++)
-                {
-                    ulong clientId = area.PlayerClientIds[i];
-                    var player = _playerInstances[clientId];
-                    var gridPos = spawnPoints[i];
-                    _levelService.ClearArea(gridPos, 1);
-                    var spawnPos = _grid.GetCellCenterWorld(gridPos);
-                    player.RespawnAt(spawnPos);
-                    // After teleporting the player, update their position in the GameState and force a chunk update.
-                    UpdatePlayerPosition(clientId, gridPos);
-                    _levelService.ForceChunkUpdateForPlayer(clientId, spawnPos);
-                }
-            }
+            // The main game loop will now proceed to the next phase (Countdown)
         }
+
 
         public void ResetPlayersForRematch()
         {
