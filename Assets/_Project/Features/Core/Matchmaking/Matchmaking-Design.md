@@ -19,7 +19,7 @@
 ```mermaid
 graph TD
     subgraph "UI Layer (MainMenu Scene)"
-        A[MainMenuManager]
+        A[UIFlowCoordinator]
         B[MatchmakingPanel UI]
     end
 
@@ -36,14 +36,14 @@ graph TD
         F[UGS Relay]
     end
 
-    A -- "1. StartMatchmaking('FreeMatch')" --> C
+    A -- "1. StartPublicMatchmaking('ranked-match', ...)" --> C
     C -- "2. Show 'Searching...' UI" --> B
     C -- "3. CreateTicketAsync()" --> D
     D -- "4. UGS API Call" --> E
     E -- "8. Match Found (with Relay Info)" --> D
     D -- "9. OnMatchSuccess Event" --> C
     C -- "10. Update UI to 'Found!'" --> B
-    C -- "11. StartClientWithRelay(info)" --> G[AppManager]
+    C -- "11. StartClient(ip, port, gameMode)" --> G[AppManager]
     G -- "12. Connect to Relay" --> F
     G -- "13. Load Game Scene" --> H((Game Scene))
 
@@ -70,11 +70,10 @@ graph TD
 ### **3.2. `MatchmakingController.cs` (コントローラー層)**
 
 *   **配置場所**: `Assets/_Project/Features/UI/Screens/MainMenu/Scripts/`
-*   **役割**: `MainMenuManager`からの指示と`MatchmakingService`のイベントを仲介し、UIの状態を制御する。
+*   **役割**: `UIFlowCoordinator`からの指示と`MatchmakingService`のイベントを仲介し、UIの状態を制御する。
 *   **責務**:
-    *   `StartMatchmaking(queueName)`: フリーマッチやランクマッチの開始をトリガーする。
-    *   `StartPrivateMatch()`: ホストとしてプライベートマッチ用のRelayルームを作成する。
-    *   `JoinPrivateMatch(joinCode)`: 合言葉でプライベートマッチに参加する。
+    *   `StartPublicMatchmaking(queueName, gameMode)`: フリーマッチやランクマッチの開始をトリガーする。
+    *   `StartPrivateMatchmaking(roomCode)`: ホストとしてプライベートマッチ用のRelayルームを作成する。
     *   `Cancel()`: 進行中の全てのマッチング処理をキャンセルする。
     *   `MatchmakingService`からのイベントを購読し、`MatchmakingPanel`のテキストを「検索中...」「対戦相手が見つかりました」「ルームを作成中...」のように更新する。
     *   マッチング成功後、`AppManager`にRelay情報を渡してゲームシーンへの遷移を開始させる。
@@ -134,15 +133,15 @@ sequenceDiagram
     participant Service as MatchmakingService
     participant UGS as UGS Matchmaker
 
-    Host->>Controller: StartPrivateMatch("MY-SECRET-CODE")
-    Controller->>Service: CreatePrivateTicketAsync("MY-SECRET-CODE")
+    Host->>Controller: StartPrivateMatchmaking("MY-SECRET-CODE")
+    Controller->>Service: CreateTicketAsync("PrivateQueue", "MY-SECRET-CODE")
     Service->>UGS: RoomID "MY-SECRET-CODE" を持つチケットを作成
     
     Controller->>HostUI: ShowPrivateLobbyPanel("MY-SECRET-CODE")
     note right of Host: 待機画面で "MY-SECRET-CODE" を表示し、参加者を待つ
 
-    Client->>Controller: JoinPrivateMatch("MY-SECRET-CODE")
-    Controller->>Service: FindPrivateTicketAsync("MY-SECRET-CODE")
+    Client->>Controller: StartPublicMatchmaking("PrivateQueue", "MY-SECRET-CODE")
+    Controller->>Service: CreateTicketAsync("PrivateQueue", "MY-SECRET-CODE")
     Service->>UGS: RoomID "MY-SECRET-CODE" を持つチケットを検索・参加
     
     UGS-->>Service: (両者が揃った) マッチ成功を両者に通知

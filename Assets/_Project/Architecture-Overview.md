@@ -42,13 +42,10 @@ graph TD
     end
     
     subgraph Server  
-        S_Facade[PlayerFacade] --> S_Services[各種サービス<br>IItemService, ILevelService...];  
+        S_Facade[PlayerFacade] --> S_Services[各種サービス<br>IItemService, ILevelService, IPlayerStatusSystem...];  
         S_Services --> S_GameState[ゲーム状態<br>GameManager, LevelManager...];  
         S_GameState --> S_Facade;  
     end
-
-    style C_Input fill:#000000  
-    style S_Services fill:#000000
 ```
 * **クライアント**: PlayerInputがユーザーの入力を検知し、PlayerFacadeに伝えます。  
 * **通信 (Client \-\> Server)**: PlayerFacadeは入力を\[ServerRpc\]に変換し、サーバーに処理を要求します。  
@@ -65,7 +62,7 @@ graph TD
 * **ステートパターン**: オブジェクトの状態（プレイヤーの待機中、移動中、タイピング中など）をクラスとして表現し、状態遷移のロジックをカプセル化します。  
 * **イベント駆動**: あるシステムが状態を変更した後、その事実をイベントとして発行（Publish）し、他のシステムがそれを購読（Subscribe）するモデル。システム間の直接的な依存をなくします。  
 * **CQRS (コマンド・クエリ責務分離)** の思想: システムへの命令（書き込み/Command）と、情報の取得（読み取り/Query）をインターフェースレベルで明確に分離します（WriterとReader）。これにより、意図しない状態変更を防ぎ、システムの安全性を高めます。
-  * **サービスロケーター (Service Locator)**: `IPlayerStatusSystem`のような各種サービスを、中央のアクセスポイントに登録・集約する手法です。本プロジェクトでは、`AppManager`が汎用的な`IServiceLocator`インターフェースを実装し、サービスを保持する「箱」としての役割を担います。
+  * **サービスロケーター (Service Locator)**: `IPlayerStatusSystem`（Core機能）のような各種サービスを、中央のアクセスポイントに登録・集約する手法です。本プロジェクトでは、`AppManager`が汎用的な`IServiceLocator`インターフェースを実装し、サービスを保持する「箱」としての役割を担います。
   * **Composition Root**: `Game`シーン固有のサービス（`ILevelService`など）の生成と`AppManager`への登録は、シーンのエントリーポイントである`GameSceneBootstrapper`が責務を持ちます。この`GameSceneBootstrapper`は、`Game`や`UI`といった機能アセンブリとは独立した、それらを参照する上位の**`Bootstrap`アセンブリ**に配置されています。これにより、`Game`機能と`UI`機能がお互いを直接参照することなく依存関係を解決できるため、**アセンブリ間の循環参照を完全に防ぎます**。この構成は、`FindObjectOfType`による暗黙的な依存を排除し、依存関係をコード上で明確にすることで、システムのテスト容易性を大幅に向上させます。
 
 ## **4. 主要サブシステム**
@@ -81,6 +78,14 @@ graph TD
 *   **`LevelManager` (構築担当)**
     *   **責務**: `IMapGenerator`アセットを1つ受け取り、その`Generate`メソッドを呼び出してタイルリストを取得し、ゲームシーン上にタイルを配置する責務を持ちます。
     *   **役割**: `MapTheme`のような中間的な解釈レイヤーを介さず、ジェネレーターから直接、完成されたタイル情報を取得します。
+
+### **4.2. UI (User Interface)**
+UIシステムは、ゲームの状態をユーザーに表示し、ユーザーからの入力を受け付ける責務を持ちます。このシステムもまた、責務の分離原則に基づき、以下のコンポーネントに分割されています。
+
+*   **`UIManager`**: シーン全体のスクリーンとパネルの表示・非表示を管理する中心的なクラスです。
+*   **`UIFlowCoordinator`**: メインメニューシーンにおける画面遷移のフローを管理するステートマシンです。
+*   **`GameUIManager`**: ゲームシーンにおけるUIの状態を管理し、ゲームの進行状況に応じて適切な画面を表示します。
+*   **Screens & Panels**: UIの各画面（例: `MainMenuScreen`）や、その上に表示されるパネル（例: `MatchmakingPanel`）は、それぞれ独立したコンポーネントとして実装されています。
 
 ## **全体のドキュメント:**　
 [README.md](./README.md)

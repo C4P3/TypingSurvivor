@@ -1,6 +1,6 @@
 # **Level機能 設計ドキュメント**
 
-## **1\. 責務**
+## **1. 責務**
 
 Level機能は、ゲームの舞台となる**世界の物理的な状態**を管理します。プレイヤーやアイテムが存在する「空間」そのものに対する全ての責務を持ちます。
 
@@ -50,7 +50,7 @@ public class SpawnArea
     *   `BaseSeed`を指定。
     *   `SpawnAreas`に、プレイヤーAとBを**同じリスト**に含む単一の`SpawnArea` (`WorldOffset=(0,0)`) を追加する。`SpawnPointStrategy`には、味方同士が近くにスポーンする`CoopSpawnStrategy`を使用する。
 
-## **3\. 主要コンポーネント**
+## **3. 主要コンポーネント**
 
 ### **3.1. LevelManager.cs**
 
@@ -69,8 +69,14 @@ public class SpawnArea
 ### **3.2. IMapGenerator.cs (Interface / ScriptableObject)**
 
 *   **役割**: **地形（ブロックタイル）の生成アルゴリズム**をカプセル化する。
-*   **インターフェース**: `List<TileData> Generate(long seed, Vector2Int offset, ...)`
+*   **インターフェース**: `List<TileData> Generate(long seed, Vector2Int worldOffset, Dictionary<TileBase, int> tileIdMap, Dictionary<string, TileBase> tileNameToTileMap)`
 *   **責務**: 与えられたシード値と**ワールド座標オフセット**に基づき、特定の領域の地形データを生成する。
+
+### **3.3. ISpawnPointStrategy.cs (Interface / ScriptableObject)**
+
+*   **役割**: 特定のマップ領域内での**スポーン地点を決定するアルゴリズム**をカプセル化する。
+*   **インターフェース**: `List<Vector3Int> GetSpawnPoints(int playerCount, List<Vector3Int> areaWalkableTiles, BoundsInt areaBounds, Vector2Int worldOffset)`
+*   **責務**: 自身の担当する領域の地形情報に基づき、安全なスポーン地点を計算する。
 
 ### **3.4. 多様なマップ生成アルゴリズム (Strategy Pattern)**
 
@@ -87,13 +93,7 @@ public class SpawnArea
     -   **`RandomWalkGenerator`**: 「歩行者」がランダムに移動した軌跡を床として削り出すことで、自然な細い通路を生成します。
     -   **`BspDungeonGenerator`**: 空間を再帰的に分割する手法で、四角い部屋と直線的な通路で構成された、構造的なダンジョンを生成します。
 
-### **3.3. ISpawnPointStrategy.cs (Interface / ScriptableObject)**
-
-*   **役割**: 特定のマップ領域内での**スポーン地点を決定するアルゴリズム**をカプセル化する。
-*   **インターフェース**: `List<Vector3Int> GetSpawnPoints(SpawnAreaContext context, ...)`
-*   **責務**: 自身の担当する領域の地形情報に基づき、安全なスポーン地点を計算する。
-
-## **4\. チャンクベース同期システムの動作フロー**
+## **4. チャンクベース同期システムの動作フロー**
 
 1.  **サーバー起動時**:
     *   `GameManager`が`MapGenerationRequest`を構築し、`LevelManager.GenerateWorld(request)`を呼び出す。

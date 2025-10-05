@@ -25,14 +25,14 @@ Player機能は、ユーザーが操作するキャラクターに関する全�
 
 * **役割**: 入力の受付係。MonoBehaviourであり、ネットワークのことは一切関知しません。  
 * **責務**:  
-  * UnityのInput System（新）からの入力を受け取り、「移動したい」「インタラクトしたい」といった意味のあるC\#イベント（OnMoveIntentなど）に変換して発行する。  
+  * UnityのInput System（新）からの入力を受け取り、「移動したい」「インタラクトしたい」といった意味のあるC#イベント（`OnMovePerformed`, `OnMoveCanceled`など）に変換して発行する。  
   * このコンポーネントはPlayerFacadeによって、IsOwnerがtrueのクライアントでのみ有効化（enabled \= true）されます。
 
 ### **2.3. PlayerStateMachine.cs**
 
 * **役割**: 状態ごとの振る舞いを司る専門家。**ステートパターン**で実装されます。  
 * **責務**:  
-  * IPlayerStateインターフェース（Enter, Execute, Exitを持つ）と、その具体的な実装クラス（RoamingState, MovingState, TypingState）を管理する。  
+  * IPlayerStateインターフェース（Enter, Execute, Exitを持つ）と、その具体的な実装クラス（`RoamingState`, `MovingState`, `TypingState`）を管理する。  
   * PlayerFacadeからの指示に基づき、状態を遷移させる。
 
 ### **2.4. PlayerView.cs**
@@ -44,7 +44,7 @@ Player機能は、ユーザーが操作するキャラクターに関する全�
 
 ## **3\. 関連システムとインターフェース**
 
-### **3.1. PlayerStatusSystem**
+### **3.1. PlayerStatusSystem (Core機能)**
 
 * **役割**: ローグライクモードなどで得られる、永続的なステータス強化（移動速度UP、最大HP上昇など）を管理するサーバーサイドのシステム。  
 * **実装**: このシステムのインスタンスは、サーバー起動時に一度だけ生成され、中央のサービスアクセスポイント（`AppManager`など）に登録されます。`PlayerFacade`のようなコンポーネントは、`AppManager.Instance.StatusReader` のように、この中央アクセスポイントを通じてシステムの機能を利用します。
@@ -71,7 +71,6 @@ Player機能は、ユーザーが操作するキャラクターに関する全�
     4.  タイピング対象のブロックの座標を、新しく追加する`NetworkVariable<Vector3Int> NetworkTypingTargetPosition`に保存し、全クライアントに同期します。
 *   **クライアントサイドロジック**:
     1.  `_currentState`の変更を検知し、`PlayerStateMachine`が`TypingState`に遷移します。
-    2.  `TypingState`の`Enter`メソッド内で、`PlayerInput`の入力アクションマップを`Typing`に切り替えます。
 
 ### **4.2. 入力仕様**
 

@@ -18,8 +18,8 @@ sequenceDiagram
     participant S_Level as ILevelService (Server)
     participant C_Level as LevelManager (Client)
 
-    C_Input->>C_Facade: OnMoveIntent (移動の意図を通知)  
-    C_Facade->>S_Facade: CmdRequestMove(direction)  
+    C_Input->>C_Facade: OnMovePerformed (direction)
+    C_Facade->>S_Facade: RequestMoveBasedOnStateServerRpc(direction)
     note right of S_Facade: サーバーが移動処理を実行し、<br>プレイヤーの位置(Transform)を更新  
       
     S_Facade->>S_Facade: OnPlayerMoved_Server イベント発行  
@@ -44,7 +44,7 @@ sequenceDiagram
     participant C_UI as InGameHUDManager (Client)
 
     C_Typing->>C_Facade: OnTypingSuccess (イベント通知)  
-    C_Facade->>S_Facade: CmdDestroyBlock(blockPos)  
+    C_Facade->>S_Facade: DestroyBlock_ServerRpc(blockPos)  
       
     S_Facade->>S_Level: DestroyBlock(clientId, blockPos)  
     note right of S_Level: ブロックを破壊し、<br>OnBlockDestroyed_Server イベントを発行
@@ -76,8 +76,8 @@ sequenceDiagram
 
     %% 1. 移動と衝突
     Note over C_PlayerInput, S_LevelManager: 1. 移動と衝突
-    C_PlayerInput->>C_Facade: OnMoveIntent (direction)
-    C_Facade->>S_Facade: Move_ServerRpc(direction)
+    C_PlayerInput->>C_Facade: OnMovePerformed(direction)
+    C_Facade->>S_Facade: RequestMoveBasedOnStateServerRpc(direction)
     S_Facade->>S_LevelManager: IsWalkable(targetPos) ?
     S_LevelManager-->>S_Facade: false (破壊可能な壁)
 

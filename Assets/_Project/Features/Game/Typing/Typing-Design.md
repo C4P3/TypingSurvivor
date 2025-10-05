@@ -30,7 +30,7 @@ Typing機能は、責務の分離原則に基づき、以下のコンポーネ�
 *   **`TypingTables/*.json` (JSONファイル)**
     *   **役割**: 各言語の文字とキー入力の対応ルールを定義する変換テーブル。
 *   **`TypingConversionTableSO` (ScriptableObject)**
-    *   **役割**: JSONファイルをUnityアセットとしてラップし、`GameConfig`から参照可能にするための`ScriptableObject`。
+    *   **役割**: JSONファイルをUnityアセットとしてラップし、`GameConfig`から参照可能にするための`ScriptableObject`。`WordProvider`は`GameConfig`を通じてこのアセットへの参照を受け取ります。
 *   **`WordData.cs` (struct)**
     *   **役割**: CSVファイルの1行を表現するデータ構造体。
 
@@ -59,8 +59,8 @@ Typing機能は、責務の分離原則に基づき、以下のコンポーネ�
 
 ### **2.4. Trie構築層 (`Builder` フォルダ)**
 
-*   **`KanaParser.cs` / `TrieBuilder.cs`**
-    *   **役割**: `WordData`のタイピング用テキストと、その言語に対応した変換テーブルを基に、Trie木を構築する。
+*   **`KanaParser.cs` / `TrieBuilder.cs` (internal)**
+    *   **役割**: `WordData`のタイピング用テキストと、その言語に対応した変換テーブルを基に、Trie木を構築する。これらのクラスはタイピング機能の内部でのみ使用されます。
     *   **特徴**: 英語のように特殊ルールがない場合は、文字をそのままTrie木に登録する。日本語の場合は、促音や撥音といった複雑なルールを解決してTrie木を構築する。
 
 ## **3. 新Input Systemとの連携**

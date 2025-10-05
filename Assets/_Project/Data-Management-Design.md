@@ -18,7 +18,7 @@
 
 * **定義**: ゲームのバージョンが変わらない限り、基本的には変化しない設定値やデータベース。  
 * **例**: アイテムの性能、マップ生成のパラメータ、ゲームの基本ルール（酸素減少率など）。  
-* **管理方法**: **ScriptableObject** を全面的に採用します。これらのアセットは、それが関連する機能のフォルダ（例: `GameConfig`は`Features/Game/Settings/`、`PlayerDefaultStats`は`Features/Core/PlayerStatus/`）に配置され、`GameSceneBootstrapper`などを通じて各システムに注入されます。
+* **管理方法**: **ScriptableObject** を全面的に採用します。これらのアセットは、それが関連する機能のフォルダ（例: `GameConfig`は`Features/Game/Settings/`、`PlayerDefaultStats`は`Features/Core/PlayerStatus/`）に配置され、`PlayerStatusSystem`や`GameSceneBootstrapper`などを通じて各システムに注入されます。
 
 ### **2.2. 動的データ / 永続化データ (Dynamic / Persistent Data)**
 
@@ -56,6 +56,8 @@ public class GameConfig : ScriptableObject
     public GameRuleSettings RuleSettings;  
     public PlayerDefaultStats PlayerStats;  
     public ItemRegistry ItemRegistry;
+    public AudioRegistry AudioRegistry;
+    public VFXRegistry VFXRegistry;
     public TextAsset WordListCsv;
     public List<LanguageTableMapping> LanguageTables;
     // ... 他の全体設定アセット ...  
@@ -70,6 +72,7 @@ UGSのCloud Saveで保存・読み込みするプレイヤーデータの具体�
 [System.Serializable]  
 public class PlayerSaveData  
 {  
+    public string PlayerName; // For UI display
     public int SaveVersion = 1; // データ構造の変更に対応するためのバージョン番号
 
     public PlayerSettingsData Settings;  

@@ -21,9 +21,9 @@ UIシステムの設計は、責務の分離とデータ駆動を重視します
 *   **`PushPanel(panel)`**: 新しいパネルをスタックに積み、一番手前に表示します。
 *   **`PopPanel()`**: スタックの一番上のパネルを取り除き、非表示にします。各パネルの「戻る」ボタンの基本的な動作となります。
 
-### **2.3. シーン固有のUI管理 (`MainMenuManager`, `GameUIManager`)**
+### **2.3. シーン固有のUI管理 (`UIFlowCoordinator`, `GameUIManager`)**
 
-各シーンに配置される`MainMenuManager`や`GameUIManager`は、そのシーンにおけるUIの司令塔です。ゲームの状態を監視し、「どのスクリーン・パネルをいつ表示するか」を判断して、`UIManager`に具体的な遷移を依頼する責務を持ちます。
+各シーンに配置される`UIFlowCoordinator`や`GameUIManager`は、そのシーンにおけるUIの司令塔です。ゲームの状態を監視し、「どのスクリーン・パネルをいつ表示するか」を判断して、`UIManager`に具体的な遷移を依頼する責務を持ちます。
 
 ---
 
@@ -43,21 +43,21 @@ UIシステムの設計は、責務の分離とデータ駆動を重視します
     *   `ランキング` → `UIManager.ShowScreen(RankingScreen)`
     *   (設定、ショップ、クレジットも同様)
 
-### **3.3. 難易度選択パネル (DifficultySelectPanel)**
-*   **役割**: シングルプレイの難易度を選択する。メインメニューの上に重ねて表示される。
+### **3.3. シングルプレイ選択スクリーン (SinglePlayerSelectScreen)**
+*   **役割**: シングルプレイの難易度を選択する。
 *   **構成**: 難易度ボタン(3つ)、`戻る`ボタン、`ランキングを見る`ボタン。
 *   **遷移**:
     *   `難易度ボタン` → ゲーム開始処理を呼び出す。
-    *   `戻る`ボタン → `UIManager.PopPanel()`
-    *   `ランキングを見る`ボタン → `UIManager.ShowScreen(RankingScreen)`
+    *   `戻る`ボタン → `UIFlowCoordinator.CloseCurrentPanel()`
+    *   `ランキングを見る`ボタン → `UIFlowCoordinator.RequestStateChange(PlayerUIState.InRanking)`
 
-### **3.4. マルチプレイモード選択スクリーン (MultiplayerModeSelectScreen)**
-*   **役割**: マルチプレイの対戦形式を選択する、全画面表示のスクリーン。
+### **3.4. マルチプレイモード選択スクリーン (MultiplayerSelectScreen)**
+*   **役割**: マルチプレイの対戦形式を選択する。
 *   **構成**: `フリーマッチ`, `ランクマッチ`, `合言葉マッチ`ボタン、`戻る`ボタン、`ランキングを見る`ボタン。
 *   **遷移**:
-    *   `マッチボタン` → `UIManager.PushPanel(MatchmakingPanel)`
-    *   `戻る`ボタン → `UIManager.ShowScreen(MainMenuScreen)`
-    *   `ランキングを見る`ボタン → `UIManager.ShowScreen(RankingScreen)`
+    *   `マッチボタン` → `UIFlowCoordinator.StartPublicMatchmaking(...)` or `UIFlowCoordinator.RequestStateChange(PlayerUIState.EnteringMatchCode)`
+    *   `戻る`ボタン → `UIFlowCoordinator.CloseCurrentPanel()`
+    *   `ランキングを見る`ボタン → `UIFlowCoordinator.RequestStateChange(PlayerUIState.InRanking)`
 
 ---
 

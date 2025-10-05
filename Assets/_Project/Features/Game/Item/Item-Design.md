@@ -32,7 +32,7 @@ Item機能は、ゲーム内に登場する全てのアイテム（消耗品、�
 ### **2.3. ItemExecutionContext.cs**
 
 * **役割**: IItemEffectが効果を実行するために必要な、\*\*全ての依存関係（外部サービスへの窓口）\*\*をまとめた「道具箱」クラス。  
-* **目的**: IItemEffectが他のシステムを直接参照するのを防ぎ、疎結合を維持します。  
+* **目的**: IItemEffectが他のシステムを直接参照するのを防ぎ、疎結合を維持します。`ItemService`によって生成され、`Execute`メソッドに渡されます。  
 * **保持する参照（インターフェース）**:  
   * ulong UserId: 効果を発動したプレイヤーのID。  
   * IGameStateWriter GameStateWriter: 酸素やスコアを操作する。  
@@ -45,7 +45,7 @@ Item機能は、ゲーム内に登場する全てのアイテム（消耗品、�
 
 * **役割**: IItemServiceインターフェースを実装する、サーバーサイドの実行エンジン。  
 * **責務**:  
-  1. PlayerFacadeからAcquireItem(itemId)の要求を受け取る。  
+  1. PlayerFacadeからAcquireItem(clientId, gridPosition, direction)の要求を受け取る。  
   2. ItemRegistryに問い合わせ、対応するItemDataを取得する。  
   3. DIで注入された各種Writerサービスへの参照をまとめ、ItemExecutionContextを生成する。  
   4. ItemDataが持つEffectsリストをループし、全てのIItemEffect.Execute(context)を呼び出す。
