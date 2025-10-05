@@ -130,10 +130,7 @@ namespace TypingSurvivor.Features.Core.App
             if (isDedicatedServer)
             {
 #if UNITY_SERVER
-                // When running on Multiplay, the UGS SDK handles server authentication automatically.
-                // The manual sign-in below is for non-Multiplay dedicated servers and can interfere
-                // with the Multiplay authentication flow, causing errors when calling Cloud Code.
-                // await ServerAuthenticationService.Instance.SignInFromServerAsync();
+                await ServerAuthenticationService.Instance.SignInFromServerAsync();
                 Debug.Log("Server initialization path completed. Assuming automatic UGS authentication on Multiplay.");
 #endif
             }

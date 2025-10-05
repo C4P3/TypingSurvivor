@@ -1,12 +1,15 @@
-const { EconomyApi } = require("@unity-services/economy-2.2");
+const { CurrenciesApi } = require("@unity-services/economy-2.2");
 
 module.exports = async ({ context, params }) => {
     const { projectId, serviceToken } = context;
     const { targetPlayerId } = params;
 
-    const economyApi = new EconomyApi({ accessToken: serviceToken });
+    const currencyApi = new CurrenciesApi({ accessToken: serviceToken });
 
-    const response = await economyApi.getPlayerCurrencies(projectId, targetPlayerId);
+    const response = await currencyApi.getPlayerCurrencies({
+        projectId: projectId,
+        playerId: targetPlayerId
+    });
     
     const ratingCurrency = response.data.results.find(c => c.currencyId === "RATING");
 
