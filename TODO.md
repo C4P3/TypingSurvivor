@@ -3,6 +3,37 @@
 このドキュメントは、Typing Survivorプロジェクトの未実装の機能や改善点を管理するためのタスクリストです。
 タスクは優先度が高いと思われる順に並んでいます。
 
+
+## 急ぎ
+- [ ] **バグ修正**:
+    - Failed to delete ticket: The object of type 'TypingSurvivor.Features.UI.Screens.MainMenu.MatchmakingController' has been destroyed but you are still trying to access it.
+Your script should either check if it is null or you should not destroy the object. Parameter name: obj
+UnityEngine.Debug:LogWarning (object)
+TypingSurvivor.Features.Core.Matchmaking.MatchmakingService/<CancelMatchmaking>d__17:MoveNext () (at Assets/_Project/Features/Core/Matchmaking/Scripts/MatchmakingService.cs:144)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetResult ()
+Unity.Services.Matchmaker.WrappedMatchmakerService/<DeleteTicketAsync>d__9:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/SDK/WrappedMatchmakerService.cs:136)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Response>:SetResult (Unity.Services.Matchmaker.Response)
+Unity.Services.Matchmaker.WrappedMatchmakerService/<TryCatchRequest>d__16`1<Unity.Services.Matchmaker.Tickets.DeleteTicketRequest>:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/SDK/WrappedMatchmakerService.cs:264)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Response>:SetResult (Unity.Services.Matchmaker.Response)
+Unity.Services.Matchmaker.Apis.Tickets.TicketsApiClient/<DeleteTicketAsync>d__8:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Apis/TicketsApi.cs:150)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
+Unity.Services.Matchmaker.Http.HttpClient/<MakeRequestAsync>d__1:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/HttpClient.cs:41)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
+Unity.Services.Matchmaker.Http.HttpClient/<CreateWebRequestAsync>d__3:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/HttpClient.cs:56)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
+Unity.Services.Matchmaker.Http.HttpClient/<CreateHttpClientResponse>d__4:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/HttpClient.cs:84)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
+Unity.Services.Matchmaker.Http.HttpClient/<>c__DisplayClass4_0/<<CreateHttpClientResponse>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/HttpClient.cs:81)
+System.Threading.Tasks.TaskCompletionSource`1<Unity.Services.Matchmaker.Http.HttpClientResponse>:SetResult (Unity.Services.Matchmaker.Http.HttpClientResponse)
+Unity.Services.Matchmaker.Http.UnityWebRequestHelpers/<>c__DisplayClass0_0:<GetAwaiter>b__0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.multiplayer@34def56704ad/Runtime/Matchmaker/Http/UnityWebRequestHelpers.cs:34)
+UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+　- メインメニューシーンに戻って再度ゲームを開始する
+- [ ] **ゲームマネージャーの破損を修正**:
+  - 再戦が上手く行かない
+  - スポーンの場所が上手く行かない
+  - BGMが上手く行かない
+- [ ] **フリーマッチでもレート計算しちゃう**:
+  - Strategyで分岐を追加。というか、Strategyに計算式があってもいい
 ---
 
 ## 🚀 フェーズ1: ゲームフロー基盤の実装 (完了)
@@ -33,15 +64,15 @@
     - [ ] ランクマッチの勝敗とレート計算ロジックを持つ `RankedMatchStrategy.cs` を作成する。
     - [ ] Matchmakerサービスを利用したプライベートマッチ（合言葉マッチ）のロジックを `MatchmakingService` と `MatchmakingController` に実装する。
 
-- [ ] **Unity Gaming Services連携 (Matchmaker, Hosting)**:
-    - [ ] UGSの各サービスを導入し、マッチング接続の基盤を構築する。
-- [ ] **マッチングUIの実装**:
-    - [ ] MainMenuシーンに「フリーマッチ」「レートマッチ」「合言葉マッチ」の各モードを選択し、マッチング待機を行うUIを実装する。
-- [ ] **レートシステムの設計・実装**:
-    - [ ] レートマッチのための内部レート計算、表示、保存（UGS Cloud Saveなど）の仕組みを実装する。
-- [ ] **合言葉マッチの実装**:
-    - [ ] プライベートなルームを作成・検索するための合言葉（ルームコード）機能を実装する。
-- [ ] **UIアニメーションの改善 (CanvasGroup)**: TypingViewなどのUI表示切り替えを、現在のSetActiveからCanvasGroupのalphaを利用したフェードイン/アウトに移行し、より洗練されたユーザー体験を提供する。
+- [x] **Unity Gaming Services連携 (Matchmaker, Hosting)**:
+    - [x] UGSの各サービスを導入し、マッチング接続の基盤を構築する。
+- [x] **マッチングUIの実装**:
+    - [x] MainMenuシーンに「フリーマッチ」「レートマッチ」「合言葉マッチ」の各モードを選択し、マッチング待機を行うUIを実装する。
+- [x] **レートシステムの設計・実装**:
+    - [x] レートマッチのための内部レート計算、表示、保存（UGS Cloud Saveなど）の仕組みを実装する。
+- [x] **合言葉マッチの実装**:
+    - [x] プライベートなルームを作成・検索するための合言葉（ルームコード）機能を実装する。
+- [x] **UIアニメーションの改善 (CanvasGroup)**: TypingViewなどのUI表示切り替えを、現在のSetActiveからCanvasGroupのalphaを利用したフェードイン/アウトに移行し、より洗練されたユーザー体験を提供する。
 - [ ] **PlayerStatusSystemの永続化**: 
     - [ ] `PlayerStatusSystem`に、Unity Gaming ServicesのCloud Saveなどを利用したセーブ/ロード機能を追加する。
 - [ ] **コードクリーンアップ**:
