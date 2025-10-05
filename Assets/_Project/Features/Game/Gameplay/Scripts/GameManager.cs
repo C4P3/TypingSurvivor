@@ -385,12 +385,14 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
             GameResult result = _gameModeStrategy.CalculateResult(_gameState);
 
+            // ジングル再生処理
+            PlayJingleThenMusicClientRpc(result.WinnerClientId);
+
             ulong loserClientId = 0;
             if (!result.IsDraw)
             {
                 loserClientId = _playerInstances.Keys.FirstOrDefault(id => id != result.WinnerClientId);
             }
-
 
             int newWinnerRating = 0;
             int newLoserRating = 0;
@@ -441,6 +443,55 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // If we passed the check, proceed with rematch.
             StopBgmClientRpc(0f);
             ResetPlayersForRematch();
+
+            // 再戦準備（マップ再生成とプレイヤー再配置）のロジック
+            // Regenerate world using the same request logic as initial spawn
+            var request = new MapGenerationRequest();
+            var clientIds = _playerInstances.Keys.ToList();
+
+            if (_gameModeStrategy is MultiPlayerStrategy || _gameModeStrategy is RankedMatchStrategy)
+            {
+                for (int i = 0; i < clientIds.Count; i++)
+                {
+                    request.SpawnAreas.Add(new SpawnArea
+                    {
+                        PlayerClientIds = new List<ulong> { clientIds[i] },
+                        WorldOffset = new Vector2Int(i * 1000, 0),
+                        MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
+                    });
+                }
+            }
+            else
+            {
+                    request.SpawnAreas.Add(new SpawnArea
+                {
+                    PlayerClientIds = new List<ulong> { clientIds[0] },
+                    WorldOffset = new Vector2Int(0, 0),
+                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
+                });
+            }
+            _levelService.GenerateWorld(request);
+            await System.Threading.Tasks.Task.Yield(); // Give LevelManager a frame to process
+
+            // Reposition players
+            foreach (var area in request.SpawnAreas)
+            {
+                var spawnPoints = _levelService.GetSpawnPoints(area);
+                for (int i = 0; i < area.PlayerClientIds.Count; i++)
+                {
+                    ulong clientId = area.PlayerClientIds[i];
+                    var player = _playerInstances[clientId];
+                    var gridPos = spawnPoints[i];
+                    _levelService.ClearArea(gridPos, 1);
+                    var spawnPos = _grid.GetCellCenterWorld(gridPos);
+                    player.RespawnAt(spawnPos);
+                    // After teleporting the player, update their position in the GameState and force a chunk update.
+                    UpdatePlayerPosition(clientId, gridPos);
+                    _levelService.ForceChunkUpdateForPlayer(clientId, spawnPos);
+                }
+            }
             // The main game loop will now proceed to the next phase (Countdown)
         }
 
@@ -565,7 +616,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             MusicManager.Instance.Play(bgmId, 0f);
         }
 
-        // 修正点3: BGM停止用のRPCを追加
+        // BGM停止用のRPC
         [ClientRpc]
         private void StopBgmClientRpc(float fadeDuration)
         {
@@ -578,7 +629,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
             bool localPlayerWon = winnerId == NetworkManager.Singleton.LocalClientId;
             var jingleId = localPlayerWon ? SoundId.WinJingle : SoundId.LoseJingle;
             
-            // 修正点4: MusicManagerに overlapDuration 引数を渡す (例: ジングルが終わる0.5秒前からBGMのフェードインを開始)
             MusicManager.Instance.PlayJingleThen(jingleId, SoundId.ResultsMusic, 1.0f, 0.5f);
         }
     }
