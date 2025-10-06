@@ -233,6 +233,20 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                     AppManager.Instance.StartClient("127.0.0.1", 7777, GameModeType.MultiPlayer);
                 }
 
+                if (GUILayout.Button("Server (Free Match)"))
+                {
+                    AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
+                    NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData("127.0.0.1", 7777);
+                    NetworkManager.Singleton.SceneManager.LoadScene("Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                }
+
+                if (GUILayout.Button("Server (Ranked)"))
+                {
+                    AppManager.Instance.SetGameMode(GameModeType.RankedMatch);
+                    NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData("127.0.0.1", 7777);
+                    NetworkManager.Singleton.SceneManager.LoadScene("Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                }
+
                 GUILayout.EndArea();
             }
         }
