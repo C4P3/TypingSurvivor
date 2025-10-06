@@ -795,8 +795,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 5695128167240779291, guid: 6fa994e3b03840f4693216238c730303, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: -6347860710101592732, guid: d3f821ab9ed87b146bf1c9a83ce16a3a, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -1079,3 +1079,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: TypingSurvivor.UI::OxygenView
   _oxygenSlider: {fileID: 8816970052870653370}
   _oxygenLabel: {fileID: 7572659493949025616}
+  _fillImage: {fileID: 4348964037665312173}
+  _fullOxygenColor: {r: 0, g: 1, b: 0, a: 1}
+  _lowOxygenColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  _criticalOxygenColor: {r: 1, g: 0, b: 0, a: 1}
