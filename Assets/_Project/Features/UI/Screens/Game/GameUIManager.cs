@@ -76,6 +76,7 @@ namespace TypingSurvivor.Features.UI
             _resultScreen.OnRematchClicked += HandleRematchClicked;
             _resultScreen.OnMainMenuClicked += HandleMainMenuClicked;
             _gameManager.OnLowOxygenStateChanged_Client += HandleLowOxygenStateChange;
+            _cameraManager.OnCameraAssigned += HandleCameraAssigned;
 
             if (_typingService != null)
             {
@@ -104,6 +105,7 @@ namespace TypingSurvivor.Features.UI
                 _resultScreen.OnMainMenuClicked -= HandleMainMenuClicked;
             }
             if (_gameManager != null) _gameManager.OnLowOxygenStateChanged_Client -= HandleLowOxygenStateChange;
+            if (_cameraManager != null) _cameraManager.OnCameraAssigned -= HandleCameraAssigned;
             
             if (_typingService != null)
             {
@@ -114,6 +116,14 @@ namespace TypingSurvivor.Features.UI
             }
 
             if (NetworkManager.Singleton != null) NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnect;
+        }
+
+        private void HandleCameraAssigned(ulong clientId, UnityEngine.Camera camera)
+        {
+            if (_playerHuds.TryGetValue(clientId, out var hud))
+            {
+                hud.SetRenderCamera(camera);
+            }
         }
 
         private void OnPlayerListChanged(Unity.Netcode.NetworkListEvent<Unity.Netcode.NetworkObjectReference> changeEvent)
@@ -152,9 +162,6 @@ namespace TypingSurvivor.Features.UI
                         var newHud = Instantiate(_inGameHUDPrefab, transform);
                         newHud.gameObject.name = $"PlayerHUD_{clientId}";
                         
-                        var playerCamera = _cameraManager.GetCameraForPlayer(clientId);
-                        if (playerCamera != null) newHud.SetRenderCamera(playerCamera);
-
                         newHud.SetPlayerOwnerId(clientId);
                         newHud.Initialize(_gameStateReader, _playerStatusReader);
                         _playerHuds[clientId] = newHud;

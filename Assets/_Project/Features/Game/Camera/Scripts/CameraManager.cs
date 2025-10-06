@@ -1,5 +1,6 @@
 using TypingSurvivor.Features.Game.Gameplay.Data;
 using TypingSurvivor.Features.Game.Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
@@ -7,14 +8,12 @@ using UnityEngine;
 
 namespace TypingSurvivor.Features.Game.Camera
 {
-    /// <summary>
-    /// ゲームのカメラレイアウト（画面分割など）を管理し、各カメラが正しいプレイヤーを追従するように設定する。
-    /// GameStateを監視し、適切なタイミングで自律的に動作する。
-    /// </summary>
     public class CameraManager : MonoBehaviour
     {
         [Tooltip("管理対象のカメラ。CameraFollowコンポーネントが付いていること。")]
         [SerializeField] private List<CameraFollow> _cameras;
+
+        public event Action<ulong, UnityEngine.Camera> OnCameraAssigned;
 
         private IGameStateReader _gameStateReader;
 
@@ -40,7 +39,6 @@ namespace TypingSurvivor.Features.Game.Camera
             if (_gameStateReader != null)
             {
                 _gameStateReader.SpawnedPlayers.OnListChanged += HandlePlayersChanged;
-                // Initial setup with current players
                 HandlePlayersChanged(new NetworkListEvent<NetworkObjectReference>());
             }
         }
@@ -71,17 +69,15 @@ namespace TypingSurvivor.Features.Game.Camera
 
         private void SetupCameras(IReadOnlyList<PlayerFacade> players)
         {
-            // まず全てのカメラを非アクティブ化
             foreach (var cam in _cameras)
             {
                 cam.gameObject.SetActive(false);
-                cam.TargetFacade = null; // Clear target
+                cam.TargetFacade = null;
             }
 
             int playerCount = players.Count;
             if (playerCount == 0) return;
 
-            // プレイヤーIDの昇順でソートし、ホストが常にP1になるようにする
             var sortedPlayers = players.OrderBy(p => p.OwnerClientId).ToList();
 
             switch (playerCount)
@@ -92,13 +88,11 @@ namespace TypingSurvivor.Features.Game.Camera
                 case 2:
                     SetupTwoPlayerSplitScreen(sortedPlayers[0], sortedPlayers[1]);
                     break;
-                // 3人や4人の場合も同様に実装
                 case 3:
                 case 4:
                     SetupFourPlayerSplitScreen(sortedPlayers);
                     break;
                 default:
-                    // 5人以上は最初の4人のみ表示
                     SetupFourPlayerSplitScreen(sortedPlayers);
                     break;
             }
@@ -108,14 +102,16 @@ namespace TypingSurvivor.Features.Game.Camera
         {
             if (_cameras.Count < 1) return;
             var cam1 = _cameras[0];
+            var cameraComponent = cam1.GetComponent<UnityEngine.Camera>();
             cam1.gameObject.SetActive(true);
-            cam1.GetComponent<UnityEngine.Camera>().rect = new Rect(0, 0, 1, 1);
+            cameraComponent.rect = new Rect(0, 0, 1, 1);
             cam1.Target = player.transform;
             cam1.TargetFacade = player;
             
-            // Enable listener only for the local player
             var listener = cam1.GetComponent<AudioListener>();
             if (listener != null) listener.enabled = player.IsOwner;
+
+            OnCameraAssigned?.Invoke(player.OwnerClientId, cameraComponent);
         }
 
         private void SetupTwoPlayerSplitScreen(PlayerFacade player1, PlayerFacade player2)
@@ -123,20 +119,24 @@ namespace TypingSurvivor.Features.Game.Camera
             if (_cameras.Count < 2) return;
 
             var cam1 = _cameras[0];
+            var cameraComponent1 = cam1.GetComponent<UnityEngine.Camera>();
             cam1.gameObject.SetActive(true);
-            cam1.GetComponent<UnityEngine.Camera>().rect = new Rect(0, 0, 0.5f, 1);
+            cameraComponent1.rect = new Rect(0, 0, 0.5f, 1);
             cam1.Target = player1.transform;
             cam1.TargetFacade = player1;
             var listener1 = cam1.GetComponent<AudioListener>();
             if (listener1 != null) listener1.enabled = player1.IsOwner;
+            OnCameraAssigned?.Invoke(player1.OwnerClientId, cameraComponent1);
 
             var cam2 = _cameras[1];
+            var cameraComponent2 = cam2.GetComponent<UnityEngine.Camera>();
             cam2.gameObject.SetActive(true);
-            cam2.GetComponent<UnityEngine.Camera>().rect = new Rect(0.5f, 0, 0.5f, 1);
+            cameraComponent2.rect = new Rect(0.5f, 0, 0.5f, 1);
             cam2.Target = player2.transform;
             cam2.TargetFacade = player2;
             var listener2 = cam2.GetComponent<AudioListener>();
             if (listener2 != null) listener2.enabled = player2.IsOwner;
+            OnCameraAssigned?.Invoke(player2.OwnerClientId, cameraComponent2);
         }
 
         private void SetupFourPlayerSplitScreen(IReadOnlyList<PlayerFacade> players)
@@ -155,13 +155,15 @@ namespace TypingSurvivor.Features.Game.Camera
             {
                 var player = players[i];
                 var cam = _cameras[i];
+                var cameraComponent = cam.GetComponent<UnityEngine.Camera>();
                 cam.gameObject.SetActive(true);
-                cam.GetComponent<UnityEngine.Camera>().rect = rects[i];
+                cameraComponent.rect = rects[i];
                 cam.Target = player.transform;
                 cam.TargetFacade = player;
                 
                 var listener = cam.GetComponent<AudioListener>();
                 if (listener != null) listener.enabled = player.IsOwner;
+                OnCameraAssigned?.Invoke(player.OwnerClientId, cameraComponent);
             }
         }
     }
