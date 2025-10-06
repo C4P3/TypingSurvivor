@@ -38,11 +38,6 @@ namespace TypingSurvivor.Features.Game.Player.Input
             _gameControls.Gameplay.Enable();
         }
 
-        public void EnableTypingInput()
-        {
-            _gameControls.Gameplay.Disable();
-        }
-
         private void SubscribeGameplayEvents()
         {
             _gameControls.Gameplay.Move.performed += HandleMovePerformed;

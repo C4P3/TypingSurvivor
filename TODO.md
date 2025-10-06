@@ -5,11 +5,6 @@
 
 ## 優先度: 高
 
-- [ ] **`PlayerInput.cs`のリファクタリング**:
-  - `EnableGameplayInput`と`EnableTypingInput`メソッドは、単一アクションマップへの移行という新しい設計思想と一致していません。これらのメソッドを削除し、関連するコードをリファクタリングして、設計との一貫性を確保する必要があります。
-- [ ] **`RoomingState.cs`のファイル名変更**:
-  - `RoomingState.cs`は明らかに`RoamingState.cs`のタイプミスです。ファイル名を修正し、コード内のすべての参照を更新する必要があります。
-
 ## 優先度: 中
 
 - [ ] **`GameUIManager.cs`の責務分割**:
