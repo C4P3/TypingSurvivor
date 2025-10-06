@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.PlayerStatus;
@@ -6,76 +5,85 @@ using TypingSurvivor.Features.Core.VFX;
 using TypingSurvivor.Features.Game.Camera;
 using TypingSurvivor.Features.Game.Gameplay;
 using TypingSurvivor.Features.Game.Gameplay.Data;
+using System.Linq;
+using TypingSurvivor.Features.Game.Typing;
 using TypingSurvivor.Features.UI.Screens;
 using TypingSurvivor.Features.UI.Screens.InGameHUD;
+using TypingSurvivor.Features.UI.Screens.Global; // Changed
 using Unity.Netcode;
 using UnityEngine;
 
 namespace TypingSurvivor.Features.UI
 {
-    /// <summary>
-    /// Manages the overall UI state for the Game scene.
-    /// It listens to game state changes and tells the UIManager to show/hide the appropriate screens.
-    /// </summary>
     [RequireComponent(typeof(UIManager))]
     public class GameUIManager : MonoBehaviour
     {
         [Header("UI System")]
         [SerializeField] private UIManager _uiManager;
 
-        [Header("Screen References")]
-        [SerializeField] private InGameHUDManager _inGameHUD;
+        [Header("Screen & Prefab References")]
+        [SerializeField] private InGameHUDManager _inGameHUDPrefab; // Prefab to instantiate
         [SerializeField] private ResultScreen _resultScreen;
         [SerializeField] private CountdownScreen _countdownScreen;
+        [SerializeField] private InGameGlobalView _inGameGlobalView; // Changed
 
         [Header("Low Oxygen Effect")]
         [SerializeField] private float _lowOxygenPitch = 1.2f;
         
-        // --- Dependencies ---
         private IGameStateReader _gameStateReader;
         private IPlayerStatusSystemReader _playerStatusReader;
-        private GameManager _gameManager; // For sending RPCs
-        private CameraManager _cameraManager; // Injected dependency
+        private GameManager _gameManager;
+        private ITypingService _typingService;
+        private CameraManager _cameraManager;
 
-        // --- State ---
+        private readonly Dictionary<ulong, InGameHUDManager> _playerHuds = new();
+        private NetworkList<NetworkObjectReference>.OnListChangedDelegate _onPlayerListChangedHandler;
         private readonly Dictionary<ulong, Coroutine> _blinkingCoroutines = new();
         private readonly Dictionary<ulong, LowHealthEffect> _activeLowHealthEffects = new();
         private bool _showDisconnectGUI = false;
 
         protected virtual void Awake()
         {
-            if (_uiManager == null)
-            {
-                _uiManager = GetComponent<UIManager>();
-            }
+            if (_uiManager == null) _uiManager = GetComponent<UIManager>();
+            _onPlayerListChangedHandler = OnPlayerListChanged;
+            // Removed instantiation of typing display
         }
 
-        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader, GameManager gameManager, TypingSurvivor.Features.Game.Typing.ITypingService typingService, CameraManager cameraManager)
+        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader, GameManager gameManager, ITypingService typingService, CameraManager cameraManager)
         {
             _gameStateReader = gameStateReader;
             _playerStatusReader = playerStatusReader;
             _gameManager = gameManager;
+            _typingService = typingService;
             _cameraManager = cameraManager;
 
-            _inGameHUD.Initialize(gameStateReader, playerStatusReader, typingService);
-
             SubscribeToEvents();
-
-            // Set initial UI state
             HandlePhaseChanged(default, _gameStateReader.CurrentPhaseNV.Value);
+            UpdatePlayerHUDs(); // Initial HUD setup
         }
 
         private void OnDestroy()
         {
             UnsubscribeFromEvents();
+            foreach (var hud in _playerHuds.Values) if (hud != null) Destroy(hud.gameObject);
+            _playerHuds.Clear();
         }
 
         private void SubscribeToEvents()
         {
             _gameStateReader.CurrentPhaseNV.OnValueChanged += HandlePhaseChanged;
+            _gameStateReader.SpawnedPlayers.OnListChanged += _onPlayerListChangedHandler;
             _resultScreen.OnRematchClicked += HandleRematchClicked;
             _resultScreen.OnMainMenuClicked += HandleMainMenuClicked;
             _gameManager.OnLowOxygenStateChanged_Client += HandleLowOxygenStateChange;
+
+            if (_typingService != null)
+            {
+                _typingService.OnTypingProgressed += HandleTypingProgressed;
+                _typingService.OnTypingCancelled += HandleTypingCancelled;
+                _typingService.OnTypingSuccess += HandleTypingSuccess;
+                _typingService.OnTypingMiss += HandleTypingMiss;
+            }
 
             if (NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsHost)
             {
@@ -85,40 +93,150 @@ namespace TypingSurvivor.Features.UI
 
         private void UnsubscribeFromEvents()
         {
-            if (_gameStateReader != null) _gameStateReader.CurrentPhaseNV.OnValueChanged -= HandlePhaseChanged;
+            if (_gameStateReader != null)
+            {
+                _gameStateReader.CurrentPhaseNV.OnValueChanged -= HandlePhaseChanged;
+                _gameStateReader.SpawnedPlayers.OnListChanged -= _onPlayerListChangedHandler;
+            }
             if (_resultScreen != null) 
             {
                 _resultScreen.OnRematchClicked -= HandleRematchClicked;
                 _resultScreen.OnMainMenuClicked -= HandleMainMenuClicked;
             }
             if (_gameManager != null) _gameManager.OnLowOxygenStateChanged_Client -= HandleLowOxygenStateChange;
+            
+            if (_typingService != null)
+            {
+                _typingService.OnTypingProgressed -= HandleTypingProgressed;
+                _typingService.OnTypingCancelled -= HandleTypingCancelled;
+                _typingService.OnTypingSuccess -= HandleTypingSuccess;
+                _typingService.OnTypingMiss -= HandleTypingMiss;
+            }
+
             if (NetworkManager.Singleton != null) NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnect;
+        }
+
+        private void OnPlayerListChanged(Unity.Netcode.NetworkListEvent<Unity.Netcode.NetworkObjectReference> changeEvent)
+        {
+            UpdatePlayerHUDs();
+        }
+
+        private void UpdatePlayerHUDs()
+        {
+            var activePlayerIds = new HashSet<ulong>();
+            foreach (var playerRef in _gameStateReader.SpawnedPlayers)
+            {
+                if (playerRef.TryGet(out var netObj))
+                {
+                    activePlayerIds.Add(netObj.OwnerClientId);
+                }
+            }
+
+            var hudsToRemove = _playerHuds.Keys.Where(id => !activePlayerIds.Contains(id)).ToList();
+            foreach (var id in hudsToRemove)
+            {
+                if (_playerHuds.TryGetValue(id, out var hud))
+                {
+                    Destroy(hud.gameObject);
+                }
+                _playerHuds.Remove(id);
+            }
+
+            foreach (var playerRef in _gameStateReader.SpawnedPlayers)
+            {
+                if (playerRef.TryGet(out var netObj))
+                {
+                    var clientId = netObj.OwnerClientId;
+                    if (!_playerHuds.ContainsKey(clientId))
+                    {
+                        var newHud = Instantiate(_inGameHUDPrefab, transform);
+                        newHud.gameObject.name = $"PlayerHUD_{clientId}";
+                        
+                        var playerCamera = _cameraManager.GetCameraForPlayer(clientId);
+                        if (playerCamera != null) newHud.SetRenderCamera(playerCamera);
+
+                        newHud.SetPlayerOwnerId(clientId);
+                        newHud.Initialize(_gameStateReader, _playerStatusReader);
+                        _playerHuds[clientId] = newHud;
+                    }
+                }
+            }
+            HandlePhaseChanged(default, _gameStateReader.CurrentPhaseNV.Value);
         }
 
         private void HandlePhaseChanged(GamePhase previousPhase, GamePhase newPhase)
         {
+            foreach (var hud in _playerHuds.Values)
+            {
+                if (newPhase == GamePhase.Playing) hud.Show();
+                else hud.Hide();
+            }
+
+            if (_inGameGlobalView != null && newPhase == GamePhase.Playing)
+            {
+                 _inGameGlobalView.Show();
+            }
+            else if (_inGameGlobalView != null)
+            {
+                _inGameGlobalView.Hide();
+            }
+
             switch (newPhase)
             {
                 case GamePhase.WaitingForPlayers:
-                    _uiManager.ShowScreen(null); // Hide all screens
+                    _uiManager.ShowScreen(null);
                     break;
-
                 case GamePhase.Countdown:
                     _uiManager.ShowScreen(_countdownScreen);
-                    _countdownScreen.StartCountdown(() => {}); // Countdown is now self-managed
+                    _countdownScreen.StartCountdown(() => {});
                     break;
-
                 case GamePhase.Playing:
-                    _uiManager.ShowScreen(_inGameHUD);
+                    _uiManager.ShowScreen(null);
                     break;
-
                 case GamePhase.Finished:
                     ResetLowOxygenEffects();
                     _uiManager.ShowScreen(_resultScreen);
-                    _resultScreen.Show("Game Over!"); // Pass the message
+                    _resultScreen.Show();
                     break;
             }
         }
+
+        #region Typing Handlers
+
+        private void HandleTypingSuccess()
+        {
+            SfxManager.Instance.PlaySfx(SoundId.TypingSuccess);
+            if (_inGameGlobalView != null) _inGameGlobalView.SetTypingActive(false);
+        }
+
+        private void HandleTypingMiss()
+        {
+            SfxManager.Instance.PlaySfx(SoundId.TypingMiss);
+        }
+
+        private void HandleTypingProgressed()
+        {
+            if (_inGameGlobalView == null) return;
+
+            if (_typingService.IsTyping)
+            {
+                _inGameGlobalView.SetTypingActive(true);
+                _inGameGlobalView.UpdateTypingQuestion(_typingService.GetDisplayText());
+                _inGameGlobalView.UpdateTypingInput(_typingService.GetTypedRomaji(), _typingService.GetRemainingRomaji());
+                SfxManager.Instance.PlaySfx(SoundId.TypingKeyPress);
+            }
+            else
+            {
+                _inGameGlobalView.SetTypingActive(false);
+            }
+        }
+
+        private void HandleTypingCancelled()
+        {
+            if (_inGameGlobalView != null) _inGameGlobalView.SetTypingActive(false);
+        }
+
+        #endregion
 
         #region Event Handlers
 
@@ -134,15 +252,12 @@ namespace TypingSurvivor.Features.UI
 
         private void HandleClientDisconnect(ulong clientId)
         {
-            if (clientId == NetworkManager.Singleton.LocalClientId)
-            {
-                _showDisconnectGUI = true;
-            }
+            if (clientId == NetworkManager.Singleton.LocalClientId) _showDisconnectGUI = true;
         }
 
         #endregion
 
-        #region Specific UI Logic (Could be refactored into own controllers)
+        #region Specific UI Logic
 
         private void ResetLowOxygenEffects()
         {
@@ -152,7 +267,7 @@ namespace TypingSurvivor.Features.UI
             foreach (var effect in _activeLowHealthEffects.Values) if (effect != null) effect.SetOpacity(0f);
             _activeLowHealthEffects.Clear();
             
-            MusicManager.Instance.ResetPitch();
+            if(MusicManager.Instance != null) MusicManager.Instance.ResetPitch();
         }
 
         public void HandleLowOxygenStateChange(ulong clientId, bool isLowOxygen)
@@ -167,27 +282,27 @@ namespace TypingSurvivor.Features.UI
             {
                 if (!_blinkingCoroutines.ContainsKey(clientId))
                 {
-                    Coroutine coroutine = StartCoroutine(BlinkEffectCoroutine(lowHealthEffect));
+                    var coroutine = StartCoroutine(BlinkEffectCoroutine(lowHealthEffect));
                     _blinkingCoroutines[clientId] = coroutine;
                     _activeLowHealthEffects[clientId] = lowHealthEffect;
                 }
             }
             else
             {
-                if (_blinkingCoroutines.TryGetValue(clientId, out Coroutine coroutine)) StopCoroutine(coroutine);
+                if (_blinkingCoroutines.TryGetValue(clientId, out var coroutine)) StopCoroutine(coroutine);
                 _blinkingCoroutines.Remove(clientId);
                 if (_activeLowHealthEffects.TryGetValue(clientId, out var effect)) effect.SetOpacity(0f);
                 _activeLowHealthEffects.Remove(clientId);
             }
 
-            if (clientId == NetworkManager.Singleton.LocalClientId)
+            if (clientId == NetworkManager.Singleton.LocalClientId && MusicManager.Instance != null)
             {
                 if (isLowOxygen) MusicManager.Instance.SetPitch(_lowOxygenPitch);
                 else MusicManager.Instance.ResetPitch();
             }
         }
 
-        private IEnumerator BlinkEffectCoroutine(LowHealthEffect effect)
+        private System.Collections.IEnumerator BlinkEffectCoroutine(LowHealthEffect effect)
         {
             while (true)
             {
@@ -210,10 +325,10 @@ namespace TypingSurvivor.Features.UI
 
             float boxWidth = 300, boxHeight = 120;
             float screenWidth = Screen.width, screenHeight = Screen.height;
-            Rect boxRect = new Rect((screenWidth - boxWidth) / 2, (screenHeight - boxHeight) / 2, boxWidth, boxHeight);
+            var boxRect = new Rect((screenWidth - boxWidth) / 2, (screenHeight - boxHeight) / 2, boxWidth, boxHeight);
             GUI.Box(boxRect, "サーバーとの接続が切断されました。");
             float buttonWidth = 200, buttonHeight = 40;
-            Rect buttonRect = new Rect(boxRect.x + (boxWidth - buttonWidth) / 2, boxRect.y + 60, buttonWidth, buttonHeight);
+            var buttonRect = new Rect(boxRect.x + (boxWidth - buttonWidth) / 2, boxRect.y + 60, buttonWidth, buttonHeight);
             if (GUI.Button(buttonRect, "メインメニューへ戻る"))
             {
                 _showDisconnectGUI = false;

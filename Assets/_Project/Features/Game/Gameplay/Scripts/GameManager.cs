@@ -36,7 +36,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private readonly HashSet<ulong> _rematchRequesters = new();
         private Coroutine _serverGameLoop;
         private GameConfig _gameConfig;
-        private float oxygenDecreaseRate = 1.0f;
+        private float oxygenDecreaseRate = 5.0f;
         private const float LowOxygenThreshold = 0.3f; // 30%
         private readonly HashSet<ulong> _playersInLowOxygen = new();
         public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;

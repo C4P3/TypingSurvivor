@@ -98,7 +98,7 @@ namespace TypingSurvivor.Features.Game.Typing
         }
 
         // UI表示用の情報を取得するためのゲッター
-        public string GetOriginalText() => _currentChallenge?.OriginalText ?? "";
+        public string GetDisplayText() => _currentChallenge?.OriginalText ?? "";
         public string GetTypedRomaji() => _currentChallenge?.GetTypedRomaji() ?? "";
         public string GetRemainingRomaji() => _currentChallenge?.GetRemainingRomaji() ?? "";
     }
