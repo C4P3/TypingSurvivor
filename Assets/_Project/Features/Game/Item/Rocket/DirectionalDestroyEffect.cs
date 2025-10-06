@@ -57,13 +57,11 @@ namespace TypingSurvivor.Features.Game.Items.Effects
             if (_rocketVFX != VFXId.None)
             {
                 // Calculate rotation and position for the VFX
-                Quaternion rotation = Quaternion.LookRotation(direction);
-                // Center the effect along the path of destruction
-                Vector3 effectPosition = userPosition + ((Vector3)direction * _distance / 2.0f);
+                Quaternion rotation = Quaternion.LookRotation(-direction);
                 // Scale the effect to match the distance
-                Vector3 scale = new Vector3(1, 1, _distance);
+                Vector3 scale = new Vector3(_distance*0.03f, _distance*0.03f, _distance*0.03f);
 
-                context.EffectManager.PlayEffect(_rocketVFX, effectPosition, rotation, scale);
+                context.EffectManager.PlayEffect(_rocketVFX, userPosition, rotation, scale);
             }
         }
     }
