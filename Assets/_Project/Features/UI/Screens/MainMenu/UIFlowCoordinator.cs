@@ -237,6 +237,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 {
                     AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
                     NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData("127.0.0.1", 7777);
+                    NetworkManager.Singleton.StartServer();
                     NetworkManager.Singleton.SceneManager.LoadScene("Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
                 }
 
@@ -244,6 +245,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 {
                     AppManager.Instance.SetGameMode(GameModeType.RankedMatch);
                     NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData("127.0.0.1", 7777);
+                    NetworkManager.Singleton.StartServer();
                     NetworkManager.Singleton.SceneManager.LoadScene("Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
                 }
 

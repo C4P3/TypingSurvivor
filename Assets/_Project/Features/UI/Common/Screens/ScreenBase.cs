@@ -28,8 +28,8 @@ namespace TypingSurvivor.Features.UI.Common
 
         public virtual void Show()
         {
-            if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
             gameObject.SetActive(true);
+            if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
             _fadeCoroutine = StartCoroutine(Fade(1f, () => {
                 _canvasGroup.interactable = true;
                 _canvasGroup.blocksRaycasts = true;
@@ -40,17 +40,21 @@ namespace TypingSurvivor.Features.UI.Common
         {
             if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
             
-            // Immediately disable interaction
             _canvasGroup.interactable = false;
             _canvasGroup.blocksRaycasts = false;
 
-            _fadeCoroutine = StartCoroutine(Fade(0f, () => {
-                gameObject.SetActive(false);
-            }));
+            _fadeCoroutine = StartCoroutine(Fade(0f, null));
         }
 
         protected virtual IEnumerator Fade(float targetAlpha, System.Action onCompleted = null)
         {
+            // If we are already at the target alpha, complete immediately.
+            if (Mathf.Approximately(_canvasGroup.alpha, targetAlpha))
+            {
+                onCompleted?.Invoke();
+                yield break;
+            }
+
             float startAlpha = _canvasGroup.alpha;
             float timer = 0f;
 
