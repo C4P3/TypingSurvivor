@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 117330115361709119}
   - component: {fileID: 74172833263547325}
   - component: {fileID: 375871150833454764}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Rating
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -147,7 +147,7 @@ GameObject:
   - component: {fileID: 577725287689816310}
   - component: {fileID: 235953525688487188}
   - component: {fileID: 7635571186016751353}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Handle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -220,7 +220,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 111089397678284430}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Handle Slide Area
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -256,7 +256,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3945515764913733837}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Fill Area
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -294,7 +294,7 @@ GameObject:
   - component: {fileID: 3772685908337464206}
   - component: {fileID: 8897906781097783515}
   - component: {fileID: 7873559873311502648}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: PlayerName
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -430,7 +430,7 @@ GameObject:
   - component: {fileID: 315789794144248854}
   - component: {fileID: 1336287236512323602}
   - component: {fileID: 7572659493949025616}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: OxygenText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -566,7 +566,7 @@ GameObject:
   - component: {fileID: 4731515238153847952}
   - component: {fileID: 2905839073751518748}
   - component: {fileID: 7605826962222775414}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -641,7 +641,7 @@ GameObject:
   - component: {fileID: 6698513639105622021}
   - component: {fileID: 3397775814567881045}
   - component: {fileID: 2689560562080607239}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: PlayerInfo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -703,7 +703,7 @@ GameObject:
   - component: {fileID: 2899726814391362360}
   - component: {fileID: 4185975273666594385}
   - component: {fileID: 1025912335162115593}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ScoreText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -852,7 +852,7 @@ GameObject:
   - component: {fileID: 5851843490129898277}
   - component: {fileID: 419510734191598564}
   - component: {fileID: 4348964037665312173}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Fill
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -926,7 +926,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7289109576193497013}
   - component: {fileID: 8816970052870653370}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: OxygenSlider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1020,7 +1020,7 @@ GameObject:
   - component: {fileID: 205496677365765910}
   - component: {fileID: 6999564671132009251}
   - component: {fileID: 3770450275078755042}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: InGameHUD
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1086,7 +1086,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
+  m_PixelsPerUnitMultiplier: 0.01
 --- !u!114 &205496677365765910
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1137,7 +1137,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 50
   m_TargetDisplay: 0
 --- !u!1 &9199683800002850600
 GameObject:
@@ -1149,7 +1149,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7736026766301027976}
   - component: {fileID: 8322359479373674546}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: OxygenView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
