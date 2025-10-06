@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
+// using TMPro;
 
 public class OxygenView : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Slider _oxygenSlider;
-    [SerializeField] private TextMeshProUGUI _oxygenLabel;
+    // [SerializeField] private TextMeshProUGUI _oxygenLabel;
     [SerializeField] private Image _fillImage; // The fill image of the slider
 
     [Header("Color Settings")]
@@ -20,7 +20,7 @@ public class OxygenView : MonoBehaviour
 
         _oxygenSlider.maxValue = maxOxygen;
         _oxygenSlider.value = currentOxygen;
-        _oxygenLabel.text = $"{Mathf.CeilToInt(currentOxygen)} / {maxOxygen}";
+        // _oxygenLabel.text = $"{Mathf.CeilToInt(currentOxygen)} / {maxOxygen}";
 
         float oxygenPercentage = currentOxygen / maxOxygen;
 

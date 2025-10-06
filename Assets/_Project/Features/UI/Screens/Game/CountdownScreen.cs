@@ -47,7 +47,7 @@ namespace TypingSurvivor.Features.UI.Screens
             _countdownText.text = "1";
             yield return new WaitForSeconds(1f);
 
-            _countdownText.text = "START!";
+            _countdownText.text = "GO!";
             yield return new WaitForSeconds(0.5f);
 
             _countdownCoroutine = null;
