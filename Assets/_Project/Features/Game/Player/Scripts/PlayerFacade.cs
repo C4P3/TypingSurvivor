@@ -234,7 +234,7 @@ namespace TypingSurvivor.Features.Game.Player
         }
 
         [ServerRpc]
-        private void RequestMoveBasedOnStateServerRpc(Vector3Int direction)
+        private void RequestMoveBasedOnStateServerRpc(Vector3Int direction, ServerRpcParams rpcParams = default)
         {
             switch (_currentState.Value)
             {
@@ -247,10 +247,29 @@ namespace TypingSurvivor.Features.Game.Player
                     Vector3Int typingTargetDirection = NetworkTypingTargetPosition.Value - NetworkGridPosition.Value;
                     if (direction != typingTargetDirection)
                     {
+                        // Notify the specific client to cancel their UI before changing state
+                        var clientRpcParams = new ClientRpcParams
+                        {
+                            Send = new ClientRpcSendParams
+                            {
+                                TargetClientIds = new ulong[] { rpcParams.Receive.SenderClientId }
+                            }
+                        };
+                        CancelTypingUIClientRpc(clientRpcParams);
+
                         _currentState.Value = PlayerState.Roaming;
                         HandleMoveIntent_Server(direction);
                     }
                     break;
+            }
+        }
+
+        [ClientRpc]
+        private void CancelTypingUIClientRpc(ClientRpcParams clientRpcParams = default)
+        {
+            if (IsOwner) // Ensure this only runs on the intended client
+            {
+                _typingService?.CancelTyping();
             }
         }
 
