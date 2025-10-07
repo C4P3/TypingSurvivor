@@ -69,8 +69,8 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             yield return StartCoroutine(WaitOrSkip(2.5f));
 
             // Step 3: Action Buttons
-            yield return StartCoroutine(FadeCanvasGroup(_actionsCanvasGroup, true, 0.5f));
             if(_skipButton) _skipButton.gameObject.SetActive(false);
+            yield return StartCoroutine(FadeCanvasGroup(_actionsCanvasGroup, true, 0.5f));
         }
 
         private IEnumerator WaitOrSkip(float duration)
