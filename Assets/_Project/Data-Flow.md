@@ -89,5 +89,35 @@ sequenceDiagram
     C_Facade->>C_TypingManager: StartTyping(targetWord)
     C_TypingManager->>C_UI: ShowTypingUI("neko")
 ```
+
+## **4. フロー④：ゲームが終了し、リザルトが表示される**
+
+サーバーがゲーム終了を判断し、最終的な統計情報を含んだリザルトデータを全クライアントに送信し、各クライアントがそれに応じて演出付きのリザルト画面を表示するまでの一連の流れです。
+
+```mermaid
+sequenceDiagram
+    participant S_GameManager as GameManager (Server)
+    participant S_Strategy as IGameModeStrategy (Server)
+    participant C_GameManager as GameManager (Client)
+    participant C_UIManager as GameUIManager (Client)
+    participant C_ResultScreen as ResultScreen (Client)
+
+    Note over S_GameManager: ゲーム終了条件を満たす
+    S_GameManager->>S_GameManager: FinishedPhaseAsync() を開始
+    S_GameManager->>S_Strategy: CalculateResult(gameState)
+    S_Strategy-->>S_GameManager: GameResult (全プレイヤーの最終データ入り) を返す
+
+    S_GameManager->>S_GameManager: GameResultをGameResultDtoに変換
+    S_GameManager->>C_GameManager: SendResultsToClientsClientRpc(resultDto)
+
+    C_GameManager->>C_GameManager: OnResultReceived_Client イベント発行
+    
+    Note left of C_UIManager: イベントを購読している
+    C_UIManager->>C_ResultScreen: Show(resultDto)
+
+    C_ResultScreen->>C_ResultScreen: ShowSequenceCoroutine() を開始
+    Note right of C_ResultScreen: 勝敗バナー、統計情報、ボタンなどを<br>順番にアニメーション表示する
+```
+
 **全体のドキュメント:**　[README.md](./README.md)
 **次のドキュメント:** [Gameplay-Design.md](./Features/Game/Gameplay/Gameplay-Design.md) (各機能詳細設計へ)

@@ -58,9 +58,24 @@ UIシステムの設計は、責務の分離とデータ駆動を重視します
 *   **役割**: マルチプレイの対戦形式を選択する。
 *   **構成**: `フリーマッチ`, `ランクマッチ`, `合言葉マッチ`ボタン、`戻る`ボタン、`ランキングを見る`ボタン。
 *   **遷移**:
-    *   `マッチボタン` → `UIFlowCoordinator.StartPublicMatchmaking(...)` or `UIFlowCoordinator.RequestStateChange(PlayerUIState.EnteringMatchCode)`
-    *   `戻る`ボタン → `UIFlowCoordinator.CloseCurrentPanel()`
     *   `ランキングを見る`ボタン → `UIFlowCoordinator.RequestStateChange(PlayerUIState.InRanking)`
+
+### **3.5. リザルトスクリーン (ResultScreen)**
+*   **役割**: ゲーム終了後、勝敗、詳細な統計、レート変動などを表示する。
+*   **特徴**: このスクリーンは単純な情報表示だけでなく、時間差で情報を提示する演出フローを持つ、複合的なコンポーネントです。
+*   **構成**: 
+    *   `WinLose_Banner`: 「YOU WIN」などの勝敗結果を大きく表示するパネル。
+    *   `Stats_Panel`: 各プレイヤーの詳細な統計（スコア、破壊ブロック数、ミス数）やレート変動を表示するパネル。
+    *   `Actions_Panel`: 「再戦」や「メインメニューへ」といった次の行動を選択するボタンを格納するパネル。
+    *   `Skip_Button`: 画面全体を覆う透明なボタンで、演出の待機時間をスキップするために使用される。
+*   **遷移と演出フロー**:
+    1.  `GameUIManager`が`GameManager`から`GameResultDto`を受け取ると、このスクリーンの`Show(dto)`メソッドを呼び出します。
+    2.  `ResultScreen`は、受け取ったデータに基づいて各パネルの表示内容を準備します。
+    3.  その後、内部のコルーチンが起動し、以下の順で各パネルがアニメーション付きで表示されます。
+        1.  `WinLose_Banner`が数秒間表示された後、非表示になります。
+        2.  `Stats_Panel`が表示され、まずレート変動、次に詳細ステータスが順番に表示されます。
+        3.  最後に`Actions_Panel`が表示され、プレイヤーの入力を待ち受けます。
+    4.  各ステップの合間には5秒程度の待機時間がありますが、プレイヤーは`Skip_Button`をクリックすることで、この待機をスキップして次のステップに進むことができます。
 
 ---
 
