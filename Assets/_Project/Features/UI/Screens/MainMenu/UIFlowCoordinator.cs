@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.CloudSave;
-using TypingSurvivor.Features.Game.Leaderboard;
+using TypingSurvivor.Features.Core.Leaderboard;
 using TypingSurvivor.Features.UI.Common;
 using TypingSurvivor.Features.UI.Screens;
 using Unity.Netcode;

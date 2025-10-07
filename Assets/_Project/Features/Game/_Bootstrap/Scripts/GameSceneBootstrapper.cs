@@ -12,7 +12,7 @@ using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
 using TypingSurvivor.Features.Game.Rating;
-using TypingSurvivor.Features.Game.Leaderboard;
+using TypingSurvivor.Features.Core.Leaderboard;
 using System;
 
 namespace TypingSurvivor.Features.Game.Gameplay

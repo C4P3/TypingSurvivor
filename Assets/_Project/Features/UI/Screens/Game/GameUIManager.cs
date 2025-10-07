@@ -13,7 +13,7 @@ using TypingSurvivor.Features.UI.Screens.Global; // Changed
 using Unity.Netcode;
 using UnityEngine;
 using TypingSurvivor.Features.Core.CloudSave;
-using TypingSurvivor.Features.Game.Leaderboard;
+using TypingSurvivor.Features.Core.Leaderboard;
 
 namespace TypingSurvivor.Features.UI
 {
