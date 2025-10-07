@@ -180,10 +180,30 @@ namespace TypingSurvivor.Features.UI
                         newHud.SetPlayerOwnerId(clientId);
                         newHud.Initialize(_gameStateReader, _playerStatusReader);
                         _playerHuds[clientId] = newHud;
+
+                        // Asynchronously fetch and display the player's rating.
+                        FetchAndDisplayRating(newHud, clientId);
                     }
                 }
             }
             HandlePhaseChanged(default, _gameStateReader.CurrentPhaseNV.Value);
+        }
+
+        private async void FetchAndDisplayRating(InGameHUDManager hud, ulong clientId)
+        {
+            if (_cloudSaveService == null || _gameManager == null) return;
+
+            string ugsPlayerId = _gameManager.GetPlayerId(clientId);
+            if (string.IsNullOrEmpty(ugsPlayerId))
+            {
+                // Maybe the ID hasn't been registered yet. This can be improved with a retry or event.
+                return;
+            }
+
+            int rating = await _cloudSaveService.GetRatingAsync(ugsPlayerId);
+            bool isRanked = Core.App.AppManager.Instance.GameMode == Core.App.GameModeType.RankedMatch;
+            
+            hud.UpdatePlayerRating(rating, isRanked);
         }
 
         private void HandlePhaseChanged(GamePhase previousPhase, GamePhase newPhase)
