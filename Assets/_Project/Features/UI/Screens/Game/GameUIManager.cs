@@ -181,8 +181,11 @@ namespace TypingSurvivor.Features.UI
                         newHud.Initialize(_gameStateReader, _playerStatusReader);
                         _playerHuds[clientId] = newHud;
 
-                        // Asynchronously fetch and display the player's rating.
-                        FetchAndDisplayRating(newHud, clientId);
+                        // Only fetch rating for ranked matches
+                        if (Core.App.AppManager.Instance.GameMode == Core.App.GameModeType.RankedMatch)
+                        {
+                            FetchAndDisplayRating(newHud, clientId);
+                        }
                     }
                 }
             }
