@@ -19,6 +19,8 @@
 
 ## 優先度: 中
 
+- [ ] **ゲーム中HUDにプレイヤー名とレートを表示**
+  - レートはランクマッチ中のみ表示する
 - [ ] **`GameUIManager.cs`の責務分割**:
   - 現在`GameUIManager`が担当している低酸素エフェクトのロジックを、専用の`LowOxygenEffectController`クラスに分離することを検討します。
 - [ ] **`PlayerFacade.cs`の責務分割**:
