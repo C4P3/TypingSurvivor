@@ -32,6 +32,7 @@ public class LevelManager : NetworkBehaviour, ILevelService
     private IItemPlacementStrategy _itemPlacementStrategy;
     private ItemRegistry _itemRegistry;
     private GameConfig _gameConfig;
+    private IGameStateWriter _gameStateWriter;
 
     [Header("Map Settings")]
     [SerializeField] private long _mapSeed;
@@ -61,13 +62,14 @@ public class LevelManager : NetworkBehaviour, ILevelService
     #endregion
 
     #region Initialization
-    public void Initialize(IMapGenerator mapGenerator, IItemPlacementStrategy itemPlacementStrategy, ItemRegistry itemRegistry, Grid grid, GameConfig gameConfig)
+    public void Initialize(IMapGenerator mapGenerator, IItemPlacementStrategy itemPlacementStrategy, ItemRegistry itemRegistry, Grid grid, GameConfig gameConfig, IGameStateWriter gameStateWriter)
     {
         _mapGenerator = mapGenerator;
         _itemPlacementStrategy = itemPlacementStrategy;
         _itemRegistry = itemRegistry;
         _grid = grid;
         _gameConfig = gameConfig;
+        _gameStateWriter = gameStateWriter;
 
         // --- Build the comprehensive Tile ID Map from all sources ---
         _tileIdMap = new List<TileBase>();
@@ -282,6 +284,8 @@ public class LevelManager : NetworkBehaviour, ILevelService
             var worldPos = _grid.GetCellCenterWorld(gridPosition);
             SfxManager.Instance.PlaySfxAtPoint(SoundId.BlockDestroy, worldPos);
         }
+
+        _gameStateWriter?.AddBlocksDestroyed(clientId, 1);
 
         Vector2Int chunkPos = WorldToChunkPos(gridPosition);
         if (_entireBlockMapData_Server.TryGetValue(chunkPos, out var tiles))

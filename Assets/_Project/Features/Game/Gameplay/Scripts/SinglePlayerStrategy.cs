@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using TypingSurvivor.Features.Game.Gameplay.Data;
 
 namespace TypingSurvivor.Features.Game.Gameplay
@@ -20,10 +22,17 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             // In single player, the game ends when the player runs out of oxygen, so it's always a loss.
             // We return a result indicating no draw and an invalid winner ID to signify no one won.
+
+            List<PlayerData> finalPlayerDatas = new List<PlayerData>();
+            for (int i = 0; i < gameState.PlayerDatas.Count; i++)
+            {
+                finalPlayerDatas.Add(gameState.PlayerDatas[i]);
+            }
             return new GameResult
             {
                 IsDraw = false,
-                WinnerClientId = ulong.MaxValue 
+                WinnerClientId = ulong.MaxValue,
+                FinalPlayerDatas = finalPlayerDatas
             };
         }
     }

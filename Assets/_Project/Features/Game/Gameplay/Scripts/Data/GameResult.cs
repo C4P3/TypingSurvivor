@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace TypingSurvivor.Features.Game.Gameplay.Data
 {
     // リザルト情報のデータ構造
@@ -5,6 +7,6 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
     {
         public bool IsDraw; // trueの場合、引き分け
         public ulong WinnerClientId; // 勝者のID (IsDrawがtrueの場合は0)
-        // 他にも最終スコアなど
+        public List<PlayerData> FinalPlayerDatas; // 全プレイヤーの最終状態
     }
 }

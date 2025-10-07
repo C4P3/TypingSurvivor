@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using TypingSurvivor.Features.Game.Gameplay.Data;
 
 namespace TypingSurvivor.Features.Game.Gameplay
@@ -32,13 +34,20 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 }
             }
 
+            List<PlayerData> finalPlayerDatas = new List<PlayerData>();
+            for (int i = 0; i < gameState.PlayerDatas.Count; i++)
+            {
+                finalPlayerDatas.Add(gameState.PlayerDatas[i]);
+            }
+
             if (aliveCount == 1)
             {
                 // A single winner
                 return new GameResult
                 {
                     IsDraw = false,
-                    WinnerClientId = winnerId
+                    WinnerClientId = winnerId,
+                    FinalPlayerDatas = finalPlayerDatas
                 };
             }
             else
@@ -47,7 +56,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 return new GameResult
                 {
                     IsDraw = true,
-                    WinnerClientId = 0 // Using 0 for winnerId in a draw
+                    WinnerClientId = 0, // Using 0 for winnerId in a draw
+                    FinalPlayerDatas = finalPlayerDatas
                 };
             }
         }

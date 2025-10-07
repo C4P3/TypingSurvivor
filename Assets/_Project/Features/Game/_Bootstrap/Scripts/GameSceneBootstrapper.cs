@@ -116,7 +116,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 itemPlacementStrategy,
                 _gameConfig.ItemRegistry,
                 _grid,
-                _gameConfig
+                _gameConfig,
+                serviceLocator.GetService<IGameStateWriter>()
             );
 
             // --- Inject dependencies into GameManager ---

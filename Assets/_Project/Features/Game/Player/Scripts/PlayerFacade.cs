@@ -102,6 +102,7 @@ namespace TypingSurvivor.Features.Game.Player
                 if (_typingService != null)
                 {
                     _typingService.OnTypingSuccess += HandleTypingSuccess;
+                    _typingService.OnTypingMiss += HandleTypingMiss;
                 }
                 else
                 {
@@ -140,6 +141,7 @@ namespace TypingSurvivor.Features.Game.Player
                 if (_typingService != null)
                 {
                     _typingService.OnTypingSuccess -= HandleTypingSuccess;
+                    _typingService.OnTypingMiss -= HandleTypingMiss;
                     _typingService.StopTyping(); // 念のため購読解除
                 }
             }
@@ -201,6 +203,11 @@ namespace TypingSurvivor.Features.Game.Player
             // タイピング成功をサーバーに通知し、ブロック破壊を要求する
             DestroyBlock_ServerRpc(NetworkTypingTargetPosition.Value);
         }
+
+        private void HandleTypingMiss()
+        {
+            NotifyTypingMissServerRpc();
+        }
         
         [ServerRpc]
         private void RequestSpawnedServerRpc()
@@ -253,6 +260,12 @@ namespace TypingSurvivor.Features.Game.Player
             
             // 破壊後はRoaming状態に戻る
             _currentState.Value = PlayerState.Roaming;
+        }
+
+        [ServerRpc]
+        private void NotifyTypingMissServerRpc()
+        {
+            _gameStateWriter?.AddTypingMisses(OwnerClientId, 1);
         }
 
         private IEnumerator ContinuousMove_Server()

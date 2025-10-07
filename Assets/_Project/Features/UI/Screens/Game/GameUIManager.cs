@@ -76,6 +76,7 @@ namespace TypingSurvivor.Features.UI
             _resultScreen.OnRematchClicked += HandleRematchClicked;
             _resultScreen.OnMainMenuClicked += HandleMainMenuClicked;
             _gameManager.OnLowOxygenStateChanged_Client += HandleLowOxygenStateChange;
+            _gameManager.OnResultReceived_Client += HandleResultReceived;
             _cameraManager.OnCameraAssigned += HandleCameraAssigned;
 
             if (_typingService != null)
@@ -104,7 +105,11 @@ namespace TypingSurvivor.Features.UI
                 _resultScreen.OnRematchClicked -= HandleRematchClicked;
                 _resultScreen.OnMainMenuClicked -= HandleMainMenuClicked;
             }
-            if (_gameManager != null) _gameManager.OnLowOxygenStateChanged_Client -= HandleLowOxygenStateChange;
+            if (_gameManager != null)
+            {
+                _gameManager.OnLowOxygenStateChanged_Client -= HandleLowOxygenStateChange;
+                _gameManager.OnResultReceived_Client -= HandleResultReceived;
+            }
             if (_cameraManager != null) _cameraManager.OnCameraAssigned -= HandleCameraAssigned;
             
             if (_typingService != null)
@@ -203,7 +208,7 @@ namespace TypingSurvivor.Features.UI
                 case GamePhase.Finished:
                     ResetLowOxygenEffects();
                     _uiManager.ShowScreen(_resultScreen);
-                    _resultScreen.Show();
+                    // The showing of the result screen is now handled by HandleResultReceived
                     break;
             }
         }
@@ -246,6 +251,11 @@ namespace TypingSurvivor.Features.UI
         #endregion
 
         #region Event Handlers
+
+        private void HandleResultReceived(GameManager.GameResultDto resultDto)
+        {
+            _resultScreen.Show(resultDto);
+        }
 
         private void HandleRematchClicked()
         {

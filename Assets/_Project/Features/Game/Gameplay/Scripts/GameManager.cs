@@ -11,6 +11,7 @@ using System.Collections;
 using TypingSurvivor.Features.Game.Settings;
 using TypingSurvivor.Features.Game.Level.Data;
 using System.Threading.Tasks;
+using System;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -41,6 +42,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private readonly HashSet<ulong> _playersInLowOxygen = new();
         public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
         public event System.Func<GameResult, System.Threading.Tasks.Task<(int, int)>> OnGameFinished;
+        public event Action<GameResultDto> OnResultReceived_Client;
         private Coroutine _shutdownCoroutine;
 
         // DTO to send all relevant result info to clients
@@ -48,7 +50,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             public bool IsDraw;
             public ulong WinnerClientId;
-            public ulong LoserClientId;
+            public PlayerData[] FinalPlayerDatas;
             public int NewWinnerRating;
             public int NewLoserRating;
 
@@ -56,7 +58,22 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 serializer.SerializeValue(ref IsDraw);
                 serializer.SerializeValue(ref WinnerClientId);
-                serializer.SerializeValue(ref LoserClientId);
+                
+                int length = 0;
+                if (!serializer.IsReader)
+                {
+                    length = FinalPlayerDatas.Length;
+                }
+                serializer.SerializeValue(ref length);
+                if (serializer.IsReader)
+                {
+                    FinalPlayerDatas = new PlayerData[length];
+                }
+                for (int i = 0; i < length; i++)
+                {
+                    FinalPlayerDatas[i].NetworkSerialize(serializer);
+                }
+
                 serializer.SerializeValue(ref NewWinnerRating);
                 serializer.SerializeValue(ref NewLoserRating);
             }
@@ -191,9 +208,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         [ClientRpc]
         private void SendResultsToClientsClientRpc(GameResultDto resultDto)
         {
-            // Client-side logic to display results will be handled by a UI manager subscribing to an event.
-            // For now, we can just log it.
-            Debug.Log($"[Client] Received game results: Winner={resultDto.WinnerClientId}, Loser={resultDto.LoserClientId}, New Ratings: Winner={resultDto.NewWinnerRating}, Loser={resultDto.NewLoserRating}");
+            OnResultReceived_Client?.Invoke(resultDto);
         }
 
         private IEnumerator ShutdownServerCoroutine()
@@ -388,12 +403,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // ジングル再生処理
             PlayJingleThenMusicClientRpc(result.WinnerClientId);
 
-            ulong loserClientId = 0;
-            if (!result.IsDraw)
-            {
-                loserClientId = _playerInstances.Keys.FirstOrDefault(id => id != result.WinnerClientId);
-            }
-
             int newWinnerRating = 0;
             int newLoserRating = 0;
 
@@ -410,7 +419,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 IsDraw = result.IsDraw,
                 WinnerClientId = result.WinnerClientId,
-                LoserClientId = loserClientId,
+                FinalPlayerDatas = result.FinalPlayerDatas.ToArray(),
                 NewWinnerRating = newWinnerRating,
                 NewLoserRating = newLoserRating
             };
@@ -514,6 +523,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 data.Score = 0;
                 data.IsGameOver = false;
                 data.Oxygen = maxOxygen;
+                data.BlocksDestroyed = 0;
+                data.TypingMisses = 0;
                 
                 _gameState.PlayerDatas[i] = data;
             }
@@ -573,6 +584,36 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 {
                     var data = _gameState.PlayerDatas[i];
                     data.IsGameOver = true;
+                    _gameState.PlayerDatas[i] = data;
+                    return;
+                }
+            }
+        }
+
+        public void AddBlocksDestroyed(ulong clientId, int amount)
+        {
+            if (!IsServer) return;
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    var data = _gameState.PlayerDatas[i];
+                    data.BlocksDestroyed += amount;
+                    _gameState.PlayerDatas[i] = data;
+                    return;
+                }
+            }
+        }
+
+        public void AddTypingMisses(ulong clientId, int amount)
+        {
+            if (!IsServer) return;
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    var data = _gameState.PlayerDatas[i];
+                    data.TypingMisses += amount;
                     _gameState.PlayerDatas[i] = data;
                     return;
                 }
