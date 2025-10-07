@@ -1,12 +1,12 @@
 using UnityEngine;
 using TypingSurvivor.Features.Game.Typing;
-using TypingSurvivor.Features.Core.App; // 新しいTypingManagerのnamespace
 
 namespace TypingSurvivor.Features.Game.Player
 {
     public class TypingState : IPlayerState
     {
         private readonly PlayerFacade _facade;
+        private float _timeInState;
 
         public TypingState(PlayerFacade playerFacade)
         {
@@ -15,18 +15,29 @@ namespace TypingSurvivor.Features.Game.Player
 
         public void Enter(PlayerState stateFrom)
         {
-            // TypingManagerに新しいお題の取得とタイピング開始を要求する
-            _facade.TypingService?.StartTyping();
+            _timeInState = 0f;
+            _facade.TypingService?.StartTyping(); // This also resets stats in TypingManager
         }
 
         public void Execute()
         {
-            // TypingManagerが入力処理を行うため、ここでは何もしない
+            _timeInState += Time.deltaTime;
         }
 
         public void Exit(PlayerState stateTo)
         {
-            _facade.TypingService?.StopTyping();
+            var typingService = _facade.TypingService;
+            if (typingService != null)
+            {
+                // Report stats regardless of whether typing was successful or cancelled
+                _facade.ReportTypingSessionStats(
+                    _timeInState,
+                    typingService.CorrectCharCount,
+                    typingService.TotalKeyPressCount
+                );
+                
+                typingService.StopTyping();
+            }
         }
 
         public void OnTargetPositionChanged()

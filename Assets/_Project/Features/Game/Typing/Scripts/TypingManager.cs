@@ -17,11 +17,21 @@ namespace TypingSurvivor.Features.Game.Typing
         private readonly IWordProvider _wordProvider;
         private TypingChallenge _currentChallenge;
 
+        // Stats for the current challenge
+        public int CorrectCharCount { get; private set; }
+        public int TotalKeyPressCount { get; private set; }
+
         public bool IsTyping => _currentChallenge != null;
 
         public TypingManager(IWordProvider wordProvider)
         {
             _wordProvider = wordProvider;
+        }
+
+        public void ResetStats()
+        {
+            CorrectCharCount = 0;
+            TotalKeyPressCount = 0;
         }
 
         /// <summary>
@@ -49,6 +59,7 @@ namespace TypingSurvivor.Features.Game.Typing
                 return;
             }
             _currentChallenge = challenge;
+            ResetStats();
             
             // テキスト入力イベントを購読
             Keyboard.current.onTextInput += OnTextInput;
@@ -76,12 +87,15 @@ namespace TypingSurvivor.Features.Game.Typing
         {
             if (!IsTyping) return;
 
+            TotalKeyPressCount++;
+
             // 入力処理をTypingChallengeに委譲
             var result = _currentChallenge.ProcessInput(character);
 
             switch (result)
             {
                 case TypeResult.Correct:
+                    CorrectCharCount++;
                     OnTypingProgressed?.Invoke();
                     break;
                 
@@ -90,6 +104,7 @@ namespace TypingSurvivor.Features.Game.Typing
                     break;
                 
                 case TypeResult.Finished:
+                    CorrectCharCount++;
                     OnTypingProgressed?.Invoke(); // 最後の文字が入力されたことをUIに反映
                     OnTypingSuccess?.Invoke();
                     StopTyping();

@@ -11,5 +11,8 @@ public interface IGameStateWriter
     void UpdatePlayerName(ulong clientId, string playerName);
     void AddBlocksDestroyed(ulong clientId, int amount);
     void AddTypingMisses(ulong clientId, int amount);
+    void AddTypingTime(ulong clientId, float time);
+    void AddCharsTyped(ulong clientId, int charCount);
+    void AddKeyPresses(ulong clientId, int pressCount);
     void ResetPlayersForRematch();
 }

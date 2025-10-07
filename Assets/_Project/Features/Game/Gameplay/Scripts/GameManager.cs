@@ -530,6 +530,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 data.Oxygen = maxOxygen;
                 data.BlocksDestroyed = 0;
                 data.TypingMisses = 0;
+                data.TotalTimeTyping = 0f;
+                data.TotalCharsTyped = 0;
+                data.TotalKeyPresses = 0;
                 
                 _gameState.PlayerDatas[i] = data;
             }
@@ -621,6 +624,51 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 {
                     var data = _gameState.PlayerDatas[i];
                     data.TypingMisses += amount;
+                    _gameState.PlayerDatas[i] = data;
+                    return;
+                }
+            }
+        }
+
+        public void AddTypingTime(ulong clientId, float time)
+        {
+            if (!IsServer) return;
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    var data = _gameState.PlayerDatas[i];
+                    data.TotalTimeTyping += time;
+                    _gameState.PlayerDatas[i] = data;
+                    return;
+                }
+            }
+        }
+
+        public void AddCharsTyped(ulong clientId, int charCount)
+        {
+            if (!IsServer) return;
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    var data = _gameState.PlayerDatas[i];
+                    data.TotalCharsTyped += charCount;
+                    _gameState.PlayerDatas[i] = data;
+                    return;
+                }
+            }
+        }
+
+        public void AddKeyPresses(ulong clientId, int pressCount)
+        {
+            if (!IsServer) return;
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    var data = _gameState.PlayerDatas[i];
+                    data.TotalKeyPresses += pressCount;
                     _gameState.PlayerDatas[i] = data;
                     return;
                 }

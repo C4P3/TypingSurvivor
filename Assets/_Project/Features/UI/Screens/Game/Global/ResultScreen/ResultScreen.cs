@@ -114,8 +114,24 @@ namespace TypingSurvivor.Features.UI.Screens
             foreach (var playerData in resultDto.FinalPlayerDatas)
             {
                 detailsBuilder.AppendLine($"Player {playerData.ClientId} ({playerData.PlayerName}):");
+
+                // Calculate WPM
+                float wpm = 0;
+                if (playerData.TotalTimeTyping > 0)
+                {
+                    wpm = (playerData.TotalCharsTyped / 5.0f) / (playerData.TotalTimeTyping / 60.0f);
+                }
+
+                // Calculate Miss Rate
+                float missRate = 0;
+                if (playerData.TotalKeyPresses > 0)
+                {
+                    missRate = (float)playerData.TypingMisses / playerData.TotalKeyPresses * 100.0f;
+                }
+
+                detailsBuilder.AppendLine($"  WPM: {wpm:F1}");
                 detailsBuilder.AppendLine($"  Blocks Destroyed: {playerData.BlocksDestroyed}");
-                detailsBuilder.AppendLine($"  Typing Misses: {playerData.TypingMisses}");
+                detailsBuilder.AppendLine($"  Typing Misses: {playerData.TypingMisses} ({missRate:F1}%)");
             }
             if (_statsText) _statsText.text = detailsBuilder.ToString();
 

@@ -17,6 +17,9 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
         public Vector3Int GridPosition;
         public int BlocksDestroyed;
         public int TypingMisses;
+        public float TotalTimeTyping;
+        public int TotalCharsTyped;
+        public int TotalKeyPresses;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -27,6 +30,9 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
             serializer.SerializeValue(ref GridPosition);
             serializer.SerializeValue(ref BlocksDestroyed);
             serializer.SerializeValue(ref TypingMisses);
+            serializer.SerializeValue(ref TotalTimeTyping);
+            serializer.SerializeValue(ref TotalCharsTyped);
+            serializer.SerializeValue(ref TotalKeyPresses);
         }
 
         public bool Equals(PlayerData other)
@@ -37,7 +43,10 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
                 && IsGameOver == other.IsGameOver
                 && GridPosition.Equals(other.GridPosition)
                 && BlocksDestroyed == other.BlocksDestroyed
-                && TypingMisses == other.TypingMisses;
+                && TypingMisses == other.TypingMisses
+                && TotalTimeTyping.Equals(other.TotalTimeTyping)
+                && TotalCharsTyped == other.TotalCharsTyped
+                && TotalKeyPresses == other.TotalKeyPresses;
         }
     }
 }

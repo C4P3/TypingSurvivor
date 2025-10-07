@@ -168,6 +168,14 @@ namespace TypingSurvivor.Features.Game.Player
 
         #endregion
 
+        #region Public Client-Side Methods
+        public void ReportTypingSessionStats(float time, int charsTyped, int keyPresses)
+        {
+            if (!IsOwner) return;
+            ReportTypingStatsServerRpc(time, charsTyped, keyPresses);
+        }
+        #endregion
+
         private void InitializeStateMachine()
         {
             var states = new IPlayerState[]
@@ -231,6 +239,15 @@ namespace TypingSurvivor.Features.Game.Player
         private void RegisterPlayerNameServerRpc(string playerName)
         {
             _gameStateWriter?.UpdatePlayerName(OwnerClientId, playerName);
+        }
+
+        [ServerRpc]
+        private void ReportTypingStatsServerRpc(float time, int charsTyped, int keyPresses)
+        {
+            if (_gameStateWriter == null) return;
+            _gameStateWriter.AddTypingTime(OwnerClientId, time);
+            _gameStateWriter.AddCharsTyped(OwnerClientId, charsTyped);
+            _gameStateWriter.AddKeyPresses(OwnerClientId, keyPresses);
         }
 
         [ServerRpc]
