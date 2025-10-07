@@ -35,7 +35,14 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             _mainMenuButton?.onClick.AddListener(() => OnMainMenuClicked?.Invoke());
         }
 
-        public void Populate(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
+        public void ShowAndPlaySequence(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
+        {
+            PrepareUIContent(dto);
+            base.Show(); // Fade in the root panel
+            StartCoroutine(PlaySequence());
+        }
+
+        private void PrepareUIContent(GameResultDto dto)
         {
             bool localPlayerWon = dto.WinnerClientId == Unity.Netcode.NetworkManager.Singleton.LocalClientId;
             if (dto.IsDraw) _winLoseText.text = "DRAW";

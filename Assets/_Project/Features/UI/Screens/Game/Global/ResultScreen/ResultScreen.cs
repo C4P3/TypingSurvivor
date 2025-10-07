@@ -53,14 +53,12 @@ namespace TypingSurvivor.Features.UI.Screens
 
             if (_currentViewInstance != null)
             {
-                _currentResultView.Populate(resultDto, personalBest, playerRank, totalPlayers);
-                
                 // Bubble up events from the new instance
                 _currentResultView.OnRematchClicked += OnRematchClicked;
                 _currentResultView.OnMainMenuClicked += OnMainMenuClicked;
 
-                // The view itself will handle its show animation and sequence.
-                _currentViewInstance.Show();
+                // Tell the view to show itself and start its animation sequence.
+                _currentResultView.ShowAndPlaySequence(resultDto, personalBest, playerRank, totalPlayers);
             }
         }
 

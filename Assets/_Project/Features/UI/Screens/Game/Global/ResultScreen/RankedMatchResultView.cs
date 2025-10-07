@@ -36,7 +36,14 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             _mainMenuButton?.onClick.AddListener(() => OnMainMenuClicked?.Invoke());
         }
 
-        public void Populate(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
+        public void ShowAndPlaySequence(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
+        {
+            PrepareUIContent(dto);
+            base.Show(); // Fade in the root panel
+            StartCoroutine(PlaySequence());
+        }
+
+        private void PrepareUIContent(GameResultDto dto)
         {
             bool localPlayerWon = dto.WinnerClientId == Unity.Netcode.NetworkManager.Singleton.LocalClientId;
             if (dto.IsDraw) _winLoseText.text = "DRAW";
@@ -44,7 +51,6 @@ namespace TypingSurvivor.Features.UI.Screens.Result
 
             // TODO: A more robust way to determine winner/loser data
             PlayerData winnerData = dto.FinalPlayerDatas[0].ClientId == dto.WinnerClientId ? dto.FinalPlayerDatas[0] : dto.FinalPlayerDatas[1];
-            PlayerData loserData = dto.FinalPlayerDatas[0].ClientId != dto.WinnerClientId ? dto.FinalPlayerDatas[0] : dto.FinalPlayerDatas[1];
 
             // Assuming player 1 card is for the local player
             var localPlayerCard = dto.FinalPlayerDatas[0].ClientId == Unity.Netcode.NetworkManager.Singleton.LocalClientId ? _player1Card : _player2Card;

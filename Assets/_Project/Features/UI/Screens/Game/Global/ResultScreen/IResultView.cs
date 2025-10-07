@@ -8,6 +8,6 @@ namespace TypingSurvivor.Features.UI.Screens.Result
         event Action OnRematchClicked;
         event Action OnMainMenuClicked;
 
-        void Populate(GameResultDto dto, float personalBest, int playerRank, int totalPlayers);
+        void ShowAndPlaySequence(GameResultDto dto, float personalBest, int playerRank, int totalPlayers);
     }
 }

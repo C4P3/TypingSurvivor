@@ -37,7 +37,14 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             _mainMenuButton?.onClick.AddListener(() => OnMainMenuClicked?.Invoke());
         }
 
-        public void Populate(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
+        public void ShowAndPlaySequence(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
+        {
+            PrepareUIContent(dto, personalBest, playerRank, totalPlayers);
+            base.Show(); // Fade in the root panel
+            StartCoroutine(PlaySequence());
+        }
+
+        private void PrepareUIContent(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
         {
             var playerData = dto.FinalPlayerDatas[0];
 
