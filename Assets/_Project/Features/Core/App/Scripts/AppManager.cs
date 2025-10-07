@@ -13,6 +13,7 @@ using Unity.Services.Authentication.Server;
 using Unity.Netcode.Transports.UTP;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
+using TypingSurvivor.Features.Core.Leaderboard;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
 
@@ -35,8 +36,13 @@ namespace TypingSurvivor.Features.Core.App
         public TypingSurvivor.Features.Core.Auth.IAuthenticationService AuthService { get; private set; }
         public ICloudSaveService CloudSaveService { get; private set; }
         public MatchmakingService MatchmakingService { get; private set; }
+        public ISurvivalLeaderboardService SurvivalLeaderboardService { get; private set; }
         public IPlayerStatusSystemReader StatusReader { get; private set; }
         public IPlayerStatusSystemWriter StatusWriter { get; private set; }
+
+        // --- Cached Player Data ---
+        public PlayerSaveData CachedPlayerData { get; set; }
+        public (int playerRank, int totalPlayers) CachedRankData { get; set; }
 
         public bool IsCoreServicesInitialized { get; private set; }
         public bool IsGameServicesInitialized { get; private set; }
@@ -144,6 +150,9 @@ namespace TypingSurvivor.Features.Core.App
 
             MatchmakingService = new MatchmakingService();
             RegisterService(MatchmakingService);
+
+            SurvivalLeaderboardService = new SurvivalLeaderboardService();
+            RegisterService<ISurvivalLeaderboardService>(SurvivalLeaderboardService);
             
             IsCoreServicesInitialized = true;
             // Notify listeners that core services are ready

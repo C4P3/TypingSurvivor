@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.CloudSave;
+using TypingSurvivor.Features.Game.Leaderboard;
 using TypingSurvivor.Features.UI.Common;
 using TypingSurvivor.Features.UI.Screens;
 using Unity.Netcode;
@@ -106,8 +107,16 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 }
             }
 
-            var playerData = await AppManager.Instance.CloudSaveService.LoadPlayerDataAsync();
+            // Load and cache player data and rank info
+            var appManager = AppManager.Instance;
+            var playerData = await appManager.CloudSaveService.LoadPlayerDataAsync();
+            appManager.CachedPlayerData = playerData;
             _hasProfile = playerData != null && !string.IsNullOrWhiteSpace(playerData.PlayerName);
+
+            if (appManager.SurvivalLeaderboardService != null)
+            {
+                appManager.CachedRankData = await appManager.SurvivalLeaderboardService.GetPlayerRankAsync();
+            }
 
             RequestStateChange(PlayerUIState.OnTitle);
         }

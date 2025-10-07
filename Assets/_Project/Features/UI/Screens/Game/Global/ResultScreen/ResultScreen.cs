@@ -11,6 +11,10 @@ namespace TypingSurvivor.Features.UI.Screens
 {
     public class ResultScreen : ScreenBase
     {
+        [Header("Root Layout Panels")]
+        [SerializeField] private GameObject _singlePlayerRoot;
+        [SerializeField] private GameObject _multiPlayerRoot;
+
         [Header("UI Elements")]
         [SerializeField] private TextMeshProUGUI _resultText; // e.g., "YOU WIN"
         [SerializeField] private TextMeshProUGUI _statsText; // For detailed stats
@@ -60,6 +64,11 @@ namespace TypingSurvivor.Features.UI.Screens
             {
                 StopCoroutine(_sequenceCoroutine);
             }
+
+            // Activate the correct root panel based on player count
+            bool isSinglePlayer = resultDto.FinalPlayerDatas.Length == 1;
+            _singlePlayerRoot?.SetActive(isSinglePlayer);
+            _multiPlayerRoot?.SetActive(!isSinglePlayer);
 
             PrepareUIContent(resultDto, personalBest, playerRank, totalPlayers);
 

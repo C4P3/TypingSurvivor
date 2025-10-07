@@ -301,34 +301,30 @@ namespace TypingSurvivor.Features.UI
         private async void ProcessSinglePlayerResultAsync(GameManager.GameResultDto resultDto)
         {
             float survivalTime = resultDto.FinalGameTime;
-            float personalBest = 0;
-            int playerRank = 0;
-            int totalPlayers = 0;
+            var appManager = Core.App.AppManager.Instance;
 
-            // 1. Load existing save data to get personal best
-            var saveData = await _cloudSaveService.LoadPlayerDataAsync();
-            if (saveData != null)
-            {
-                personalBest = saveData.Progress.SinglePlayHighScore;
-                if (survivalTime > personalBest)
-                {
-                    saveData.Progress.SinglePlayHighScore = survivalTime;
-                    personalBest = survivalTime; // Update for immediate display
-                    await _cloudSaveService.SavePlayerDataAsync(saveData);
-                }
-            }
+            // 1. Use cached data for immediate display
+            float personalBest = appManager.CachedPlayerData?.Progress.SinglePlayHighScore ?? 0;
+            int playerRank = appManager.CachedRankData.playerRank;
+            int totalPlayers = appManager.CachedRankData.totalPlayers;
 
-            // 2. Submit score to leaderboard and get rank
-            if (_survivalLeaderboardService != null)
-            {
-                await _survivalLeaderboardService.SubmitScoreAsync(survivalTime);
-                var rankData = await _survivalLeaderboardService.GetPlayerRankAsync();
-                playerRank = rankData.playerRank;
-                totalPlayers = rankData.totalPlayers;
-            }
-
-            // 3. Show the result screen with all the data
+            // 2. Show the result screen immediately with cached data
             _resultScreen.Show(resultDto, personalBest, playerRank, totalPlayers);
+
+            // 3. In the background, submit the new score and update save data if needed
+            if (survivalTime > personalBest)
+            {
+                // Update leaderboard
+                _survivalLeaderboardService?.SubmitScoreAsync(survivalTime);
+
+                // Update Cloud Save
+                var saveData = appManager.CachedPlayerData ?? new PlayerSaveData();
+                saveData.Progress.SinglePlayHighScore = survivalTime;
+                await _cloudSaveService.SavePlayerDataAsync(saveData);
+                
+                // Update the cache in AppManager as well
+                appManager.CachedPlayerData = saveData;
+            }
         }
 
         private void HandleRematchClicked()
