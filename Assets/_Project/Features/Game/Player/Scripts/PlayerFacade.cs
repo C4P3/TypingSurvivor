@@ -109,11 +109,12 @@ namespace TypingSurvivor.Features.Game.Player
                     Debug.LogError("ITypingServiceの実装が見つかりません。");
                 }
 
-                // Register this client's PlayerId with the server
+                // Register this client's PlayerId and Name with the server
                 if (GameManager.Instance != null)
                 {
                     var playerId = AuthenticationService.Instance.PlayerId;
                     GameManager.Instance.RegisterPlayerIdServerRpc(playerId);
+                    LoadAndRegisterPlayerName();
                 }
                 else
                 {
@@ -125,6 +126,17 @@ namespace TypingSurvivor.Features.Game.Player
             }
             
             OnStateChanged(PlayerState.Roaming, _currentState.Value);
+        }
+
+        private async void LoadAndRegisterPlayerName()
+        {
+            var cloudSaveService = AppManager.Instance.CloudSaveService;
+            if (cloudSaveService == null) return;
+
+            var saveData = await cloudSaveService.LoadPlayerDataAsync();
+            string playerName = (saveData != null && !string.IsNullOrEmpty(saveData.PlayerName)) ? saveData.PlayerName : $"Player_{OwnerClientId}";
+            
+            RegisterPlayerNameServerRpc(playerName);
         }
 
         public override void OnNetworkDespawn()
@@ -213,6 +225,12 @@ namespace TypingSurvivor.Features.Game.Player
         private void RequestSpawnedServerRpc()
         {
             OnPlayerSpawned_Server?.Invoke(OwnerClientId, transform.position);
+        }
+
+        [ServerRpc]
+        private void RegisterPlayerNameServerRpc(string playerName)
+        {
+            _gameStateWriter?.UpdatePlayerName(OwnerClientId, playerName);
         }
 
         [ServerRpc]

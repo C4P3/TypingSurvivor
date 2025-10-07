@@ -5,10 +5,10 @@ using UnityEngine;
 /// </summary>
 public interface IGameStateWriter
 {
-    void AddScore(ulong clientId, int amount);
     void SetPlayerGameOver(ulong clientId);
     void AddOxygen(ulong clientId, float amount);
     void UpdatePlayerPosition(ulong clientId, Vector3Int gridPosition);
+    void UpdatePlayerName(ulong clientId, string playerName);
     void AddBlocksDestroyed(ulong clientId, int amount);
     void AddTypingMisses(ulong clientId, int amount);
     void ResetPlayersForRematch();

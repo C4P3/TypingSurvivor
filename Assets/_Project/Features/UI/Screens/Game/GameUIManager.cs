@@ -12,6 +12,8 @@ using TypingSurvivor.Features.UI.Screens.InGameHUD;
 using TypingSurvivor.Features.UI.Screens.Global; // Changed
 using Unity.Netcode;
 using UnityEngine;
+using TypingSurvivor.Features.Core.CloudSave;
+using TypingSurvivor.Features.Game.Leaderboard;
 
 namespace TypingSurvivor.Features.UI
 {
@@ -35,6 +37,8 @@ namespace TypingSurvivor.Features.UI
         private GameManager _gameManager;
         private ITypingService _typingService;
         private CameraManager _cameraManager;
+        private ICloudSaveService _cloudSaveService;
+        private ISurvivalLeaderboardService _survivalLeaderboardService; // For future use
 
         private readonly Dictionary<ulong, InGameHUDManager> _playerHuds = new();
         private NetworkList<NetworkObjectReference>.OnListChangedDelegate _onPlayerListChangedHandler;
@@ -46,16 +50,22 @@ namespace TypingSurvivor.Features.UI
         {
             if (_uiManager == null) _uiManager = GetComponent<UIManager>();
             _onPlayerListChangedHandler = OnPlayerListChanged;
-            // Removed instantiation of typing display
         }
 
-        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader, GameManager gameManager, ITypingService typingService, CameraManager cameraManager)
+        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader, GameManager gameManager, ITypingService typingService, CameraManager cameraManager, ICloudSaveService cloudSaveService, ISurvivalLeaderboardService survivalLeaderboardService)
         {
             _gameStateReader = gameStateReader;
             _playerStatusReader = playerStatusReader;
             _gameManager = gameManager;
             _typingService = typingService;
             _cameraManager = cameraManager;
+            _cloudSaveService = cloudSaveService;
+            _survivalLeaderboardService = survivalLeaderboardService; // For future use
+
+            if (_inGameGlobalView != null)
+            {
+                _inGameGlobalView.Initialize(gameStateReader);
+            }
 
             SubscribeToEvents();
             HandlePhaseChanged(default, _gameStateReader.CurrentPhaseNV.Value);
@@ -254,7 +264,48 @@ namespace TypingSurvivor.Features.UI
 
         private void HandleResultReceived(GameManager.GameResultDto resultDto)
         {
-            _resultScreen.Show(resultDto);
+            // For single player, process high score logic before showing the screen
+            if (Core.App.AppManager.Instance.GameMode == Core.App.GameModeType.SinglePlayer)
+            {
+                ProcessSinglePlayerResultAsync(resultDto);
+            }
+            else
+            {
+                _resultScreen.Show(resultDto, 0, 0, 0); // No high score or rank info for multiplaye
+            }
+        }
+
+        private async void ProcessSinglePlayerResultAsync(GameManager.GameResultDto resultDto)
+        {
+            float survivalTime = resultDto.FinalGameTime;
+            float personalBest = 0;
+            int playerRank = 0;
+            int totalPlayers = 0;
+
+            // 1. Load existing save data to get personal best
+            var saveData = await _cloudSaveService.LoadPlayerDataAsync();
+            if (saveData != null)
+            {
+                personalBest = saveData.Progress.SinglePlayHighScore;
+                if (survivalTime > personalBest)
+                {
+                    saveData.Progress.SinglePlayHighScore = survivalTime;
+                    personalBest = survivalTime; // Update for immediate display
+                    await _cloudSaveService.SavePlayerDataAsync(saveData);
+                }
+            }
+
+            // 2. Submit score to leaderboard and get rank
+            if (_survivalLeaderboardService != null)
+            {
+                await _survivalLeaderboardService.SubmitScoreAsync(survivalTime);
+                var rankData = await _survivalLeaderboardService.GetPlayerRankAsync();
+                playerRank = rankData.playerRank;
+                totalPlayers = rankData.totalPlayers;
+            }
+
+            // 3. Show the result screen with all the data
+            _resultScreen.Show(resultDto, personalBest, playerRank, totalPlayers);
         }
 
         private void HandleRematchClicked()

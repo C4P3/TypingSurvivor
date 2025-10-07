@@ -14,15 +14,21 @@ namespace TypingSurvivor.Features.UI.Screens
         [Header("UI Elements")]
         [SerializeField] private TextMeshProUGUI _resultText; // e.g., "YOU WIN"
         [SerializeField] private TextMeshProUGUI _statsText; // For detailed stats
+        [SerializeField] private TextMeshProUGUI _timeText; // For basic time
+        [SerializeField] private TextMeshProUGUI _bestTimeText; // For best time
+        [SerializeField] private TextMeshProUGUI _rankText; // For rank
         [SerializeField] private InteractiveButton _rematchButton;
         [SerializeField] private InteractiveButton _mainMenuButton;
         [SerializeField] private InteractiveButton _skipButton; // Full-screen transparent button
 
         [Header("Panel Canvas Groups")]
         [SerializeField] private CanvasGroup _winLoseBannerCanvasGroup;
-        [SerializeField] private CanvasGroup _statsPanelCanvasGroup;
-        [SerializeField] private CanvasGroup _ratingSubPanelCanvasGroup;
-        [SerializeField] private CanvasGroup _detailsSubPanelCanvasGroup;
+        [SerializeField] private CanvasGroup _statsPanelCanvasGroup; // Main container for all stats
+        [SerializeField] private CanvasGroup _basicStatsCanvasGroup; // For Time / Best Time
+        [SerializeField] private CanvasGroup _newRecordCanvasGroup; // For "New Record!" text
+        [SerializeField] private CanvasGroup _rankCanvasGroup; // For Rank info
+        [SerializeField] private CanvasGroup _ratingSubPanelCanvasGroup; // For multiplayer rating
+        [SerializeField] private CanvasGroup _detailsSubPanelCanvasGroup; // For Blocks, Misses etc.
         [SerializeField] private CanvasGroup _actionsPanelCanvasGroup;
 
         public event Action OnRematchClicked;
@@ -38,7 +44,6 @@ namespace TypingSurvivor.Features.UI.Screens
             _mainMenuButton.onClick.AddListener(() => OnMainMenuClicked?.Invoke());
             _skipButton.onClick.AddListener(() => _skipWait = true);
 
-            // Start with all groups hidden
             HideAllCanvasGroups();
         }
 
@@ -49,78 +54,102 @@ namespace TypingSurvivor.Features.UI.Screens
             _skipButton.onClick.RemoveAllListeners();
         }
 
-        public void Show(GameResultDto resultDto)
+        public void Show(GameResultDto resultDto, float personalBest, int playerRank, int totalPlayers)
         {
             if (_sequenceCoroutine != null)
             {
                 StopCoroutine(_sequenceCoroutine);
             }
 
-            // 1. Prepare all UI content before starting the animation
-            PrepareUIContent(resultDto);
-
-            // 2. Start the display sequence
-            _sequenceCoroutine = StartCoroutine(ShowSequenceCoroutine(resultDto));
-            
-            base.Show(); // Fade in the root canvas group
+            PrepareUIContent(resultDto, personalBest, playerRank, totalPlayers);
+            _sequenceCoroutine = StartCoroutine(ShowSequenceCoroutine(resultDto, personalBest, playerRank, totalPlayers));
+            base.Show();
         }
 
-        private void PrepareUIContent(GameResultDto resultDto)
+        private void PrepareUIContent(GameResultDto resultDto, float personalBest, int playerRank, int totalPlayers)
         {
-            // Determine Win/Loss/Draw for the local player
             ulong localClientId = NetworkManager.Singleton.LocalClientId;
-            if (resultDto.IsDraw)
+            bool isSinglePlayer = resultDto.FinalPlayerDatas.Length == 1;
+
+            if (isSinglePlayer)
             {
-                _resultText.text = "DRAW";
-            }
-            else if (resultDto.WinnerClientId == localClientId)
-            {
-                _resultText.text = "YOU WIN";
+                _resultText.text = "GAME OVER";
+                if(_timeText) _timeText.text = $"TIME: {FormatTime(resultDto.FinalGameTime)}";
+                if(_bestTimeText) _bestTimeText.text = $"BEST: {FormatTime(personalBest)}";
+                if (playerRank > 0 && totalPlayers > 0)
+                {
+                    float percentile = ((float)playerRank / totalPlayers) * 100f;
+                    if(_rankText) _rankText.text = $"RANK: {playerRank} / {totalPlayers} (Top {percentile:F1}%)";
+                }
             }
             else
             {
-                _resultText.text = "YOU LOSE";
+                if (resultDto.IsDraw) _resultText.text = "DRAW";
+                else if (resultDto.WinnerClientId == localClientId) _resultText.text = "YOU WIN";
+                else _resultText.text = "YOU LOSE";
+                if(_timeText) _timeText.text = $"MATCH TIME: {FormatTime(resultDto.FinalGameTime)}";
             }
 
-            // Build the detailed stats string
-            StringBuilder statsBuilder = new StringBuilder();
+            StringBuilder detailsBuilder = new StringBuilder();
+            detailsBuilder.AppendLine("\n--- STATS ---");
             foreach (var playerData in resultDto.FinalPlayerDatas)
             {
-                statsBuilder.AppendLine($"--- Player {playerData.ClientId} ---");
-                statsBuilder.AppendLine($"Score: {playerData.Score}");
-                statsBuilder.AppendLine($"Blocks Destroyed: {playerData.BlocksDestroyed}");
-                statsBuilder.AppendLine($"Typing Misses: {playerData.TypingMisses}");
-                statsBuilder.AppendLine();
+                detailsBuilder.AppendLine($"Player {playerData.ClientId} ({playerData.PlayerName}):");
+                detailsBuilder.AppendLine($"  Blocks Destroyed: {playerData.BlocksDestroyed}");
+                detailsBuilder.AppendLine($"  Typing Misses: {playerData.TypingMisses}");
             }
-            _statsText.text = statsBuilder.ToString();
+            if (_statsText) _statsText.text = detailsBuilder.ToString();
 
-            // TODO: Populate rating change text fields here
+            if (!isSinglePlayer && (resultDto.NewWinnerRating != 0 || resultDto.NewLoserRating != 0))
+            {
+                // TODO: Populate specific rating text fields
+            }
         }
 
-        private IEnumerator ShowSequenceCoroutine(GameResultDto dto)
+        private IEnumerator ShowSequenceCoroutine(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
         {
             HideAllCanvasGroups();
             _skipButton.gameObject.SetActive(true);
 
-            // Step 1: Show Win/Loss Banner
             yield return FadeCanvasGroup(_winLoseBannerCanvasGroup, true, 0.5f);
-            yield return WaitOrSkip(5.0f);
+            yield return WaitOrSkip(3.0f);
             yield return FadeCanvasGroup(_winLoseBannerCanvasGroup, false, 0.5f);
 
-            // Step 2: Show Stats Panel & Rating (if applicable)
             yield return FadeCanvasGroup(_statsPanelCanvasGroup, true, 0.5f);
-            bool isRanked = dto.NewWinnerRating != 0 || dto.NewLoserRating != 0;
-            if (isRanked)
+            
+            bool isSinglePlayer = dto.FinalPlayerDatas.Length == 1;
+            if (isSinglePlayer)
             {
-                yield return FadeCanvasGroup(_ratingSubPanelCanvasGroup, true, 0.5f);
-                yield return WaitOrSkip(5.0f);
+                yield return FadeCanvasGroup(_basicStatsCanvasGroup, true, 0.5f);
+                yield return WaitOrSkip(3.0f);
+
+                bool isNewRecord = dto.FinalGameTime > personalBest && personalBest > 0;
+                if (isNewRecord)
+                {
+                    yield return FadeCanvasGroup(_newRecordCanvasGroup, true, 0.5f);
+                    yield return WaitOrSkip(2.0f);
+                }
+
+                bool hasRank = playerRank > 0 && totalPlayers > 0;
+                if (hasRank)
+                {
+                    yield return FadeCanvasGroup(_rankCanvasGroup, true, 0.5f);
+                    yield return WaitOrSkip(3.0f);
+                }
+            }
+            else
+            {
+                bool isRanked = dto.NewWinnerRating != 0 || dto.NewLoserRating != 0;
+                if (isRanked)
+                {
+                    yield return FadeCanvasGroup(_ratingSubPanelCanvasGroup, true, 0.5f);
+                    yield return WaitOrSkip(5.0f);
+                }
             }
 
-            // Step 3: Show Detailed Stats
             yield return FadeCanvasGroup(_detailsSubPanelCanvasGroup, true, 0.5f);
             yield return WaitOrSkip(5.0f);
 
-            // Step 4: Show Action Buttons
             yield return FadeCanvasGroup(_actionsPanelCanvasGroup, true, 0.5f);
             _skipButton.gameObject.SetActive(false);
         }
@@ -129,6 +158,9 @@ namespace TypingSurvivor.Features.UI.Screens
         {
             if(_winLoseBannerCanvasGroup) _winLoseBannerCanvasGroup.alpha = 0;
             if(_statsPanelCanvasGroup) _statsPanelCanvasGroup.alpha = 0;
+            if(_basicStatsCanvasGroup) _basicStatsCanvasGroup.alpha = 0;
+            if(_newRecordCanvasGroup) _newRecordCanvasGroup.alpha = 0;
+            if(_rankCanvasGroup) _rankCanvasGroup.alpha = 0;
             if(_ratingSubPanelCanvasGroup) _ratingSubPanelCanvasGroup.alpha = 0;
             if(_detailsSubPanelCanvasGroup) _detailsSubPanelCanvasGroup.alpha = 0;
             if(_actionsPanelCanvasGroup) _actionsPanelCanvasGroup.alpha = 0;
@@ -143,7 +175,7 @@ namespace TypingSurvivor.Features.UI.Screens
                 timer += Time.deltaTime;
                 yield return null;
             }
-            _skipWait = false; // Reset for the next step
+            _skipWait = false;
         }
 
         private IEnumerator FadeCanvasGroup(CanvasGroup cg, bool fadeIn, float duration)
@@ -160,6 +192,13 @@ namespace TypingSurvivor.Features.UI.Screens
                 yield return null;
             }
             cg.alpha = endAlpha;
+        }
+
+        private string FormatTime(float timeInSeconds)
+        {
+            int minutes = Mathf.FloorToInt(timeInSeconds / 60F);
+            int seconds = Mathf.FloorToInt(timeInSeconds - minutes * 60);
+            return string.Format("{0:00}:{1:00}", minutes, seconds);
         }
     }
 }

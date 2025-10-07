@@ -9,7 +9,9 @@
         "Unity.InputSystem",
         "Unity.Services.Authentication",
         "Unity.Services.Core.Networking",
-        "Unity.Services.Leaderboards"
+        "Unity.Services.Leaderboards",
+        "Unity.Collections",
+        "Unity.Services.CloudCode"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -22,7 +22,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
         public NetworkList<NetworkObjectReference> SpawnedPlayers => _spawnedPlayers;
         public float CurrentOxygen => OxygenLevel.Value; // Kept for single player logic for now
         public event Action<ulong, float> OnOxygenChanged;
-        public event Action<int> OnScoreChanged;
 
         public override void OnNetworkSpawn()
         {
@@ -61,24 +60,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
             // Notify listeners about the specific player data that changed
             OnOxygenChanged?.Invoke(changedData.ClientId, changedData.Oxygen);
-
-            // Also update score if it's for the local player
-            if (NetworkManager.Singleton.IsClient && changedData.ClientId == NetworkManager.Singleton.LocalClientId)
-            {
-                OnScoreChanged?.Invoke(changedData.Score);
-            }
-        }
-
-        public int GetPlayerScore(ulong clientId)
-        {
-            foreach (var playerData in PlayerDatas)
-            {
-                if (playerData.ClientId == clientId)
-                {
-                    return playerData.Score;
-                }
-            }
-            return 0;
         }
     }
 }

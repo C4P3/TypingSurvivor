@@ -7,10 +7,9 @@ using Unity.Netcode;
 public interface IGameStateReader
 {
     NetworkVariable<GamePhase> CurrentPhaseNV { get; }
+    NetworkVariable<float> GameTimer { get; }
     NetworkList<PlayerData> PlayerDatas { get; }
     NetworkList<NetworkObjectReference> SpawnedPlayers { get; }
     float CurrentOxygen { get; } // This might become obsolete or represent local player's oxygen
-    int GetPlayerScore(ulong clientId);
     event System.Action<ulong, float> OnOxygenChanged;
-    event System.Action<int> OnScoreChanged;
 }

@@ -6,7 +6,8 @@
         "TypingSurvivor.Game",
         "Unity.Netcode.Runtime",
         "Unity.TextMeshPro",
-        "Unity.Networking.Transport"
+        "Unity.Networking.Transport",
+        "Unity.Collections"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

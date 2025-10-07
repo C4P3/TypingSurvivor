@@ -12,6 +12,7 @@ using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
 using TypingSurvivor.Features.Game.Rating;
+using TypingSurvivor.Features.Game.Leaderboard;
 using System;
 
 namespace TypingSurvivor.Features.Game.Gameplay
@@ -59,6 +60,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
             serviceLocator.RegisterService(_gameConfig);
 
             // --- Register Plain C# Services ---
+            serviceLocator.RegisterService<ISurvivalLeaderboardService>(new SurvivalLeaderboardService());
+
             // TypingManagerはWordProviderに依存するため、ここで生成して注入する
             if (_gameConfig.WordListCsv == null)
             {
@@ -190,7 +193,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     serviceLocator.GetService<IPlayerStatusSystemReader>(),
                     _gameManager,
                     serviceLocator.GetService<ITypingService>(),
-                    _cameraManager
+                    _cameraManager,
+                    serviceLocator.GetService<ICloudSaveService>(),
+                    serviceLocator.GetService<ISurvivalLeaderboardService>()
                 );
             }
         }

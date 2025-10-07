@@ -36,6 +36,6 @@ namespace TypingSurvivor.Features.Core.CloudSave
     public class PlayerProgressData
     {
         public int Rating = 1500; // Default starting rating
-        public int SinglePlayHighScore = 0;
+        public float SinglePlayHighScore = 0f;
     }
 }

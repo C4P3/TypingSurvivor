@@ -1784,6 +1784,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 523364178}
     m_Modifications:
+    - target: {fileID: 1367437774370161296, guid: f30a687269665a14bb99c7ef736c8cc6, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1367437774370161296, guid: f30a687269665a14bb99c7ef736c8cc6, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2832077617482492171, guid: f30a687269665a14bb99c7ef736c8cc6, type: 3}
       propertyPath: m_Name
       value: GlobalUICanvas
@@ -1867,6 +1875,10 @@ PrefabInstance:
     - target: {fileID: 6516028592399695968, guid: f30a687269665a14bb99c7ef736c8cc6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8592807899328044572, guid: f30a687269665a14bb99c7ef736c8cc6, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -11,7 +11,6 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
     public class InGameHUDManager : ScreenBase
     {
         [SerializeField] private OxygenView _oxygenView;
-        [SerializeField] private ScoreView _scoreView;
         [SerializeField] private PlayerInfoView _playerInfoView;
 
 
@@ -88,7 +87,7 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
             if (_gameStateReader != null)
             {
                 _gameStateReader.OnOxygenChanged += OnOxygenChanged;
-                _gameStateReader.OnScoreChanged += OnScoreChanged;
+                _gameStateReader.PlayerDatas.OnListChanged += OnPlayerDatasChanged;
             }
         }
 
@@ -97,24 +96,32 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
             if (_gameStateReader != null)
             {
                 _gameStateReader.OnOxygenChanged -= OnOxygenChanged;
-                _gameStateReader.OnScoreChanged -= OnScoreChanged;
+                _gameStateReader.PlayerDatas.OnListChanged -= OnPlayerDatasChanged;
             }
         }
 
         #endregion
 
         #region Event Handlers
+        private void OnPlayerDatasChanged(NetworkListEvent<TypingSurvivor.Features.Game.Gameplay.Data.PlayerData> changeEvent)
+        {
+            // Find the specific data for this HUD's owner and update the name
+            foreach (var playerData in _gameStateReader.PlayerDatas)
+            {
+                if (playerData.ClientId == PlayerOwnerId)
+                {
+                    UpdatePlayerName(playerData.PlayerName.ToString());
+                    return; // Found our player, no need to loop further
+                }
+            }
+        }
+
         private void OnOxygenChanged(ulong clientId, float newOxygenValue)
         {
             if (clientId != PlayerOwnerId) return;
             if (_playerStatusReader == null) return;
 
             _oxygenView.UpdateView(newOxygenValue, _playerStatusReader.GetStatValue(PlayerOwnerId, PlayerStat.MaxOxygen));
-        }
-
-        private void OnScoreChanged(int newScoreValue)
-        {
-            _scoreView.UpdateView(newScoreValue);
         }
 
         #endregion

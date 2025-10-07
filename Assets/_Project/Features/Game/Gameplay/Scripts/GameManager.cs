@@ -50,6 +50,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             public bool IsDraw;
             public ulong WinnerClientId;
+            public float FinalGameTime;
             public PlayerData[] FinalPlayerDatas;
             public int NewWinnerRating;
             public int NewLoserRating;
@@ -58,6 +59,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 serializer.SerializeValue(ref IsDraw);
                 serializer.SerializeValue(ref WinnerClientId);
+                serializer.SerializeValue(ref FinalGameTime);
                 
                 int length = 0;
                 if (!serializer.IsReader)
@@ -138,8 +140,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private void HandleClientConnected(ulong clientId)
         {
             if (!IsServer) return;
-            // PlayerDatasリストを初期化
-            _gameState.PlayerDatas.Add(new PlayerData { ClientId = clientId, Score = 0, Oxygen = 100f, IsGameOver = false });
+            // PlayerDatasリストを初期化。デフォルト名を設定。
+            _gameState.PlayerDatas.Add(new PlayerData { ClientId = clientId, PlayerName = $"Player {clientId}", Oxygen = 100f, IsGameOver = false });
         }
 
         private void HandleClientDisconnected(ulong clientId)
@@ -259,12 +261,15 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
         private IEnumerator PlayingPhase()
         {
+            _gameState.GameTimer.Value = 0f; // Reset timer for the round
             _gameState.CurrentPhase.Value = GamePhase.Playing;
             PlayBgmClientRpc(SoundId.GameMusic);
             _playersInLowOxygen.Clear(); // Reset for the new round
 
             while (!_gameModeStrategy.IsGameOver(_gameState))
             {
+                _gameState.GameTimer.Value += Time.deltaTime;
+
                 // Decrease oxygen and check for low oxygen state changes
                 for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
                 {
@@ -419,6 +424,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 IsDraw = result.IsDraw,
                 WinnerClientId = result.WinnerClientId,
+                FinalGameTime = _gameState.GameTimer.Value,
                 FinalPlayerDatas = result.FinalPlayerDatas.ToArray(),
                 NewWinnerRating = newWinnerRating,
                 NewLoserRating = newLoserRating
@@ -519,8 +525,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 // Get the (potentially modified) max oxygen for this player
                 float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
 
-                // Reset runtime stats
-                data.Score = 0;
+                // Reset runtime stats, but keep the player name
                 data.IsGameOver = false;
                 data.Oxygen = maxOxygen;
                 data.BlocksDestroyed = 0;
@@ -547,20 +552,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
         }
 
-        public void AddScore(ulong clientId, int amount)
-        {
-            if (!IsServer) return;
-            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
-            {
-                if (_gameState.PlayerDatas[i].ClientId == clientId)
-                {
-                    var data = _gameState.PlayerDatas[i];
-                    data.Score += amount;
-                    _gameState.PlayerDatas[i] = data;
-                    return;
-                }
-            }
-        }
         public void UpdatePlayerPosition(ulong clientId, Vector3Int gridPosition)
         {
             if (!IsServer) return;
@@ -575,6 +566,22 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 }
             }
         }
+
+        public void UpdatePlayerName(ulong clientId, string playerName)
+        {
+            if (!IsServer) return;
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    var data = _gameState.PlayerDatas[i];
+                    data.PlayerName = playerName;
+                    _gameState.PlayerDatas[i] = data;
+                    return;
+                }
+            }
+        }
+
         public void SetPlayerGameOver(ulong clientId)
         {
             if (!IsServer) return;
