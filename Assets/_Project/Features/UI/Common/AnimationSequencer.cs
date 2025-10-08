@@ -95,6 +95,7 @@ public class AnimationSequencer : MonoBehaviour
         // シーケンス実行
         foreach (var step in _sequence)
         {
+            Debug.Log(step.isEnabled);
             if (!step.isEnabled || step.panel == null || !step.panel.gameObject.activeInHierarchy) continue;
 
             if (step.delayBeforeShow > 0) yield return new WaitForSeconds(step.delayBeforeShow);
