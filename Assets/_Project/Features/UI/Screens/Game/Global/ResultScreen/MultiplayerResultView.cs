@@ -68,7 +68,7 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             }
             else
             {
-                _winLoseDrawText.text = localPlayerWon ? "YOU WIN" : "GAME OVER";
+                _winLoseDrawText.text = localPlayerWon ? "YOU WIN" : "YOU LOSE";
             }
 
             // ローカル・リモートプレイヤーのデータを特定

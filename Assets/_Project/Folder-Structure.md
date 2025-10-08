@@ -59,7 +59,7 @@ Features/
 │   └── 📂Typing/
 │
 └── 📂UI/                   # UI機能
-    ├── 📂Common/             # 画面をまたいで使われる共通部品 (ボタン、ゲージなど)
+    ├── 📂Common/             # 共通部品(ボタン等)。AnimationSequencer, SequencedGroupPanel等を格納。
     └── 📂Screens/            # 画面単位のプレハブと管理スクリプト
         ├── 📂InGameHUD/
         └── 📂MainMenu/
