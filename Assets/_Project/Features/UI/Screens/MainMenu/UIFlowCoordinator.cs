@@ -277,7 +277,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         public async Task StartPrivateMatchmaking(string roomCode)
         {
-            _currentGameMode = GameModeType.FreeMatch;
+            _currentGameMode = GameModeType.MultiPlayer;
             _activeWaitPanel = _roomWaitPanel;
 
             if (_activeWaitPanel == null)
