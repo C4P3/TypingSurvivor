@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using TMPro;
 using TypingSurvivor.Features.UI.Common;
 using UnityEngine;
@@ -17,7 +16,8 @@ namespace TypingSurvivor.Features.UI.Screens.Result
         [SerializeField] private TextMeshProUGUI _timeText;
         [SerializeField] private TextMeshProUGUI _bestTimeText;
         [SerializeField] private TextMeshProUGUI _rankText;
-        [SerializeField] private TextMeshProUGUI _statsText; // For WPM, Blocks, Misses
+        [Tooltip("WPM, Blocks, Missesなどの統計情報を表示するカード")]
+        [SerializeField] private PlayerResultCard _playerCard;
 
         [Header("Buttons")]
         [SerializeField] private InteractiveButton _rematchButton;
@@ -57,33 +57,32 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             var playerData = dto.FinalPlayerDatas[0];
             bool isNewRecord = dto.FinalGameTime > personalBest && personalBest > 0;
 
+            // "ShowNewRecord" という名前のステップがシーケンサーにあれば、条件に応じて有効/無効を切り替える
             SetStepEnabledInAllSequencers("ShowNewRecord", isNewRecord);
 
-            // データをUIに設定
-            _timeText.text = $"TIME: {FormatTime(dto.FinalGameTime)}";
-            _bestTimeText.text = $"BEST: {FormatTime(isNewRecord ? dto.FinalGameTime : personalBest)}";
+            // タイムやランクなど、この画面固有のUIを更新
+            if(_timeText) _timeText.text = $"TIME: {FormatTime(dto.FinalGameTime)}";
+            if(_bestTimeText) _bestTimeText.text = $"BEST: {FormatTime(isNewRecord ? dto.FinalGameTime : personalBest)}";
 
-            if (playerRank > 0 && totalPlayers > 0)
+            if (_rankText != null)
             {
-                float percentile = ((float)playerRank / totalPlayers) * 100f;
-                _rankText.text = $"RANK: {playerRank} / {totalPlayers} (Top {percentile:F1}%)";
+                if (playerRank > 0 && totalPlayers > 0)
+                {
+                    float percentile = ((float)playerRank / totalPlayers) * 100f;
+                    _rankText.text = $"RANK: {playerRank} / {totalPlayers} (Top {percentile:F1}%)";
+                }
+                else
+                {
+                    _rankText.text = "RANK: Unranked";
+                }
             }
-            else
+
+            // PlayerResultCardに統計データの設定を委譲
+            if (_playerCard != null)
             {
-                _rankText.text = "RANK: Unranked";
+                // シングルプレイなので、isRankedはfalse, newRatingは0
+                _playerCard.Populate(playerData, false, 0);
             }
-
-            float wpm = 0;
-            if (playerData.TotalTimeTyping > 0) wpm = (playerData.TotalCharsTyped / 5.0f) / (playerData.TotalTimeTyping / 60.0f);
-            
-            float missRate = 0;
-            if (playerData.TotalKeyPresses > 0) missRate = (float)playerData.TypingMisses / (float)playerData.TotalKeyPresses * 100.0f;
-
-            var statsBuilder = new StringBuilder();
-            statsBuilder.AppendLine($"WPM: {wpm:F1}");
-            statsBuilder.AppendLine($"Blocks: {playerData.BlocksDestroyed}");
-            statsBuilder.AppendLine($"Miss: {playerData.TypingMisses} ({missRate:F1}%)");
-            _statsText.text = statsBuilder.ToString();
         }
 
         private string FormatTime(float timeInSeconds)

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using TMPro;
 using TypingSurvivor.Features.Game.Gameplay.Data;
 using TypingSurvivor.Features.UI.Common;
@@ -15,10 +16,10 @@ namespace TypingSurvivor.Features.UI.Screens.Result
 
         [Header("UI Elements")]
         [SerializeField] private TextMeshProUGUI _winLoseDrawText;
-        [Tooltip("Prefab上で、ローカルプレイヤー（自分）用のカードをアサインしてください")]
-        [SerializeField] private PlayerResultCard _localPlayerCard;
-        [Tooltip("Prefab上で、リモートプレイヤー（相手）用のカードをアサインしてください")]
-        [SerializeField] private PlayerResultCard _remotePlayerCard;
+        [Tooltip("Player 1 (ClientIdが小さい方) のカード")]
+        [SerializeField] private PlayerResultCard _player1Card;
+        [Tooltip("Player 2 (ClientIdが大きい方) のカード")]
+        [SerializeField] private PlayerResultCard _player2Card;
 
         [Header("Buttons")]
         [SerializeField] private InteractiveButton _rematchButton;
@@ -71,22 +72,25 @@ namespace TypingSurvivor.Features.UI.Screens.Result
                 _winLoseDrawText.text = localPlayerWon ? "YOU WIN" : "YOU LOSE";
             }
 
-            // ローカル・リモートプレイヤーのデータを特定
-            PlayerData localPlayerData = dto.FinalPlayerDatas[0].ClientId == Unity.Netcode.NetworkManager.Singleton.LocalClientId ? dto.FinalPlayerDatas[0] : dto.FinalPlayerDatas[1];
-            PlayerData remotePlayerData = dto.FinalPlayerDatas[0].ClientId != Unity.Netcode.NetworkManager.Singleton.LocalClientId ? dto.FinalPlayerDatas[0] : dto.FinalPlayerDatas[1];
+            // CameraManagerと同様に、ClientIdでプレイヤーをソートし、P1/P2を確定させる
+            var sortedPlayers = dto.FinalPlayerDatas.OrderBy(p => p.ClientId).ToList();
+            if (sortedPlayers.Count < 2) return; // Should not happen in multiplayer
+
+            var player1Data = sortedPlayers[0];
+            var player2Data = sortedPlayers[1];
 
             // プレイヤーカードにデータを設定
             if (isRanked)
             {
-                int localPlayerNewRating = localPlayerData.ClientId == dto.WinnerClientId ? dto.NewWinnerRating : dto.NewLoserRating;
-                int remotePlayerNewRating = remotePlayerData.ClientId == dto.WinnerClientId ? dto.NewWinnerRating : dto.NewLoserRating;
-                _localPlayerCard.Populate(localPlayerData, true, localPlayerNewRating);
-                _remotePlayerCard.Populate(remotePlayerData, true, remotePlayerNewRating);
+                int player1NewRating = player1Data.ClientId == dto.WinnerClientId ? dto.NewWinnerRating : dto.NewLoserRating;
+                int player2NewRating = player2Data.ClientId == dto.WinnerClientId ? dto.NewWinnerRating : dto.NewLoserRating;
+                if(_player1Card) _player1Card.Populate(player1Data, true, player1NewRating);
+                if(_player2Card) _player2Card.Populate(player2Data, true, player2NewRating);
             }
             else
             {
-                _localPlayerCard.Populate(localPlayerData, false, 0);
-                _remotePlayerCard.Populate(remotePlayerData, false, 0);
+                if(_player1Card) _player1Card.Populate(player1Data, false, 0);
+                if(_player2Card) _player2Card.Populate(player2Data, false, 0);
             }
         }
     }
