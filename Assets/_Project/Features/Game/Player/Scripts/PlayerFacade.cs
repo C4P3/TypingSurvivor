@@ -19,7 +19,7 @@ namespace TypingSurvivor.Features.Game.Player
 {
     public class PlayerFacade : NetworkBehaviour
     {
-        #region Events
+        #region Server-SideEvents
         public static event Action<ulong, Vector3> OnPlayerMoved_Server;
         public static event Action<ulong, Vector3> OnPlayerSpawned_Server;
         public static event Action<ulong> OnPlayerDespawned_Server;
@@ -45,7 +45,8 @@ namespace TypingSurvivor.Features.Game.Player
         public readonly NetworkVariable<Vector3Int> NetworkGridPosition = new(writePerm: NetworkVariableWritePermission.Server);
         public readonly NetworkVariable<float> NetworkMoveDuration = new(0.25f, writePerm: NetworkVariableWritePermission.Server);
         public readonly NetworkVariable<Vector3Int> NetworkTypingTargetPosition = new(writePerm: NetworkVariableWritePermission.Server);
-
+        public readonly NetworkVariable<Vector3Int> NetworkFacingDirection = new(Vector3Int.down, writePerm: NetworkVariableWritePermission.Server);
+        
         // --- サーバーサイドの内部状態 ---
         private Vector3Int _continuousMoveDirection_Server;
         private bool _isMoving_Server;
@@ -120,12 +121,17 @@ namespace TypingSurvivor.Features.Game.Player
                 {
                     Debug.LogError("GameManager instance not found! Cannot register PlayerId.");
                 }
-                
-                if(IsServer) OnPlayerSpawned_Server?.Invoke(OwnerClientId, transform.position);
+
+                if (IsServer) OnPlayerSpawned_Server?.Invoke(OwnerClientId, transform.position);
                 else RequestSpawnedServerRpc();
             }
-            
+
             OnStateChanged(PlayerState.Roaming, _currentState.Value);
+            
+            if (_view != null)
+            {
+                _view.Initialize(this);
+            }
         }
 
         private async void LoadAndRegisterPlayerName()
@@ -292,6 +298,12 @@ namespace TypingSurvivor.Features.Game.Player
 
         private void HandleMoveIntent_Server(Vector3Int direction)
         {
+            // 移動の意図があった場合、まず向きを更新する
+            if (direction != Vector3Int.zero)
+            {
+                NetworkFacingDirection.Value = direction;
+            }
+            
             _continuousMoveDirection_Server = direction;
             if (!_isMoving_Server)
             {
@@ -369,6 +381,9 @@ namespace TypingSurvivor.Features.Game.Player
                         break;
 
                     case TileInteractionType.Destructible:
+                        // 壁に衝突してタイピングへ移行する際にも向きを設定する
+                        // HandleMoveIntent_Serverですでに設定済みだが、念のためここでも確定させる
+                        NetworkFacingDirection.Value = _continuousMoveDirection_Server;
                         // Typingステートに移行し、移動コルーチンを完全に終了させる
                         NetworkTypingTargetPosition.Value = targetGridPos;
                         _currentState.Value = PlayerState.Typing;
@@ -413,7 +428,7 @@ namespace TypingSurvivor.Features.Game.Player
             // - For a teleport, it will start the Lerp from the newly snapped position (resulting in no movement, which is correct).
             _stateMachine.CurrentIPlayerState?.OnTargetPositionChanged();
         }
-
+        
         #endregion
 
         #region Public Server-Side Methods
@@ -426,7 +441,7 @@ namespace TypingSurvivor.Features.Game.Player
 
             transform.position = newWorldPosition;
             NetworkGridPosition.Value = _grid.WorldToCell(newWorldPosition);
-            
+
             // Reset server-side state
             _currentState.Value = PlayerState.Roaming;
             _continuousMoveDirection_Server = Vector3Int.zero;
