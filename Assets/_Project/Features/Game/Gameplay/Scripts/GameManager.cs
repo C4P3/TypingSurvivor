@@ -180,7 +180,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
 
             // --- If the last player disconnects, start shutdown sequence ---
-            if (_playerInstances.Count == 0 && _shutdownCoroutine == null)
+            if (_playerInstances.Count <= 0 && _shutdownCoroutine == null)
             {
                 Debug.Log("[GameManager] Last player disconnected. Server will shut down.");
                 _shutdownCoroutine = StartCoroutine(ShutdownServerCoroutine());
@@ -399,27 +399,23 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
         }
 
-        private async System.Threading.Tasks.Task FinishedPhaseAsync()
+        private async Task FinishedPhaseAsync()
         {
             _gameState.CurrentPhase.Value = GamePhase.Finished;
-
             GameResult result = _gameModeStrategy.CalculateResult(_gameState);
-
-            // ジングル再生処理
             PlayJingleThenMusicClientRpc(result.WinnerClientId);
 
+            // --- レート計算　---
             int newWinnerRating = 0;
             int newLoserRating = 0;
-
             if (OnGameFinished != null)
             {
-                // Await the rating calculation and update
                 var ratings = await OnGameFinished.Invoke(result);
                 newWinnerRating = ratings.Item1;
                 newLoserRating = ratings.Item2;
             }
             
-            // Broadcast results to all clients
+            // 全クライエントに結果通知をブロードキャスト
             var resultDto = new GameResultDto
             {
                 IsDraw = result.IsDraw,
@@ -433,81 +429,107 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
             _rematchRequesters.Clear();
 
-            // Wait for rematch requests. This loop has a 30-second timeout.
-            float rematchWaitStartTime = Time.time;
-            while (Time.time < rematchWaitStartTime + 30.0f && _rematchRequesters.Count < _playerInstances.Count)
+            // --- ゲームモードに応じた再戦待機ロジック ---
+            bool isSinglePlayer = _gameModeStrategy is SinglePlayerStrategy;
+            if (isSinglePlayer)
             {
-                await System.Threading.Tasks.Task.Yield(); // Use Task.Yield instead of yield return null in an async method
+                // シングルプレイ：　無期限待機
+                _gameState.RematchTimerRemaining.Value = -1f; // -1を「無期限」のフラグとして使う
+                while (_rematchRequesters.Count < _playerInstances.Count)
+                {
+                    // プレイヤーが切断したらループを抜ける
+                    if (_playerInstances.Count < 0) break;
+                    await Task.Yield();
+                }
+            }
+            else
+            {
+                // マルチプレイ：　タイムアウト付き待機
+                float rematchEndTime = Time.time + _gameConfig.RuleSettings.RematchTimeoutSeconds;
+                while (Time.time < rematchEndTime && _rematchRequesters.Count < _playerInstances.Count)
+                {
+                    // 残り時間をNetworkVariable経由でクライアントに同期
+                    _gameState.RematchTimerRemaining.Value = rematchEndTime - Time.time;
+                    await Task.Yield();
+                }
+                _gameState.RematchTimerRemaining.Value = 0f; // 待機終了
             }
 
-            // After the loop, check if we have enough players for a rematch.
-            if (_playerInstances.Count < _gameModeStrategy.PlayerCount || _rematchRequesters.Count < _gameModeStrategy.PlayerCount)
+            // --- 再戦またはシャットダウンの判定 ---
+            // 必要な人数が揃っているか、かつ全員が再戦をリクエストしたか
+            if (_playerInstances.Count >= _gameModeStrategy.PlayerCount && _rematchRequesters.Count >= _gameModeStrategy.PlayerCount)
             {
+                // 再戦処理へ
+                Debug.Log("All players requested a rematch. Starting next round.");
+                StopBgmClientRpc(0f);
+                ResetPlayersForRematch();
+
+                // マップ再生成と再配置
+                // 再戦準備（マップ再生成とプレイヤー再配置）のロジック
+                // Regenerate world using the same request logic as initial spawn
+                var request = new MapGenerationRequest();
+                var clientIds = _playerInstances.Keys.ToList();
+
+                if (_gameModeStrategy is MultiPlayerStrategy || _gameModeStrategy is RankedMatchStrategy)
+                {
+                    for (int i = 0; i < clientIds.Count; i++)
+                    {
+                        request.SpawnAreas.Add(new SpawnArea
+                        {
+                            PlayerClientIds = new List<ulong> { clientIds[i] },
+                            WorldOffset = new Vector2Int(i * 1000, 0),
+                            MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                            SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
+                        });
+                    }
+                }
+                else
+                {
+                    request.SpawnAreas.Add(new SpawnArea
+                    {
+                        PlayerClientIds = new List<ulong> { clientIds[0] },
+                        WorldOffset = new Vector2Int(0, 0),
+                        MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
+                        SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
+                    });
+                }
+                _levelService.GenerateWorld(request);
+                await System.Threading.Tasks.Task.Yield(); // Give LevelManager a frame to process
+
+                // Reposition players
+                foreach (var area in request.SpawnAreas)
+                {
+                    var spawnPoints = _levelService.GetSpawnPoints(area);
+                    for (int i = 0; i < area.PlayerClientIds.Count; i++)
+                    {
+                        ulong clientId = area.PlayerClientIds[i];
+                        var player = _playerInstances[clientId];
+                        var gridPos = spawnPoints[i];
+                        _levelService.ClearArea(gridPos, 1);
+                        var spawnPos = _grid.GetCellCenterWorld(gridPos);
+                        player.RespawnAt(spawnPos);
+                        // After teleporting the player, update their position in the GameState and force a chunk update.
+                        UpdatePlayerPosition(clientId, gridPos);
+                        _levelService.ForceChunkUpdateForPlayer(clientId, spawnPos);
+                    }
+                }
+                // The main game loop will now proceed to the next phase (Countdown)
+
+            }
+            else
+            {
+                // 再戦不成立、サーバーシャットダウンへ
                 Debug.Log("Not enough players for a rematch, or timeout reached. Server will shut down.");
                 if (_shutdownCoroutine == null)
                 {
                     _shutdownCoroutine = StartCoroutine(ShutdownServerCoroutine());
                 }
-                // Wait indefinitely until shutdown
+                // シャットダウンまで待機
                 while (true)
-                { 
-                    await System.Threading.Tasks.Task.Delay(1000);
+                {
+                    await Task.Delay(1000);
                 }
             }
-            
-            // If we passed the check, proceed with rematch.
-            StopBgmClientRpc(0f);
-            ResetPlayersForRematch();
-
-            // 再戦準備（マップ再生成とプレイヤー再配置）のロジック
-            // Regenerate world using the same request logic as initial spawn
-            var request = new MapGenerationRequest();
-            var clientIds = _playerInstances.Keys.ToList();
-
-            if (_gameModeStrategy is MultiPlayerStrategy || _gameModeStrategy is RankedMatchStrategy)
-            {
-                for (int i = 0; i < clientIds.Count; i++)
-                {
-                    request.SpawnAreas.Add(new SpawnArea
-                    {
-                        PlayerClientIds = new List<ulong> { clientIds[i] },
-                        WorldOffset = new Vector2Int(i * 1000, 0),
-                        MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                        SpawnPointStrategy = _gameConfig.VersusSpawnStrategy as ISpawnPointStrategy
-                    });
-                }
-            }
-            else
-            {
-                    request.SpawnAreas.Add(new SpawnArea
-                {
-                    PlayerClientIds = new List<ulong> { clientIds[0] },
-                    WorldOffset = new Vector2Int(0, 0),
-                    MapGenerator = _gameConfig.DefaultMapGenerator as IMapGenerator,
-                    SpawnPointStrategy = _gameConfig.SinglePlayerSpawnStrategy as ISpawnPointStrategy
-                });
-            }
-            _levelService.GenerateWorld(request);
-            await System.Threading.Tasks.Task.Yield(); // Give LevelManager a frame to process
-
-            // Reposition players
-            foreach (var area in request.SpawnAreas)
-            {
-                var spawnPoints = _levelService.GetSpawnPoints(area);
-                for (int i = 0; i < area.PlayerClientIds.Count; i++)
-                {
-                    ulong clientId = area.PlayerClientIds[i];
-                    var player = _playerInstances[clientId];
-                    var gridPos = spawnPoints[i];
-                    _levelService.ClearArea(gridPos, 1);
-                    var spawnPos = _grid.GetCellCenterWorld(gridPos);
-                    player.RespawnAt(spawnPos);
-                    // After teleporting the player, update their position in the GameState and force a chunk update.
-                    UpdatePlayerPosition(clientId, gridPos);
-                    _levelService.ForceChunkUpdateForPlayer(clientId, spawnPos);
-                }
-            }
-            // The main game loop will now proceed to the next phase (Countdown)
         }
 
 

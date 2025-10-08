@@ -82,6 +82,8 @@ namespace TypingSurvivor.Features.UI
         private void SubscribeToEvents()
         {
             _gameStateReader.CurrentPhaseNV.OnValueChanged += HandlePhaseChanged;
+            _gameStateReader.RematchTimerRemainingNV.OnValueChanged += HandleRematchTimerChanged; // タイマーの購読
+            _gameStateReader.PlayerDatas.OnListChanged += HandlePlayerDataChanged; // プレイヤーリストの購読
             _gameStateReader.SpawnedPlayers.OnListChanged += _onPlayerListChangedHandler;
             _resultScreen.OnRematchClicked += HandleRematchClicked;
             _resultScreen.OnMainMenuClicked += HandleMainMenuClicked;
@@ -108,6 +110,8 @@ namespace TypingSurvivor.Features.UI
             if (_gameStateReader != null)
             {
                 _gameStateReader.CurrentPhaseNV.OnValueChanged -= HandlePhaseChanged;
+                _gameStateReader.RematchTimerRemainingNV.OnValueChanged -= HandleRematchTimerChanged;
+                _gameStateReader.PlayerDatas.OnListChanged -= HandlePlayerDataChanged;
                 _gameStateReader.SpawnedPlayers.OnListChanged -= _onPlayerListChangedHandler;
             }
             if (_resultScreen != null) 
@@ -243,6 +247,28 @@ namespace TypingSurvivor.Features.UI
                     _uiManager.ShowScreen(_resultScreen);
                     // The showing of the result screen is now handled by HandleResultReceived
                     break;
+            }
+        }
+        private void HandleRematchTimerChanged(float previousValue, float newValue)
+        {
+            // ResultScreenが表示されている場合のみ、タイマー情報をビューに渡す
+            if (_gameStateReader.CurrentPhaseNV.Value == GamePhase.Finished && _resultScreen.CurrentView != null)
+            {
+                _resultScreen.CurrentView.UpdateRematchTimer(newValue);
+            }
+        }
+
+        private void HandlePlayerDataChanged(NetworkListEvent<PlayerData> changeEvent)
+        {
+            // Finishedフェーズで、プレイヤーがリストから「削除」された場合に通知
+            if (_gameStateReader.CurrentPhaseNV.Value == GamePhase.Finished &&
+                changeEvent.Type == NetworkListEvent<PlayerData>.EventType.Remove)
+            {
+                // マルチプレイモードの場合のみ処理
+                if (Core.App.AppManager.Instance.GameMode != Core.App.GameModeType.SinglePlayer)
+                {
+                    _resultScreen.CurrentView?.NotifyOpponentDisconnected();
+                }
             }
         }
 

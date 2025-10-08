@@ -20,6 +20,10 @@ namespace TypingSurvivor.Features.UI.Screens.Result
         [SerializeField] private PlayerResultCard _player1Card;
         [Tooltip("Player 2 (ClientIdが大きい方) のカード")]
         [SerializeField] private PlayerResultCard _player2Card;
+        [Tooltip("再戦タイマー")]
+        [SerializeField] private TextMeshProUGUI _rematchTimerText;
+        [Tooltip("切断メッセージ")]
+        [SerializeField] private TextMeshProUGUI _disconnectMessageText;
 
         [Header("Buttons")]
         [SerializeField] private InteractiveButton _rematchButton;
@@ -43,6 +47,37 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             {
                 rootSequencer.Play();
             }
+        }
+
+        public void UpdateRematchTimer(float remainingTime)
+        {
+            if (_rematchTimerText == null) return;
+
+            if (remainingTime > 0)
+            {
+                // 残り時間を表示
+                _rematchTimerText.text = $"再戦待機中... あと {Mathf.CeilToInt(remainingTime)} 秒";
+            }
+            else
+            {
+                // 時間切れ
+                _rematchTimerText.text = "再戦時間が終了しました";
+                _rematchButton.interactable = false; // 再戦ボタンを無効化
+            }
+        }
+
+        public void NotifyOpponentDisconnected()
+        {
+            if (_disconnectMessageText)
+            {
+                _disconnectMessageText.text = "対戦相手が退出しました";
+                _disconnectMessageText.gameObject.SetActive(true);
+            }
+            if (_rematchTimerText)
+            {
+                 _rematchTimerText.gameObject.SetActive(false); // タイマーを非表示に
+            }
+            _rematchButton.interactable = false; // 再戦ボタンを無効化
         }
 
         private void SetStepEnabledInAllSequencers(string stepName, bool isEnabled)

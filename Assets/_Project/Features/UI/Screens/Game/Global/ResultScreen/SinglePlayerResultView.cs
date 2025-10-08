@@ -44,6 +44,16 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             }
         }
 
+        public void UpdateRematchTimer(float remainingTime)
+        {
+            // シングルプレイではタイマーを表示しないため、何もしない
+        }
+
+        public void NotifyOpponentDisconnected()
+        {
+            // シングルプレイなので、対戦相手は存在しない。何もしない
+        }
+
         private void SetStepEnabledInAllSequencers(string stepName, bool isEnabled)
         {
             foreach (var sequencer in _allSequencersInHierarchy)

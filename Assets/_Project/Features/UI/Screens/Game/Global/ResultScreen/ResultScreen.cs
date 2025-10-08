@@ -25,6 +25,7 @@ namespace TypingSurvivor.Features.UI.Screens
 
         private Component _currentViewInstance;
         private IResultView _currentResultView;
+        public IResultView CurrentView => _currentResultView;
 
         private void OnDestroy()
         {
