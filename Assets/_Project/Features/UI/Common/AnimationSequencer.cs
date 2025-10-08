@@ -1,4 +1,3 @@
-// Assets/_Project/Features/UI/Common/AnimationSequencer.cs
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,8 +20,8 @@ public class AnimationSequencer : MonoBehaviour
         public bool hideAfterHold = true;
         [Tooltip("trueの場合、holdDurationを無視してResume()が呼ばれるまで待機します")]
         public bool waitForManualResume = false;
-
-        [HideInInspector] public bool isEnabled = true;
+        [Tooltip("trueにすると、このステップを無効化します。デフォルトはfalse（有効）です。")]
+        public bool isDisabled = false;
     }
 
     [Header("Animation Settings")]
@@ -54,10 +53,10 @@ public class AnimationSequencer : MonoBehaviour
 
     public void SetStepEnabled(string stepName, bool isEnabled)
     {
-        // ステップが存在すれば有効/無効をセットする。存在しない場合は何もしない。
+        // 内部でロジックを反転させ、isDisabledフラグを操作する
         if (_stepMap.TryGetValue(stepName, out var step))
         {
-            step.isEnabled = isEnabled;
+            step.isDisabled = !isEnabled;
         }
     }
 
@@ -95,8 +94,8 @@ public class AnimationSequencer : MonoBehaviour
         // シーケンス実行
         foreach (var step in _sequence)
         {
-            Debug.Log(step.isEnabled);
-            if (!step.isEnabled || step.panel == null || !step.panel.gameObject.activeInHierarchy) continue;
+            // isEnabledの代わりにisDisabledでチェック
+            if (step.isDisabled || step.panel == null || !step.panel.gameObject.activeInHierarchy) continue;
 
             if (step.delayBeforeShow > 0) yield return new WaitForSeconds(step.delayBeforeShow);
 
