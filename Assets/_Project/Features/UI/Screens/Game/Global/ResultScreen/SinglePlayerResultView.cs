@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Text;
 using TMPro;
 using TypingSurvivor.Features.UI.Common;
@@ -8,31 +7,27 @@ using static TypingSurvivor.Features.Game.Gameplay.GameManager;
 
 namespace TypingSurvivor.Features.UI.Screens.Result
 {
-    public class SinglePlayerNormalResultView : ScreenBase, IResultView
+    [RequireComponent(typeof(AnimationSequencer))]
+    public class SinglePlayerResultView : MonoBehaviour, IResultView
     {
+        public event Action OnRematchClicked;
+        public event Action OnMainMenuClicked;
+
         [Header("UI Elements")]
         [SerializeField] private TextMeshProUGUI _timeText;
         [SerializeField] private TextMeshProUGUI _bestTimeText;
         [SerializeField] private TextMeshProUGUI _rankText;
         [SerializeField] private TextMeshProUGUI _statsText; // For WPM, Blocks, Misses
-        [SerializeField] private InteractiveButton _skipButton;
+
+        [Header("Buttons")]
         [SerializeField] private InteractiveButton _rematchButton;
         [SerializeField] private InteractiveButton _mainMenuButton;
 
-        [Header("Sub-Panel Canvas Groups")]
-        [SerializeField] private CanvasGroup _mainContentCanvasGroup;
-        [SerializeField] private CanvasGroup _detailsCanvasGroup;
-        [SerializeField] private CanvasGroup _actionsCanvasGroup;
+        private AnimationSequencer[] _allSequencersInHierarchy;
 
-        public event Action OnRematchClicked;
-        public event Action OnMainMenuClicked;
-
-        private bool _skipWait = false;
-
-        protected override void Awake()
+        private void Awake()
         {
-            base.Awake();
-            _skipButton?.onClick.AddListener(() => _skipWait = true);
+            _allSequencersInHierarchy = GetComponentsInChildren<AnimationSequencer>(true);
             _rematchButton?.onClick.AddListener(() => OnRematchClicked?.Invoke());
             _mainMenuButton?.onClick.AddListener(() => OnMainMenuClicked?.Invoke());
         }
@@ -40,16 +35,33 @@ namespace TypingSurvivor.Features.UI.Screens.Result
         public void ShowAndPlaySequence(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
         {
             PrepareUIContent(dto, personalBest, playerRank, totalPlayers);
-            base.Show(); // Fade in the root panel
-            StartCoroutine(PlaySequence());
+            
+            // Play the root sequencer
+            var rootSequencer = GetComponent<AnimationSequencer>();
+            if (rootSequencer != null)
+            {
+                rootSequencer.Play();
+            }
+        }
+
+        private void SetStepEnabledInAllSequencers(string stepName, bool isEnabled)
+        {
+            foreach (var sequencer in _allSequencersInHierarchy)
+            {
+                sequencer.SetStepEnabled(stepName, isEnabled);
+            }
         }
 
         private void PrepareUIContent(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
         {
             var playerData = dto.FinalPlayerDatas[0];
+            bool isNewRecord = dto.FinalGameTime > personalBest && personalBest > 0;
 
+            SetStepEnabledInAllSequencers("ShowNewRecord", isNewRecord);
+
+            // データをUIに設定
             _timeText.text = $"TIME: {FormatTime(dto.FinalGameTime)}";
-            _bestTimeText.text = $"BEST: {FormatTime(personalBest)}";
+            _bestTimeText.text = $"BEST: {FormatTime(isNewRecord ? dto.FinalGameTime : personalBest)}";
 
             if (playerRank > 0 && totalPlayers > 0)
             {
@@ -72,53 +84,6 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             statsBuilder.AppendLine($"Blocks: {playerData.BlocksDestroyed}");
             statsBuilder.AppendLine($"Miss: {playerData.TypingMisses} ({missRate:F1}%)");
             _statsText.text = statsBuilder.ToString();
-        }
-
-        public IEnumerator PlaySequence()
-        {
-            _mainContentCanvasGroup.alpha = 0;
-            _detailsCanvasGroup.alpha = 0;
-            _actionsCanvasGroup.alpha = 0;
-            if(_skipButton) _skipButton.gameObject.SetActive(true);
-
-            // Step 1: Main Results
-            yield return StartCoroutine(FadeCanvasGroup(_mainContentCanvasGroup, true, 0.5f));
-            yield return StartCoroutine(WaitOrSkip(2.0f));
-
-            // Step 2: Detailed Info
-            yield return StartCoroutine(FadeCanvasGroup(_detailsCanvasGroup, true, 0.5f));
-            yield return StartCoroutine(WaitOrSkip(2.0f));
-
-            // Step 3: Action Buttons
-            if(_skipButton) _skipButton.gameObject.SetActive(false);
-            yield return StartCoroutine(FadeCanvasGroup(_actionsCanvasGroup, true, 0.5f));
-        }
-
-        private IEnumerator WaitOrSkip(float duration)
-        {
-            _skipWait = false;
-            float timer = 0;
-            while (timer < duration && !_skipWait)
-            {
-                timer += Time.deltaTime;
-                yield return null;
-            }
-            _skipWait = false;
-        }
-
-        private IEnumerator FadeCanvasGroup(CanvasGroup cg, bool fadeIn, float duration)
-        {
-            if (cg == null) yield break;
-            float startAlpha = fadeIn ? 0f : 1f;
-            float endAlpha = fadeIn ? 1f : 0f;
-            float timer = 0f;
-            while (timer < duration)
-            {
-                timer += Time.deltaTime;
-                cg.alpha = Mathf.Lerp(startAlpha, endAlpha, timer / duration);
-                yield return null;
-            }
-            cg.alpha = endAlpha;
         }
 
         private string FormatTime(float timeInSeconds)

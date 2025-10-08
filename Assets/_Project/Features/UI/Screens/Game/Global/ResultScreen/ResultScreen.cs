@@ -7,21 +7,23 @@ using TypingSurvivor.Features.UI.Screens.Result;
 namespace TypingSurvivor.Features.UI.Screens
 {
     /// <summary>
-    /// Acts as a factory and conductor for the result screen.
+    /// Acts as a factory for the result screen.
     /// It determines which result view prefab to instantiate based on the game outcome.
     /// </summary>
     public class ResultScreen : ScreenBase
     {
-        [Header("Result View Prefabs")]
-        [SerializeField] private SinglePlayerNormalResultView _spNormalPrefab;
-        [SerializeField] private SinglePlayerNewRecordResultView _spNewRecordPrefab;
-        [SerializeField] private RankedMatchResultView _rankedPrefab;
-        [SerializeField] private FreeMatchResultView _freePrefab;
+        [Header("Single Player Prefabs")]
+        [SerializeField] private SinglePlayerResultView _spNormalPrefab;
+        [SerializeField] private SinglePlayerResultView _spNewRecordPrefab;
+
+        [Header("Multiplayer Prefabs")]
+        [SerializeField] private MultiplayerResultView _mpFreePrefab;
+        [SerializeField] private MultiplayerResultView _mpRankedPrefab;
 
         public event Action OnRematchClicked;
         public event Action OnMainMenuClicked;
 
-        private ScreenBase _currentViewInstance;
+        private Component _currentViewInstance;
         private IResultView _currentResultView;
 
         private void OnDestroy()
@@ -37,7 +39,7 @@ namespace TypingSurvivor.Features.UI.Screens
         {
             base.Show(); // Show the root container
 
-            // Clean up previous instance and its event subscriptions
+            // Clean up previous instance
             if (_currentViewInstance != null)
             {
                 Destroy(_currentViewInstance.gameObject);
@@ -49,15 +51,12 @@ namespace TypingSurvivor.Features.UI.Screens
             }
 
             _currentResultView = InstantiateView(resultDto, personalBest);
-            _currentViewInstance = _currentResultView as ScreenBase;
+            _currentViewInstance = _currentResultView as Component;
 
-            if (_currentViewInstance != null)
+            if (_currentResultView != null)
             {
-                // Bubble up events from the new instance
                 _currentResultView.OnRematchClicked += OnRematchClicked;
                 _currentResultView.OnMainMenuClicked += OnMainMenuClicked;
-
-                // Tell the view to show itself and start its animation sequence.
                 _currentResultView.ShowAndPlaySequence(resultDto, personalBest, playerRank, totalPlayers);
             }
         }
@@ -69,26 +68,12 @@ namespace TypingSurvivor.Features.UI.Screens
             if (isSinglePlayer)
             {
                 bool isNewRecord = dto.FinalGameTime > personalBest && personalBest > 0;
-                if (isNewRecord)
-                {
-                    return Instantiate(_spNewRecordPrefab, transform);
-                }
-                else
-                {
-                    return Instantiate(_spNormalPrefab, transform);
-                }
+                return isNewRecord ? Instantiate(_spNewRecordPrefab, transform) : Instantiate(_spNormalPrefab, transform);
             }
             else // Multiplayer
             {
                 bool isRanked = dto.NewWinnerRating != 0 || dto.NewLoserRating != 0;
-                if (isRanked)
-                {
-                    return Instantiate(_rankedPrefab, transform);
-                }
-                else
-                {
-                    return Instantiate(_freePrefab, transform);
-                }
+                return isRanked ? Instantiate(_mpRankedPrefab, transform) : Instantiate(_mpFreePrefab, transform);
             }
         }
     }

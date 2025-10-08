@@ -60,7 +60,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.023977757, g: 1, b: 0, a: 1}
+  m_Color: {r: 0.023977757, g: 1, b: 0, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -91,10 +91,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Screens.ResultScreen
   _fadeDuration: 0.2
   _canvasGroup: {fileID: 4127701997016584797}
-  _spNormalPrefab: {fileID: 4637074907051121673, guid: 0ec274b3a2722f441afb9cacfb8d13a3, type: 3}
-  _spNewRecordPrefab: {fileID: 6102665393390128455, guid: 22ea60012a1008341ba7f9d49f2f3582, type: 3}
-  _rankedPrefab: {fileID: 4522927250500105066, guid: d3eb5b60177070a428ebe4f372cb8dc4, type: 3}
-  _freePrefab: {fileID: 5685889265032055707, guid: e84f78b8eb9f2134bb0ce400f6713cc6, type: 3}
+  _spNormalPrefab: {fileID: 4072156964690879913, guid: 0ec274b3a2722f441afb9cacfb8d13a3, type: 3}
+  _spNewRecordPrefab: {fileID: 4072156964690879913, guid: bd64d2cc1a98748bcbc9bc450c83c7ea, type: 3}
+  _mpFreePrefab: {fileID: 2442738703846644862, guid: e84f78b8eb9f2134bb0ce400f6713cc6, type: 3}
+  _mpRankedPrefab: {fileID: 2442738703846644862, guid: a06aa988809e04d669105bd159e50a0c, type: 3}
 --- !u!225 &4127701997016584797
 CanvasGroup:
   m_ObjectHideFlags: 0
