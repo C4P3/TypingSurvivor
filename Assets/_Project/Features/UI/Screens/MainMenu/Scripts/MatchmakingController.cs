@@ -74,7 +74,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             }
             _uiManager.PushPanel(_privateLobbyWaitPanel);
             _privateLobbyWaitPanel.ShowWithRoomCode(roomCode);
-            await _matchmakingService.CreateTicketAsync("PrivateQueue", roomCode); // Using a placeholder queue name
+            await _matchmakingService.CreateTicketAsync("free-match", roomCode); // Using a placeholder queue name
         }
 
         public void Cancel()
