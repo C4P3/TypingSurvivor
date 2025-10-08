@@ -4,6 +4,7 @@
 タスクは優先度が高いと思われる順に並んでいます。
 
 ## 優先度: 高
+- [ ] 爆弾やロケットなどの一部のアイテムのエフェクトが消えないバグの修正
 - [x] **リファクタリングしたリザルト画面のPrefabをUnity Editorで設定**
   - 補足: 新しい`AnimationSequencer`コンポーネントにアニメーションシーケンスを設定する。
 - [x] **タイピング中断時にUIが消えないバグを修正**
@@ -23,6 +24,10 @@
 
 ## 優先度: 中
 
+- [ ] **`MatchmakingService`の改善**:
+  - マッチングのタイムアウトとキャンセル処理を、より堅牢な`CancellationToken`を使用する方式にリファクタリングすることを検討します。
+- [ ] **`MatchmakingController`の改善**:
+  - 遅延処理を`StartCoroutine`から`await Task.Delay()`に置き換え、`async/await`のスタイルで一貫性を保つことを検討します。
 - [ ] **`GameUIManager.cs`の責務分割**:
   - 現在`GameUIManager`が担当している低酸素エフェクトのロジックを、専用の`LowOxygenEffectController`クラスに分離することを検討します。
 - [ ] **`PlayerFacade.cs`の責務分割**:

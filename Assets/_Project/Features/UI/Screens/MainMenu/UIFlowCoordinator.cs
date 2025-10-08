@@ -4,9 +4,11 @@ using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.Core.Leaderboard;
+using TypingSurvivor.Features.Core.Matchmaking;
 using TypingSurvivor.Features.UI.Common;
 using TypingSurvivor.Features.UI.Screens;
 using Unity.Netcode;
+using System.Collections;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -32,9 +34,6 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [Header("UI System")]
         [SerializeField] private UIManager _uiManager;
 
-        [Header("Controllers")]
-        [SerializeField] private MatchmakingController _matchmakingController;
-
         [Header("Screens & Panels")]
         [SerializeField] private TitleScreenController _titleScreen;
         [SerializeField] private ProfileCreationController _profileCreationScreen;
@@ -46,10 +45,21 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private RankingScreen _rankingScreen;
         [SerializeField] private ShopScreen _shopScreen;
         [SerializeField] private SettingsScreen _settingsScreen;
+
+        [Header("Matchmaking Panels")]
+        [SerializeField] private MatchmakingWaitPanel _rankedWaitPanel;
+        [SerializeField] private MatchmakingWaitPanel _freeWaitPanel;
+        [SerializeField] private MatchmakingWaitPanel _roomWaitPanel;
         
+        // --- State ---
         private PlayerUIState _currentState;
         private bool _isInitialized = false;
         private bool _hasProfile = false;
+
+        // --- Matchmaking State ---
+        private MatchmakingService _matchmakingService;
+        private GameModeType _currentGameMode;
+        private MatchmakingWaitPanel _activeWaitPanel;
 
         private void Start()
         {
@@ -69,6 +79,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             {
                 AppManager.Instance.OnCoreServicesInitialized -= InitializeFlow;
             }
+            UnsubscribeFromMatchmakingEvents();
         }
 
         private void InitializeFlow()
@@ -88,9 +99,35 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _rankingScreen.Initialize(this);
             _howToPlayScreen.Initialize(this);
             
-            _matchmakingController.Initialize(AppManager.Instance.MatchmakingService, _uiManager, AppManager.Instance);
+            // Initialize matchmaking
+            _matchmakingService = AppManager.Instance.MatchmakingService;
+            SubscribeToMatchmakingEvents();
 
             _ = CheckAuthenticationAndProceed();
+        }
+
+        private void SubscribeToMatchmakingEvents()
+        {
+            if (_matchmakingService == null) return;
+            _matchmakingService.OnMatchSuccess += HandleMatchSuccess;
+            _matchmakingService.OnMatchFailure += HandleMatchFailure;
+            _matchmakingService.OnStatusUpdated += HandleStatusUpdate;
+
+            if (_rankedWaitPanel != null) _rankedWaitPanel.OnCancelClicked += CancelMatchmaking;
+            if (_freeWaitPanel != null) _freeWaitPanel.OnCancelClicked += CancelMatchmaking;
+            if (_roomWaitPanel != null) _roomWaitPanel.OnCancelClicked += CancelMatchmaking;
+        }
+
+        private void UnsubscribeFromMatchmakingEvents()
+        {
+            if (_matchmakingService == null) return;
+            _matchmakingService.OnMatchSuccess -= HandleMatchSuccess;
+            _matchmakingService.OnMatchFailure -= HandleMatchFailure;
+            _matchmakingService.OnStatusUpdated -= HandleStatusUpdate;
+
+            if (_rankedWaitPanel != null) _rankedWaitPanel.OnCancelClicked -= CancelMatchmaking;
+            if (_freeWaitPanel != null) _freeWaitPanel.OnCancelClicked -= CancelMatchmaking;
+            if (_roomWaitPanel != null) _roomWaitPanel.OnCancelClicked -= CancelMatchmaking;
         }
 
         private async Task CheckAuthenticationAndProceed()
@@ -215,12 +252,92 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         public async Task StartPublicMatchmaking(string queueName, GameModeType gameMode)
         {
-            await _matchmakingController.StartPublicMatchmaking(queueName, gameMode);
+            _currentGameMode = gameMode;
+            
+            if (gameMode == GameModeType.RankedMatch)
+            {
+                _activeWaitPanel = _rankedWaitPanel;
+            }
+            else
+            {
+                _activeWaitPanel = _freeWaitPanel;
+            }
+
+            if (_activeWaitPanel == null)
+            {
+                Debug.LogError($"Wait panel for {gameMode} is not assigned in UIFlowCoordinator.");
+                return;
+            }
+
+            _activeWaitPanel.PreparePanel(isPrivate: false);
+            _activeWaitPanel.Show();
+            
+            await _matchmakingService.CreateTicketAsync(queueName);
         }
 
         public async Task StartPrivateMatchmaking(string roomCode)
         {
-            await _matchmakingController.StartPrivateMatchmaking(roomCode);
+            _currentGameMode = GameModeType.FreeMatch;
+            _activeWaitPanel = _roomWaitPanel;
+
+            if (_activeWaitPanel == null)
+            {
+                Debug.LogError("Room wait panel is not assigned in UIFlowCoordinator.");
+                return;
+            }
+            if (string.IsNullOrEmpty(roomCode))
+            {
+                Debug.LogError("Room code cannot be empty for a private match.");
+                return;
+            }
+
+            _activeWaitPanel.PreparePanel(isPrivate: true, roomCode: roomCode);
+            _activeWaitPanel.Show();
+            
+            await _matchmakingService.CreateTicketAsync("free-match", roomCode);
+        }
+
+        public void CancelMatchmaking()
+        {
+            _matchmakingService.CancelMatchmaking();
+        }
+
+        private void HandleMatchSuccess(MatchmakingResult result)
+        {
+            if (_activeWaitPanel == null) return;
+            _activeWaitPanel.UpdateStatus("Match Found! Connecting...");
+            StartCoroutine(ConnectAfterDelay(result, 1.5f));
+        }
+
+        private IEnumerator ConnectAfterDelay(MatchmakingResult result, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            Debug.Log($"Match found! Connecting to {result.Ip}:{result.Port}");
+            AppManager.Instance.StartClient(result.Ip, (ushort)result.Port, _currentGameMode);
+        }
+
+        private void HandleMatchFailure(string reason)
+        {
+            if (_activeWaitPanel == null) return;
+            _activeWaitPanel.UpdateStatus($"Failed: {reason}");
+            StartCoroutine(ClosePanelAfterDelay(2.5f));
+        }
+
+        private IEnumerator ClosePanelAfterDelay(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (_activeWaitPanel != null)
+            {
+                _activeWaitPanel.Hide();
+            }
+            _activeWaitPanel = null; // Clear active panel
+        }
+
+        private void HandleStatusUpdate(string status)
+        {
+            if (_activeWaitPanel == null) return;
+            _activeWaitPanel.UpdateStatus(status);
+            Debug.Log($"Matchmaking Status: {status}");
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -264,3 +381,4 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 #endif
     }
 }
+
