@@ -76,7 +76,7 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             SetStepEnabledInAllSequencers("ShowNewRecord", isNewRecord);
 
             // タイムやランクなど、この画面固有のUIを更新
-            if(_timeText) _timeText.text = $"TIME: {FormatTime(dto.FinalGameTime)}";
+            if(_timeText) _timeText.text = $"{FormatTime(dto.FinalGameTime)}";
             if(_bestTimeText) _bestTimeText.text = $"BEST: {FormatTime(isNewRecord ? dto.FinalGameTime : personalBest)}";
 
             if (_rankText != null)
