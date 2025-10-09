@@ -3,6 +3,7 @@ using System;
 using TypingSurvivor.Features.UI.Common;
 using static TypingSurvivor.Features.Game.Gameplay.GameManager;
 using TypingSurvivor.Features.UI.Screens.Result;
+using TypingSurvivor.Features.Core.App;
 
 namespace TypingSurvivor.Features.UI.Screens
 {
@@ -64,7 +65,7 @@ namespace TypingSurvivor.Features.UI.Screens
 
         private IResultView InstantiateView(GameResultDto dto, float personalBest)
         {
-            bool isSinglePlayer = dto.FinalPlayerDatas.Length == 1;
+            bool isSinglePlayer = Core.App.AppManager.Instance.GameMode == GameModeType.SinglePlayer;
 
             if (isSinglePlayer)
             {

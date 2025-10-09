@@ -26,7 +26,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3229576579935791202}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.40809, y: 1.02198, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -59,7 +59,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.GameUIManager
   _uiManager: {fileID: 898466311756851917}
-  _inGameHUDPrefab: {fileID: 205496677365765910, guid: 145d318c70e09cc468653dfe0ea7aec7, type: 3}
+  _inGameHUDPrefab: {fileID: 5441486668270393294, guid: 145d318c70e09cc468653dfe0ea7aec7, type: 3}
   _resultScreen: {fileID: 377261692106906697}
   _countdownScreen: {fileID: 3843892149087172766}
   _inGameGlobalView: {fileID: 7209821596057310372}
