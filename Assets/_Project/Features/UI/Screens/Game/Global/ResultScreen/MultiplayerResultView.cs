@@ -140,14 +140,18 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             if (isRanked)
             {
                 int player1NewRating = player1Data.ClientId == dto.WinnerClientId ? dto.NewWinnerRating : dto.NewLoserRating;
+                int player1OldRating = player1Data.ClientId == dto.WinnerClientId ? dto.OldWinnerRating : dto.OldLoserRating;
+
                 int player2NewRating = player2Data.ClientId == dto.WinnerClientId ? dto.NewWinnerRating : dto.NewLoserRating;
-                if(_player1Card) _player1Card.Populate(player1Data, true, player1NewRating);
-                if(_player2Card) _player2Card.Populate(player2Data, true, player2NewRating);
+                int player2OldRating = player2Data.ClientId == dto.WinnerClientId ? dto.OldWinnerRating : dto.OldLoserRating;
+
+                if(_player1Card) _player1Card.Populate(player1Data, true, player1NewRating, player1OldRating);
+                if(_player2Card) _player2Card.Populate(player2Data, true, player2NewRating, player2OldRating);
             }
             else
             {
-                if(_player1Card) _player1Card.Populate(player1Data, false, 0);
-                if(_player2Card) _player2Card.Populate(player2Data, false, 0);
+                if(_player1Card) _player1Card.Populate(player1Data, false, 0, 0);
+                if(_player2Card) _player2Card.Populate(player2Data, false, 0, 0);
             }
         }
     }

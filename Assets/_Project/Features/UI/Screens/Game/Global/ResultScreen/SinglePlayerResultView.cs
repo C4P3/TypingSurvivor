@@ -96,7 +96,7 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             if (_playerCard != null)
             {
                 // シングルプレイなので、isRankedはfalse, newRatingは0
-                _playerCard.Populate(playerData, false, 0);
+                _playerCard.Populate(playerData, false, 0, 0);
             }
         }
 

@@ -41,7 +41,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private const float LowOxygenThreshold = 0.3f; // 30%
         private readonly HashSet<ulong> _playersInLowOxygen = new();
         public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
-        public event System.Func<GameResult, System.Threading.Tasks.Task<(int, int)>> OnGameFinished;
+        public event System.Func<GameResult, System.Threading.Tasks.Task<(int, int, int, int)>> OnGameFinished;
         public event Action<GameResultDto> OnResultReceived_Client;
         public event Action OnOpponentDisconnectedInGame_Client;
         public event Action OnOpponentDisconnectedResult_Client;
@@ -56,7 +56,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
             public ulong WinnerClientId;
             public float FinalGameTime;
             public PlayerData[] FinalPlayerDatas;
+            public int OldWinnerRating;
             public int NewWinnerRating;
+            public int OldLoserRating;
             public int NewLoserRating;
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -80,7 +82,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     FinalPlayerDatas[i].NetworkSerialize(serializer);
                 }
 
+                serializer.SerializeValue(ref OldWinnerRating);
                 serializer.SerializeValue(ref NewWinnerRating);
+                serializer.SerializeValue(ref OldLoserRating);
                 serializer.SerializeValue(ref NewLoserRating);
             }
         }
@@ -446,13 +450,14 @@ namespace TypingSurvivor.Features.Game.Gameplay
             PlayJingleThenMusicClientRpc(result.WinnerClientId);
 
             // --- レート計算　---
-            int newWinnerRating = 0;
-            int newLoserRating = 0;
+            int oldWinnerRating = 0, newWinnerRating = 0, oldLoserRating = 0, newLoserRating = 0;
             if (OnGameFinished != null)
             {
                 var ratings = await OnGameFinished.Invoke(result);
-                newWinnerRating = ratings.Item1;
-                newLoserRating = ratings.Item2;
+                oldWinnerRating = ratings.Item1;
+                newWinnerRating = ratings.Item2;
+                oldLoserRating = ratings.Item3;
+                newLoserRating = ratings.Item4;
             }
             
             // 全クライエントに結果通知をブロードキャスト
@@ -462,7 +467,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 WinnerClientId = result.WinnerClientId,
                 FinalGameTime = _gameState.GameTimer.Value,
                 FinalPlayerDatas = result.FinalPlayerDatas.ToArray(),
+                OldWinnerRating = oldWinnerRating,
                 NewWinnerRating = newWinnerRating,
+                OldLoserRating = oldLoserRating,
                 NewLoserRating = newLoserRating
             };
             SendResultsToClientsClientRpc(resultDto);

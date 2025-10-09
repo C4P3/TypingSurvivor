@@ -22,12 +22,12 @@ namespace TypingSurvivor.Features.Game.Rating
             _gameManager = gameManager;
         }
 
-        public async Task<(int, int)> HandleGameFinished(GameResult result)
+        public async Task<(int, int, int, int)> HandleGameFinished(GameResult result)
         {
             if (result.IsDraw)
             {
                 Debug.Log("[RatingService] Game was a draw. No rating change.");
-                return (0, 0); // Return no change
+                return (0, 0, 0, 0); // Return no change
             }
 
             PlayerData? winnerData = null;
@@ -48,7 +48,7 @@ namespace TypingSurvivor.Features.Game.Rating
             if (winnerData == null || loserData == null)
             {
                 Debug.LogError("[RatingService] Could not determine winner and loser. Aborting rating change.");
-                return (0, 0);
+                return (0, 0, 0, 0);
             }
 
             string winnerAuthId = _gameManager.GetPlayerId(winnerData.Value.ClientId);
@@ -57,7 +57,7 @@ namespace TypingSurvivor.Features.Game.Rating
             if (string.IsNullOrEmpty(winnerAuthId) || string.IsNullOrEmpty(loserAuthId))
             {
                 Debug.LogError("[RatingService] Could not find AuthenticationId for a client. Aborting rating change.");
-                return (0, 0);
+                return (0, 0, 0, 0);
             }
 
             // Load ratings directly using the new service method
@@ -81,7 +81,7 @@ namespace TypingSurvivor.Features.Game.Rating
             // Atomically update both players' ratings and leaderboard scores with a single call
             await _cloudSaveService.UpdateRatingsAsync(winnerAuthId, loserAuthId, newWinnerRating, newLoserRating);
 
-            return (newWinnerRating, newLoserRating);
+            return (oldWinnerRating, newWinnerRating, oldLoserRating, newLoserRating);
         }
     }
 }
