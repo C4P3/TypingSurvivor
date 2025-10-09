@@ -219,7 +219,7 @@ MonoBehaviour:
   _winLoseDrawText: {fileID: 8707819902469063364}
   _player1Card: {fileID: 4352184195115046349}
   _player2Card: {fileID: 6838999967729424053}
-  _rematchTimerText: {fileID: 0}
+  _rematchTimerText: {fileID: 6509020140061379362}
   _disconnectMessageText: {fileID: 0}
   _rematchButton: {fileID: 1057926374784416615}
   _mainMenuButton: {fileID: 7235569726688341874}
