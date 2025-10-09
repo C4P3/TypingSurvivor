@@ -1792,6 +1792,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1875908500484397861, guid: f30a687269665a14bb99c7ef736c8cc6, type: 3}
+      propertyPath: _spNewRecordPrefab
+      value: 
+      objectReference: {fileID: 4072156964690879913, guid: 878030131c3197f4da96531fbc89aa06, type: 3}
     - target: {fileID: 2832077617482492171, guid: f30a687269665a14bb99c7ef736c8cc6, type: 3}
       propertyPath: m_Name
       value: GlobalUICanvas
@@ -1878,7 +1882,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8592807899328044572, guid: f30a687269665a14bb99c7ef736c8cc6, type: 3}
       propertyPath: m_AdditionalShaderChannelsFlag
-      value: 1
+      value: 25
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

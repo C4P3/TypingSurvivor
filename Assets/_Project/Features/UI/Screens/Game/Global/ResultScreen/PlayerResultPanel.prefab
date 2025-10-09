@@ -89,7 +89,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89552f6cd4230994fb3dc2eb3d444822, type: 3}
   m_Name: 
   m_EditorClassIdentifier: TypingSurvivor.UI::TypingSurvivor.Features.UI.Screens.ResultScreen
-  _fadeDuration: 0.2
+  _fadeDuration: 0
   _canvasGroup: {fileID: 4127701997016584797}
   _spNormalPrefab: {fileID: 4072156964690879913, guid: 0ec274b3a2722f441afb9cacfb8d13a3, type: 3}
   _spNewRecordPrefab: {fileID: 4072156964690879913, guid: bd64d2cc1a98748bcbc9bc450c83c7ea, type: 3}
