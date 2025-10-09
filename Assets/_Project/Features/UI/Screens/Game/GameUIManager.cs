@@ -69,8 +69,16 @@ namespace TypingSurvivor.Features.UI
             }
 
             SubscribeToEvents();
+            
+            // Handle cameras that might have been assigned before we subscribed.
+            var existingCameras = _cameraManager.GetAssignedCameras();
+            foreach (var pair in existingCameras)
+            {
+                HandleCameraAssigned(pair.Key, pair.Value);
+            }
+
             HandlePhaseChanged(default, _gameStateReader.CurrentPhaseNV.Value);
-            UpdatePlayerHUDs(); // Initial HUD setup
+            UpdatePlayerHUDs(); // Initial HUD cleanup for any players that might have left
         }
 
         private void OnDestroy()
@@ -170,19 +178,47 @@ namespace TypingSurvivor.Features.UI
 
         private void HandleCameraAssigned(ulong clientId, UnityEngine.Camera camera)
         {
-            if (_playerHuds.TryGetValue(clientId, out var hud))
+            if (_playerHuds.ContainsKey(clientId))
             {
-                hud.SetRenderCamera(camera);
+                // HUD already exists, just ensure camera is set.
+                _playerHuds[clientId].SetRenderCamera(camera);
+                return;
+            }
+
+            // HUD doesn't exist, create it now.
+            var newHud = Instantiate(_inGameHUDPrefab, transform);
+            newHud.gameObject.name = $"PlayerHUD_{clientId}";
+            
+            // Initialize and set camera immediately
+            newHud.SetPlayerOwnerId(clientId);
+            newHud.Initialize(_gameStateReader, _playerStatusReader);
+            newHud.SetRenderCamera(camera);
+            _playerHuds[clientId] = newHud;
+
+            // Fetch rating for ranked matches
+            if (Core.App.AppManager.Instance.GameMode == Core.App.GameModeType.RankedMatch)
+            {
+                FetchAndDisplayRating(newHud, clientId);
+            }
+            
+            // Ensure visibility is correct for the current phase
+            if (_gameStateReader != null)
+            {
+                if (_gameStateReader.CurrentPhaseNV.Value == GamePhase.Playing) newHud.Show();
+                else newHud.Hide();
             }
         }
 
         private void OnPlayerListChanged(Unity.Netcode.NetworkListEvent<Unity.Netcode.NetworkObjectReference> changeEvent)
         {
+            // This event is now only for cleaning up HUDs of disconnected players.
             UpdatePlayerHUDs();
         }
 
         private void UpdatePlayerHUDs()
         {
+            if (_gameStateReader == null) return;
+
             var activePlayerIds = new HashSet<ulong>();
             foreach (var playerRef in _gameStateReader.SpawnedPlayers)
             {
@@ -201,30 +237,6 @@ namespace TypingSurvivor.Features.UI
                 }
                 _playerHuds.Remove(id);
             }
-
-            foreach (var playerRef in _gameStateReader.SpawnedPlayers)
-            {
-                if (playerRef.TryGet(out var netObj))
-                {
-                    var clientId = netObj.OwnerClientId;
-                    if (!_playerHuds.ContainsKey(clientId))
-                    {
-                        var newHud = Instantiate(_inGameHUDPrefab, transform);
-                        newHud.gameObject.name = $"PlayerHUD_{clientId}";
-                        
-                        newHud.SetPlayerOwnerId(clientId);
-                        newHud.Initialize(_gameStateReader, _playerStatusReader);
-                        _playerHuds[clientId] = newHud;
-
-                        // Only fetch rating for ranked matches
-                        if (Core.App.AppManager.Instance.GameMode == Core.App.GameModeType.RankedMatch)
-                        {
-                            FetchAndDisplayRating(newHud, clientId);
-                        }
-                    }
-                }
-            }
-            HandlePhaseChanged(default, _gameStateReader.CurrentPhaseNV.Value);
         }
 
         private async void FetchAndDisplayRating(InGameHUDManager hud, ulong clientId)

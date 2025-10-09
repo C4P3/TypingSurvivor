@@ -92,7 +92,7 @@ MonoBehaviour:
   _fadeDuration: 0
   _canvasGroup: {fileID: 4127701997016584797}
   _spNormalPrefab: {fileID: 4072156964690879913, guid: 0ec274b3a2722f441afb9cacfb8d13a3, type: 3}
-  _spNewRecordPrefab: {fileID: 4072156964690879913, guid: bd64d2cc1a98748bcbc9bc450c83c7ea, type: 3}
+  _spNewRecordPrefab: {fileID: 4072156964690879913, guid: 878030131c3197f4da96531fbc89aa06, type: 3}
   _mpFreePrefab: {fileID: 2442738703846644862, guid: e84f78b8eb9f2134bb0ce400f6713cc6, type: 3}
   _mpRankedPrefab: {fileID: 2442738703846644862, guid: a06aa988809e04d669105bd159e50a0c, type: 3}
 --- !u!225 &4127701997016584797

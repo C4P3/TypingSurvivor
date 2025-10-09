@@ -34,6 +34,19 @@ namespace TypingSurvivor.Features.Game.Camera
             return null;
         }
 
+        public Dictionary<ulong, UnityEngine.Camera> GetAssignedCameras()
+        {
+            var assignedCameras = new Dictionary<ulong, UnityEngine.Camera>();
+            foreach (var camFollow in _cameras)
+            {
+                if (camFollow.gameObject.activeInHierarchy && camFollow.TargetFacade != null)
+                {
+                    assignedCameras[camFollow.TargetFacade.OwnerClientId] = camFollow.GetComponent<UnityEngine.Camera>();
+                }
+            }
+            return assignedCameras;
+        }
+
         private void Start()
         {
             if (_gameStateReader != null)
