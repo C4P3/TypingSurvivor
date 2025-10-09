@@ -16,6 +16,9 @@ namespace TypingSurvivor.Features.UI.Screens.Result
         /// <param name="remainingTime">残り時間（秒）。無期限の場合は負の値。</param>
         void UpdateRematchTimer(float remainingTime);
 
+        void UpdateRematchRequesterCount(int count, int total);
+
+
         /// <summary>
         /// 他のプレイヤーが切断したことをビューに通知します。
         /// </summary>

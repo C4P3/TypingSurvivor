@@ -51,7 +51,12 @@ namespace TypingSurvivor.Features.UI.Screens.Result
 
         public void NotifyOpponentDisconnected()
         {
-            // シングルプレイなので、対戦相手は存在しない。何もしない
+            // Not used in single player
+        }
+
+        public void UpdateRematchRequesterCount(int count, int total)
+        {
+            // Not used in single player
         }
 
         private void SetStepEnabledInAllSequencers(string stepName, bool isEnabled)

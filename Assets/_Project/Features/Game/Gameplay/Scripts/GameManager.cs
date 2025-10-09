@@ -43,6 +43,10 @@ namespace TypingSurvivor.Features.Game.Gameplay
         public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
         public event System.Func<GameResult, System.Threading.Tasks.Task<(int, int)>> OnGameFinished;
         public event Action<GameResultDto> OnResultReceived_Client;
+        public event Action OnOpponentDisconnectedInGame_Client;
+        public event Action OnOpponentDisconnectedResult_Client;
+        public event Action OnReturnToMainMenu_Client;
+        public event Action<int, int> OnRematchStatusChanged_Client;
         private Coroutine _shutdownCoroutine;
 
         // DTO to send all relevant result info to clients
@@ -189,11 +193,23 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // --- Re-evaluate Game State based on the current phase ---
             var currentPhase = _gameState.CurrentPhase.Value;
 
-            // Case 1: Did the game end because a player disconnected during gameplay?
-            if (currentPhase == GamePhase.Playing && _gameModeStrategy.IsGameOver(_gameState))
+            if (currentPhase == GamePhase.Playing)
             {
-                _gameState.CurrentPhase.Value = GamePhase.Finished;
-                return;
+                // Notify remaining players of the disconnection
+                ShowInGameOpponentDisconnectedClientRpc();
+
+                // Check if the game should end now
+                if (_gameModeStrategy.IsGameOver(_gameState))
+                {
+                    _gameState.CurrentPhase.Value = GamePhase.Finished;
+                }
+                return; // Exit after handling
+            }
+
+            if (currentPhase == GamePhase.Finished)
+            {
+                // Notify remaining players on the result screen
+                NotifyResultScreenOpponentDisconnectedClientRpc();
             }
 
             // Case 2: Did the prerequisites for starting a game break?
@@ -211,6 +227,30 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private void SendResultsToClientsClientRpc(GameResultDto resultDto)
         {
             OnResultReceived_Client?.Invoke(resultDto);
+        }
+
+        [ClientRpc]
+        private void ShowInGameOpponentDisconnectedClientRpc()
+        {
+            OnOpponentDisconnectedInGame_Client?.Invoke();
+        }
+
+        [ClientRpc]
+        private void NotifyResultScreenOpponentDisconnectedClientRpc()
+        {
+            OnOpponentDisconnectedResult_Client?.Invoke();
+        }
+
+        [ClientRpc]
+        private void ReturnToMainMenuClientRpc()
+        {
+            OnReturnToMainMenu_Client?.Invoke();
+        }
+
+        [ClientRpc]
+        private void UpdateRematchStatusClientRpc(int requesterCount, int totalPlayers)
+        {
+            OnRematchStatusChanged_Client?.Invoke(requesterCount, totalPlayers);
         }
 
         private IEnumerator ShutdownServerCoroutine()
@@ -520,6 +560,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 // 再戦不成立、サーバーシャットダウンへ
                 Debug.Log("Not enough players for a rematch, or timeout reached. Server will shut down.");
+                ReturnToMainMenuClientRpc();
                 if (_shutdownCoroutine == null)
                 {
                     _shutdownCoroutine = StartCoroutine(ShutdownServerCoroutine());
@@ -723,6 +764,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
             if (_playerInstances.ContainsKey(clientId) && !_rematchRequesters.Contains(clientId))
             {
                 _rematchRequesters.Add(clientId);
+                _gameState.RematchRequesterCount.Value = _rematchRequesters.Count;
+                UpdateRematchStatusClientRpc(_rematchRequesters.Count, _playerInstances.Count);
                 Debug.Log($"Player {clientId} requested a rematch. {_rematchRequesters.Count}/{_playerInstances.Count}");
             }
         }

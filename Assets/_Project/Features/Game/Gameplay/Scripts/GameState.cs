@@ -13,6 +13,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         public NetworkVariable<GamePhase> CurrentPhase { get; } = new(GamePhase.WaitingForPlayers);
         public NetworkVariable<float> GameTimer { get; } = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<float> RematchTimerRemaining { get; } = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<int> RematchRequesterCount { get; } = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<float> OxygenLevel { get; } = new(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         public NetworkList<PlayerData> PlayerDatas { get; } = new();
@@ -21,6 +22,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         // --- IGameStateReader Implementation ---
         public NetworkVariable<GamePhase> CurrentPhaseNV => CurrentPhase;
         public NetworkVariable<float> RematchTimerRemainingNV => RematchTimerRemaining;
+        public NetworkVariable<int> RematchRequesterCountNV => RematchRequesterCount;
         public NetworkList<NetworkObjectReference> SpawnedPlayers => _spawnedPlayers;
         public float CurrentOxygen => OxygenLevel.Value; // Kept for single player logic for now
         public event Action<ulong, float> OnOxygenChanged;

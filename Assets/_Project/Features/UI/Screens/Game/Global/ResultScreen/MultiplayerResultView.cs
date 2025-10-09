@@ -20,10 +20,8 @@ namespace TypingSurvivor.Features.UI.Screens.Result
         [SerializeField] private PlayerResultCard _player1Card;
         [Tooltip("Player 2 (ClientIdが大きい方) のカード")]
         [SerializeField] private PlayerResultCard _player2Card;
-        [Tooltip("再戦タイマー")]
-        [SerializeField] private TextMeshProUGUI _rematchTimerText;
-        [Tooltip("切断メッセージ")]
-        [SerializeField] private TextMeshProUGUI _disconnectMessageText;
+        [Tooltip("共有テキストエリア (タイマー、希望者数、切断通知)")]
+        [SerializeField] private TextMeshProUGUI _sharedStatusText;
 
         [Header("Buttons")]
         [SerializeField] private InteractiveButton _rematchButton;
@@ -31,11 +29,18 @@ namespace TypingSurvivor.Features.UI.Screens.Result
 
         private AnimationSequencer[] _allSequencersInHierarchy;
 
+        // State for priority display
+        private bool _opponentDisconnected = false;
+        private float _showRematchRequesterUntil = -1f;
+        private int _requesterCount = 0;
+        private int _totalPlayers = 0;
+
         private void Awake()
         {
             _allSequencersInHierarchy = GetComponentsInChildren<AnimationSequencer>(true);
             _rematchButton?.onClick.AddListener(() => OnRematchClicked?.Invoke());
             _mainMenuButton?.onClick.AddListener(() => OnMainMenuClicked?.Invoke());
+            if (_sharedStatusText) _sharedStatusText.text = ""; // Clear text initially
         }
 
         public void ShowAndPlaySequence(GameResultDto dto, float personalBest, int playerRank, int totalPlayers)
@@ -51,33 +56,48 @@ namespace TypingSurvivor.Features.UI.Screens.Result
 
         public void UpdateRematchTimer(float remainingTime)
         {
-            if (_rematchTimerText == null) return;
+            if (_sharedStatusText == null) return;
 
-            if (remainingTime > 0)
+            // 1. Highest priority: Opponent disconnected
+            if (_opponentDisconnected)
             {
-                // 残り時間を表示
-                _rematchTimerText.text = $"再戦待機中... あと {Mathf.CeilToInt(remainingTime)} 秒";
+                return; // Message is already set, do nothing
             }
+
+            // 2. Medium priority: Show rematch requester count for 10 seconds
+            if (Time.time < _showRematchRequesterUntil)
+            {
+                _sharedStatusText.text = $"再戦希望者 {_requesterCount} / {_totalPlayers}";
+            }
+            // 3. Lowest priority: Show auto-exit timer
             else
             {
-                // 時間切れ
-                _rematchTimerText.text = "再戦時間が終了しました";
-                _rematchButton.interactable = false; // 再戦ボタンを無効化
+                if (remainingTime > 0)
+                {
+                    _sharedStatusText.text = $"自動退出まで残り {Mathf.CeilToInt(remainingTime)} 秒";
+                }
+                else
+                {
+                    _sharedStatusText.text = ""; // Timer expired, will be kicked soon
+                }
             }
+        }
+
+        public void UpdateRematchRequesterCount(int count, int total)
+        {
+            _requesterCount = count;
+            _totalPlayers = total;
+            _showRematchRequesterUntil = Time.time + 10f;
         }
 
         public void NotifyOpponentDisconnected()
         {
-            if (_disconnectMessageText)
+            _opponentDisconnected = true;
+            if (_sharedStatusText)
             {
-                _disconnectMessageText.text = "対戦相手が退出しました";
-                _disconnectMessageText.gameObject.SetActive(true);
+                _sharedStatusText.text = "対戦相手が退出しました";
             }
-            if (_rematchTimerText)
-            {
-                 _rematchTimerText.gameObject.SetActive(false); // タイマーを非表示に
-            }
-            _rematchButton.interactable = false; // 再戦ボタンを無効化
+            _rematchButton.interactable = false; // Disable rematch button
         }
 
         private void SetStepEnabledInAllSequencers(string stepName, bool isEnabled)
@@ -90,11 +110,13 @@ namespace TypingSurvivor.Features.UI.Screens.Result
 
         private void PrepareUIContent(GameResultDto dto)
         {
+            // Reset state for new results
+            _opponentDisconnected = false;
+            _showRematchRequesterUntil = -1f;
+            _rematchButton.interactable = true;
+
             // ランクマッチかどうかを判定
             bool isRanked = dto.NewWinnerRating != 0 || dto.NewLoserRating != 0;
-
-            // 例えば、ランク戦の時だけ特別な演出ステップを有効にする場合
-            // SetStepEnabledInAllSequencers("ShowRankAnimation", isRanked);
 
             // 勝敗テキストを設定
             bool localPlayerWon = dto.WinnerClientId == Unity.Netcode.NetworkManager.Singleton.LocalClientId;

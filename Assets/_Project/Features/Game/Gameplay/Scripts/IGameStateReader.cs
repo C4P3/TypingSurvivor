@@ -9,6 +9,7 @@ public interface IGameStateReader
     NetworkVariable<GamePhase> CurrentPhaseNV { get; }
     NetworkVariable<float> GameTimer { get; }
     NetworkVariable<float> RematchTimerRemainingNV { get; }
+    NetworkVariable<int> RematchRequesterCountNV { get; }
     NetworkList<PlayerData> PlayerDatas { get; }
     NetworkList<NetworkObjectReference> SpawnedPlayers { get; }
     float CurrentOxygen { get; } // This might become obsolete or represent local player's oxygen

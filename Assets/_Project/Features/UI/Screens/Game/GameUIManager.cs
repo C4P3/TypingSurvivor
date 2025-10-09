@@ -14,6 +14,7 @@ using Unity.Netcode;
 using UnityEngine;
 using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.Core.Leaderboard;
+using TypingSurvivor.Features.UI.Common;
 
 namespace TypingSurvivor.Features.UI
 {
@@ -28,6 +29,7 @@ namespace TypingSurvivor.Features.UI
         [SerializeField] private ResultScreen _resultScreen;
         [SerializeField] private CountdownScreen _countdownScreen;
         [SerializeField] private InGameGlobalView _inGameGlobalView; // Changed
+        [SerializeField] private NotificationPanel _notificationPanelPrefab;
 
         [Header("Low Oxygen Effect")]
         [SerializeField] private float _lowOxygenPitch = 1.2f;
@@ -44,7 +46,6 @@ namespace TypingSurvivor.Features.UI
         private NetworkList<NetworkObjectReference>.OnListChangedDelegate _onPlayerListChangedHandler;
         private readonly Dictionary<ulong, Coroutine> _blinkingCoroutines = new();
         private readonly Dictionary<ulong, LowHealthEffect> _activeLowHealthEffects = new();
-        private bool _showDisconnectGUI = false;
 
         protected virtual void Awake()
         {
@@ -89,6 +90,10 @@ namespace TypingSurvivor.Features.UI
             _resultScreen.OnMainMenuClicked += HandleMainMenuClicked;
             _gameManager.OnLowOxygenStateChanged_Client += HandleLowOxygenStateChange;
             _gameManager.OnResultReceived_Client += HandleResultReceived;
+            _gameManager.OnOpponentDisconnectedInGame_Client += HandleOpponentDisconnectedInGame;
+            _gameManager.OnOpponentDisconnectedResult_Client += HandleOpponentDisconnectedResult;
+            _gameManager.OnReturnToMainMenu_Client += HandleReturnToMainMenu;
+            _gameManager.OnRematchStatusChanged_Client += HandleRematchStatusChanged;
             _cameraManager.OnCameraAssigned += HandleCameraAssigned;
 
             if (_typingService != null)
@@ -123,6 +128,10 @@ namespace TypingSurvivor.Features.UI
             {
                 _gameManager.OnLowOxygenStateChanged_Client -= HandleLowOxygenStateChange;
                 _gameManager.OnResultReceived_Client -= HandleResultReceived;
+                _gameManager.OnOpponentDisconnectedInGame_Client -= HandleOpponentDisconnectedInGame;
+                _gameManager.OnOpponentDisconnectedResult_Client -= HandleOpponentDisconnectedResult;
+                _gameManager.OnReturnToMainMenu_Client -= HandleReturnToMainMenu;
+                _gameManager.OnRematchStatusChanged_Client -= HandleRematchStatusChanged;
             }
             if (_cameraManager != null) _cameraManager.OnCameraAssigned -= HandleCameraAssigned;
             
@@ -135,6 +144,28 @@ namespace TypingSurvivor.Features.UI
             }
 
             if (NetworkManager.Singleton != null) NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnect;
+        }
+
+        private void HandleOpponentDisconnectedInGame()
+        {
+            if (_notificationPanelPrefab == null) return;
+            var popup = Instantiate(_notificationPanelPrefab, transform);
+            popup.Show("対戦相手が切断しました。", 3f);
+        }
+
+        private void HandleOpponentDisconnectedResult()
+        {
+            _resultScreen.CurrentView?.NotifyOpponentDisconnected();
+        }
+
+        private void HandleReturnToMainMenu()
+        {
+            ReturnToMainMenu();
+        }
+
+        private void HandleRematchStatusChanged(int count, int total)
+        {
+            _resultScreen.CurrentView?.UpdateRematchRequesterCount(count, total);
         }
 
         private void HandleCameraAssigned(ulong clientId, UnityEngine.Camera camera)
@@ -365,7 +396,11 @@ namespace TypingSurvivor.Features.UI
 
         private void HandleClientDisconnect(ulong clientId)
         {
-            if (clientId == NetworkManager.Singleton.LocalClientId) _showDisconnectGUI = true;
+            if (clientId != NetworkManager.Singleton.LocalClientId) return;
+
+            if (_notificationPanelPrefab == null) return;
+            var popup = Instantiate(_notificationPanelPrefab, transform);
+            popup.Show("サーバーとの接続が切断されました。", null, "メインメニューへ戻る", ReturnToMainMenu);
         }
 
         #endregion
@@ -430,23 +465,6 @@ namespace TypingSurvivor.Features.UI
         {
             NetworkManager.Singleton.Shutdown();
             UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
-        }
-
-        private void OnGUI()
-        {
-            if (!_showDisconnectGUI) return;
-
-            float boxWidth = 300, boxHeight = 120;
-            float screenWidth = Screen.width, screenHeight = Screen.height;
-            var boxRect = new Rect((screenWidth - boxWidth) / 2, (screenHeight - boxHeight) / 2, boxWidth, boxHeight);
-            GUI.Box(boxRect, "サーバーとの接続が切断されました。");
-            float buttonWidth = 200, buttonHeight = 40;
-            var buttonRect = new Rect(boxRect.x + (boxWidth - buttonWidth) / 2, boxRect.y + 60, buttonWidth, buttonHeight);
-            if (GUI.Button(buttonRect, "メインメニューへ戻る"))
-            {
-                _showDisconnectGUI = false;
-                ReturnToMainMenu();
-            }
         }
 
         #endregion
