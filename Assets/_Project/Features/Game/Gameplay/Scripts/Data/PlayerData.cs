@@ -20,6 +20,7 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
         public float TotalTimeTyping;
         public int TotalCharsTyped;
         public int TotalKeyPresses;
+        public bool IsDisconnected; // To track if the player has disconnected
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -33,6 +34,7 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
             serializer.SerializeValue(ref TotalTimeTyping);
             serializer.SerializeValue(ref TotalCharsTyped);
             serializer.SerializeValue(ref TotalKeyPresses);
+            serializer.SerializeValue(ref IsDisconnected);
         }
 
         public bool Equals(PlayerData other)
@@ -46,7 +48,8 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
                 && TypingMisses == other.TypingMisses
                 && TotalTimeTyping.Equals(other.TotalTimeTyping)
                 && TotalCharsTyped == other.TotalCharsTyped
-                && TotalKeyPresses == other.TotalKeyPresses;
+                && TotalKeyPresses == other.TotalKeyPresses
+                && IsDisconnected == other.IsDisconnected;
         }
     }
 }

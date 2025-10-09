@@ -60,6 +60,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             public int NewWinnerRating;
             public int OldLoserRating;
             public int NewLoserRating;
+            public bool OpponentDisconnected; // Added to indicate disconnection
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
             {
@@ -86,6 +87,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 serializer.SerializeValue(ref NewWinnerRating);
                 serializer.SerializeValue(ref OldLoserRating);
                 serializer.SerializeValue(ref NewLoserRating);
+                serializer.SerializeValue(ref OpponentDisconnected);
             }
         }
 
@@ -156,75 +158,35 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             if (!IsServer) return;
 
-            // Clean up low oxygen tracking
-            _playersInLowOxygen.Remove(clientId);
-            _clientIdToPlayerIdMap.Remove(clientId);
-
-            // Netcode automatically despawns the player object. We just need to clean up our game state.
-            if (_playerInstances.TryGetValue(clientId, out var playerFacade))
-            {
-                // Remove from the synced list of spawned players
-                for (int i = 0; i < _gameState.SpawnedPlayers.Count; i++)
-                {
-                    if (_gameState.SpawnedPlayers[i].TryGet(out var networkObject) && networkObject == playerFacade.NetworkObject)
-                    {
-                        _gameState.SpawnedPlayers.RemoveAt(i);
-                        break;
-                    }
-                }
-            }
-
-            // Clean up server-side tracking
-            _playerInstances.Remove(clientId);
-
-            // Clean up GameState data
-            for (int i = _gameState.PlayerDatas.Count - 1; i >= 0; i--)
+            // Find the player in our list and mark them as disconnected.
+            int disconnectedPlayerIndex = -1;
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
             {
                 if (_gameState.PlayerDatas[i].ClientId == clientId)
                 {
-                    _gameState.PlayerDatas.RemoveAt(i);
+                    var data = _gameState.PlayerDatas[i];
+                    data.IsDisconnected = true;
+                    data.IsGameOver = true; // Also mark as game over to trigger end-game logic
+                    _gameState.PlayerDatas[i] = data;
+                    disconnectedPlayerIndex = i;
                     break;
                 }
             }
 
-            // --- If the last player disconnects, start shutdown sequence ---
-            if (_playerInstances.Count <= 0 && _shutdownCoroutine == null)
+            // If the player was not in the list (e.g., disconnected before being added), there's nothing to do.
+            if (disconnectedPlayerIndex == -1) return;
+
+            // Always notify remaining players about the disconnection.
+            ShowInGameOpponentDisconnectedClientRpc();
+
+            // If the game is already on the result screen, send a specific notification to update that UI.
+            if (_gameState.CurrentPhase.Value == GamePhase.Finished)
             {
-                Debug.Log("[GameManager] Last player disconnected. Server will shut down.");
-                _shutdownCoroutine = StartCoroutine(ShutdownServerCoroutine());
-            }
-
-            // --- Re-evaluate Game State based on the current phase ---
-            var currentPhase = _gameState.CurrentPhase.Value;
-
-            if (currentPhase == GamePhase.Playing)
-            {
-                // Notify remaining players of the disconnection
-                ShowInGameOpponentDisconnectedClientRpc();
-
-                // Check if the game should end now
-                if (_gameModeStrategy.IsGameOver(_gameState))
-                {
-                    _gameState.CurrentPhase.Value = GamePhase.Finished;
-                }
-                return; // Exit after handling
-            }
-
-            if (currentPhase == GamePhase.Finished)
-            {
-                // Notify remaining players on the result screen
                 NotifyResultScreenOpponentDisconnectedClientRpc();
             }
-
-            // Case 2: Did the prerequisites for starting a game break?
-            if (currentPhase == GamePhase.WaitingForPlayers || currentPhase == GamePhase.Countdown)
-            {
-                if (_playerInstances.Count < _gameModeStrategy.PlayerCount)
-                {
-                    Debug.Log("A player disconnected before the game started. Aborting and moving to results.");
-                    _gameState.CurrentPhase.Value = GamePhase.Finished;
-                }
-            }
+            
+            // The main ServerGameLoop will now naturally detect the game over state via IsGameOver()
+            // and transition to the Finished phase, whether the game was in Countdown, Playing, or WaitingForPlayers.
         }
 
         [ClientRpc]
@@ -460,6 +422,17 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 newLoserRating = ratings.Item4;
             }
             
+            // Check if the game ended due to a disconnection
+            bool opponentDisconnected = false;
+            foreach (var playerData in _gameState.PlayerDatas)
+            {
+                if (playerData.IsDisconnected)
+                {
+                    opponentDisconnected = true;
+                    break;
+                }
+            }
+
             // 全クライエントに結果通知をブロードキャスト
             var resultDto = new GameResultDto
             {
@@ -470,7 +443,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 OldWinnerRating = oldWinnerRating,
                 NewWinnerRating = newWinnerRating,
                 OldLoserRating = oldLoserRating,
-                NewLoserRating = newLoserRating
+                NewLoserRating = newLoserRating,
+                OpponentDisconnected = opponentDisconnected
             };
             SendResultsToClientsClientRpc(resultDto);
 
@@ -501,6 +475,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 }
                 _gameState.RematchTimerRemaining.Value = 0f; // 待機終了
             }
+
+            // Clean up players who disconnected during the match before deciding on rematch.
+            CleanupDisconnectedPlayers();
 
             // --- 再戦またはシャットダウンの判定 ---
             // 必要な人数が揃っているか、かつ全員が再戦をリクエストしたか
@@ -798,6 +775,37 @@ namespace TypingSurvivor.Features.Game.Gameplay
             var jingleId = localPlayerWon ? SoundId.WinJingle : SoundId.LoseJingle;
             
             MusicManager.Instance.PlayJingleThen(jingleId, SoundId.ResultsMusic, 1.0f, 0.5f);
+        }
+
+        private void CleanupDisconnectedPlayers()
+        {
+            for (int i = _gameState.PlayerDatas.Count - 1; i >= 0; i--)
+            {
+                if (_gameState.PlayerDatas[i].IsDisconnected)
+                {
+                    ulong clientId = _gameState.PlayerDatas[i].ClientId;
+
+                    // Clean up game state and tracking collections
+                    _playersInLowOxygen.Remove(clientId);
+                    _clientIdToPlayerIdMap.Remove(clientId);
+
+                    if (_playerInstances.TryGetValue(clientId, out var playerFacade))
+                    {
+                        // Remove from the synced list of spawned players
+                        for (int j = _gameState.SpawnedPlayers.Count - 1; j >= 0; j--)
+                        {
+                            if (_gameState.SpawnedPlayers[j].TryGet(out var networkObject) && networkObject == playerFacade.NetworkObject)
+                            {
+                                _gameState.SpawnedPlayers.RemoveAt(j);
+                                break;
+                            }
+                        }
+                        _playerInstances.Remove(clientId);
+                    }
+
+                    _gameState.PlayerDatas.RemoveAt(i);
+                }
+            }
         }
     }
 }

@@ -9,12 +9,13 @@ using System.Linq;
 using TypingSurvivor.Features.Game.Typing;
 using TypingSurvivor.Features.UI.Screens;
 using TypingSurvivor.Features.UI.Screens.InGameHUD;
-using TypingSurvivor.Features.UI.Screens.Global; // Changed
+using TypingSurvivor.Features.UI.Screens.Global;
 using Unity.Netcode;
 using UnityEngine;
 using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.Core.Leaderboard;
 using TypingSurvivor.Features.UI.Common;
+using TypingSurvivor.Features.UI.Screens.Game.Global;
 
 namespace TypingSurvivor.Features.UI
 {
@@ -28,8 +29,9 @@ namespace TypingSurvivor.Features.UI
         [SerializeField] private InGameHUDManager _inGameHUDPrefab; // Prefab to instantiate
         [SerializeField] private ResultScreen _resultScreen;
         [SerializeField] private CountdownScreen _countdownScreen;
-        [SerializeField] private InGameGlobalView _inGameGlobalView; // Changed
-        [SerializeField] private NotificationPanel _notificationPanelPrefab;
+        [SerializeField] private InGameGlobalView _inGameGlobalView;
+        [SerializeField] private TopNotificationPanel _topNotificationPanel;
+        [SerializeField] private DisconnectNotificationScreen _disconnectNotificationScreen;
 
         [Header("Low Oxygen Effect")]
         [SerializeField] private float _lowOxygenPitch = 1.2f;
@@ -156,9 +158,8 @@ namespace TypingSurvivor.Features.UI
 
         private void HandleOpponentDisconnectedInGame()
         {
-            if (_notificationPanelPrefab == null) return;
-            var popup = Instantiate(_notificationPanelPrefab, transform);
-            popup.Show("対戦相手が切断しました。", 3f);
+            if (_topNotificationPanel == null) return;
+            _topNotificationPanel.Show("対戦相手が切断しました。", 3f);
         }
 
         private void HandleOpponentDisconnectedResult()
@@ -410,9 +411,9 @@ namespace TypingSurvivor.Features.UI
         {
             if (clientId != NetworkManager.Singleton.LocalClientId) return;
 
-            if (_notificationPanelPrefab == null) return;
-            var popup = Instantiate(_notificationPanelPrefab, transform);
-            popup.Show("サーバーとの接続が切断されました。", null, "メインメニューへ戻る", ReturnToMainMenu);
+            if (_disconnectNotificationScreen == null) return;
+            _uiManager.ShowScreen(_disconnectNotificationScreen);
+            _disconnectNotificationScreen.Show("サーバーとの接続が切断されました。", "メインメニューへ戻る", ReturnToMainMenu);
         }
 
         #endregion

@@ -10,11 +10,11 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
         public bool IsGameOver(IGameStateReader gameState)
         {
-            // Game is over if only one or fewer players are left with oxygen > 0.
+            // Game is over if only one or fewer players are not in a GameOver state.
             int aliveCount = 0;
             foreach (var player in gameState.PlayerDatas)
             {
-                if (player.Oxygen > 0)
+                if (!player.IsGameOver)
                 {
                     aliveCount++;
                 }
@@ -31,7 +31,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             ulong winnerId = 0;
             foreach (var player in gameState.PlayerDatas)
             {
-                if (player.Oxygen > 0)
+                if (!player.IsGameOver)
                 {
                     aliveCount++;
                     winnerId = player.ClientId;

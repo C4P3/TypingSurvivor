@@ -1,4 +1,5 @@
 using TMPro;
+using TypingSurvivor.Features.Game.Gameplay.Data;
 using UnityEngine;
 using static TypingSurvivor.Features.Game.Gameplay.GameManager;
 
@@ -18,7 +19,7 @@ namespace TypingSurvivor.Features.UI.Screens.Result
         [SerializeField] private GameObject _ratingSection;
         [SerializeField] private TextMeshProUGUI _ratingChangeText;
 
-        public void Populate(Game.Gameplay.Data.PlayerData playerData, bool isRanked, int newRating, int oldRating)
+        public void Populate(PlayerData playerData, bool isRanked, int newRating, int oldRating)
         {
             if (_playerNameText != null)
             {

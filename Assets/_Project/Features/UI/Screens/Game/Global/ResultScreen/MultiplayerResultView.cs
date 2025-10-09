@@ -115,6 +115,12 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             _showRematchRequesterUntil = -1f;
             _rematchButton.interactable = true;
 
+            // If the game ended because of a disconnection, show the specific message.
+            if (dto.OpponentDisconnected)
+            {
+                NotifyOpponentDisconnected();
+            }
+
             // ランクマッチかどうかを判定
             bool isRanked = dto.NewWinnerRating != 0 || dto.NewLoserRating != 0;
 
