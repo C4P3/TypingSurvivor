@@ -108,6 +108,7 @@ sequenceDiagram
     S_Strategy-->>S_GameManager: GameResult (全プレイヤーの最終データ入り) を返す
 
     S_GameManager->>S_GameManager: GameResultをGameResultDtoに変換
+    note right of S_GameManager: この際、切断者がいれば<br>OpponentDisconnectedフラグがtrueになる
     S_GameManager->>C_GameManager: SendResultsToClientsClientRpc(resultDto)
 
     C_GameManager->>C_GameManager: OnResultReceived_Client イベント発行
@@ -116,7 +117,7 @@ sequenceDiagram
     C_UIManager->>C_ResultScreen: Show(resultDto)
 
     C_ResultScreen->>C_ResultScreen: ShowSequenceCoroutine() を開始
-    Note right of C_ResultScreen: 勝敗バナー、統計情報、ボタンなどを<br>順番にアニメーション表示する
+    Note right of C_ResultScreen: DtoのOpponentDisconnectedフラグをチェックし、<br>必要なら切断メッセージを表示し再戦ボタンを無効化する。<br>その後、勝敗バナー、統計情報、ボタンなどを<br>順番にアニメーション表示する
 ```
 
 **全体のドキュメント:**　[README.md](./README.md)

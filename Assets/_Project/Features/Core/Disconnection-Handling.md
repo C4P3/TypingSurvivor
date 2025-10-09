@@ -1,12 +1,12 @@
-# **クライアント切断時の総合的な処理フロー**
+# クライアント切断時の総合的な処理フロー
 
 このドキュメントは、クライアントがゲームセッションから切断された際の、サーバーとクライアント双方の挙動と責務を定義する。
 
 ## 1. 設計原則
 
-*   **サーバー権威:** ゲームの状態（勝敗、続行/終了）に関する全ての決定権はサーバーが持つ。
-*   **単一責任:** 各クラスは、自身の責務範囲内の処理のみを行う。
-*   **明確なフィードバック:** プレイヤーには、何が起こったのかを明確に通知する。
+-   **サーバー権威:** ゲームの状態（勝敗、続行/終了）に関する全ての決定権はサーバーが持つ。
+-   **責務の分離:** イベントハンドラは状態の変更のみを行い、ゲームのメインループが状態に基づいてフェーズ遷移を判断する。
+-   **明確なフィードバック:** プレイヤーには、何が起こったのかを明確に通知する。
 
 ## 2. ケーススタディ
 
@@ -21,44 +21,48 @@ sequenceDiagram
     participant NetManager as NetworkManager (Server)
     participant GameManager as GameManager (Server)
     participant GameState as GameState (Server)
-    participant PlayerFacade as PlayerFacade (Server)
-    participant GameModeStrategy as IGameModeStrategy (Server)
+    participant ServerLoop as ServerGameLoop (Server)
 
     NetManager->>GameManager: OnClientDisconnectCallback(clientId)
-    GameManager->>PlayerFacade: NetworkObject.Despawn()
-    GameManager->>GameState: PlayerDatas.Remove(clientId)
-    GameManager->>GameModeStrategy: IsGameOver(GameState) ?
-    alt ゲーム終了条件を満たす
-        GameModeStrategy-->>GameManager: true
-        GameManager->>GameState: CurrentPhase.Value = Finished
+    Note right of GameManager: HandleClientDisconnected()
+    GameManager->>GameState: PlayerData.IsDisconnected = true
+    GameManager->>GameState: PlayerData.IsGameOver = true
+    
+    loop Every Frame
+        ServerLoop->>ServerLoop: PlayingPhaseチェック
+        Note right of ServerLoop: IsGameOver()がtrueを返す
     end
+    ServerLoop->>ServerLoop: FinishedPhaseに移行
+    
+    Note over ServerLoop: FinishedPhaseの最後に...
+    ServerLoop->>GameManager: CleanupDisconnectedPlayers()
+    GameManager->>GameState: PlayerDataなどを削除
 ```
 
-*   **責務:**
-    *   **`GameManager`:**
+-   **責務:**
+    -   **`GameManager`:**
         1.  `OnClientDisconnectCallback`を購読し、切断を検知する。
-        2.  切断したプレイヤーの`PlayerFacade`をDespawnする。
-        3.  `GameState`からプレイヤーデータを削除する。
-        4.  `IGameModeStrategy`に問い合わせ、ゲームの続行可否を判断し、必要なら`GamePhase`を`Finished`に更新する。
+        2.  `GameState`内の該当`PlayerData`の`IsDisconnected`と`IsGameOver`フラグを`true`に更新する。状態変更のみに責任を持つ。
+        3.  ゲームのメインループ(`ServerGameLoop`)からの指示で、`FinishedPhase`の最後に切断済みプレイヤーの情報をクリーンアップする。
+    -   **`ServerGameLoop`:**
+        1.  毎フレーム`IGameModeStrategy.IsGameOver()`をチェックし、ゲーム終了を検知する。
+        2.  ゲーム終了を検知したら、`PlayingPhase`を終了し、`FinishedPhase`に移行する責務を持つ。
 
 #### 2.2. 残ったクライアントのフロー
 
 ```mermaid
 sequenceDiagram
-    participant GameState as GameState (Client)
-    participant GameUIManager as GameUIManager (Client)
-    participant InGameHUD as InGameHUD (Client)
+    participant S_GameManager as GameManager (Server)
+    participant C_GameUIManager as GameUIManager (Client)
+    participant C_TopPanel as TopNotificationPanel (Client)
 
-    Note over GameState, InGameHUD: サーバーからの同期により...
-    GameState->>GameState: PlayerDatas.OnListChanged イベント発火
-    GameState->>GameState: (もし発生すれば) CurrentPhase.OnValueChanged イベント発火
-
-    GameUIManager->>InGameHUD: （必要に応じて）UI表示を更新
-    Note right of InGameHUD: 例：切断したプレイヤーの<br>ステータス表示を消す
+    S_GameManager->>C_GameUIManager: ShowInGameOpponentDisconnectedClientRpc()
+    Note right of C_GameUIManager: OnOpponentDisconnectedInGame_Client イベント発火
+    C_GameUIManager->>C_TopPanel: Show("対戦相手が切断しました", 3f)
 ```
 
-*   **責務:**
-    *   **各種UIコンポーネント:** `NetworkList`や`NetworkVariable`の変更イベントを購読し、サーバーから送られてきた最新の状態を画面に反映するだけ。
+-   **責務:**
+    -   **`GameUIManager`:** サーバーからのRPCを受け取り、`TopNotificationPanel`に短時間の通知を表示する。
 
 ---
 
@@ -72,21 +76,21 @@ sequenceDiagram
 sequenceDiagram
     participant NetManager as NetworkManager (Client)
     participant GameUIManager as GameUIManager (Client)
-    participant Popup as DisconnectPopup (Client)
+    participant DisconnectScreen as DisconnectNotificationScreen (Client)
     participant SceneManager as SceneManager
 
     NetManager->>GameUIManager: OnClientDisconnectCallback(clientId)
-    GameUIManager->>Popup: Show("接続が切断されました")
+    GameUIManager->>DisconnectScreen: Show("サーバーとの接続が切断されました", ...)
     
-    Note over Popup, SceneManager: ユーザーが「メインメニューへ」ボタンをクリック
+    Note over DisconnectScreen, SceneManager: ユーザーが「メインメニューへ」ボタンをクリック
     
-    Popup->>GameUIManager: OnConfirmButtonClicked
+    DisconnectScreen->>GameUIManager: OnConfirmButtonClicked
     GameUIManager->>NetManager: Shutdown()
     GameUIManager->>SceneManager: LoadScene("MainMenu")
 ```
 
-*   **責務:**
-    *   **`GameUIManager`:**
+-   **責務:**
+    -   **`GameUIManager`:**
         1.  クライアント側の`OnClientDisconnectCallback`を購読し、接続断を検知する。
-        2.  切断通知UIを表示し、ユーザーからの入力を待つ。
+        2.  操作をブロックする`DisconnectNotificationScreen`を表示し、ユーザーからの入力を待つ。
         3.  ユーザーの確認後、`NetworkManager.Shutdown()`を呼び出してセッションを安全に終了し、`MainMenu`シーンへ遷移する。
