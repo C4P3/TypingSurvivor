@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TypingSurvivor.Features.Core.Audio.Data;
+using TypingSurvivor.Features.Core.Settings;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -20,6 +21,7 @@ namespace TypingSurvivor.Features.Core.Audio
         private AudioSource _activeTurntable;
         
         private AudioRegistry _registry;
+        private float _bgmVolumeMultiplier = 1.0f;
 
         private readonly Stack<MusicData> _musicStack = new();
         private Coroutine _activeTransitionCoroutine;
@@ -41,6 +43,36 @@ namespace TypingSurvivor.Features.Core.Audio
             _turntableA = gameObject.AddComponent<AudioSource>();
             _turntableB = gameObject.AddComponent<AudioSource>();
             _activeTurntable = _turntableA;
+        }
+
+        private void Start()
+        {
+            if (SettingsManager.Instance == null) return;
+            
+            _bgmVolumeMultiplier = SettingsManager.Instance.Settings.BgmVolume;
+            SettingsManager.Instance.OnBgmVolumeChanged += HandleBgmVolumeChanged;
+        }
+
+        override public void OnDestroy()
+        {
+            base.OnDestroy();
+            StopAndClear();
+
+            if (SettingsManager.Instance != null)
+            {
+                SettingsManager.Instance.OnBgmVolumeChanged -= HandleBgmVolumeChanged;
+            }
+        }
+
+        private void HandleBgmVolumeChanged(float volume)
+        {
+            _bgmVolumeMultiplier = volume;
+            if (_activeTurntable != null && _activeTurntable.isPlaying && _musicStack.Count > 0)
+            {
+                // Update the volume of the currently playing music
+                var currentMusic = _musicStack.Peek();
+                _activeTurntable.volume = currentMusic.Volume * _bgmVolumeMultiplier;
+            }
         }
 
         // --- Public API ---
@@ -135,7 +167,7 @@ namespace TypingSurvivor.Features.Core.Audio
 
             // Play jingle
             _activeTurntable.clip = jingle.Clip;
-            _activeTurntable.volume = jingle.Volume;
+            _activeTurntable.volume = jingle.Volume * _bgmVolumeMultiplier;
             _activeTurntable.loop = false;
             _activeTurntable.Play();
 
@@ -169,18 +201,19 @@ namespace TypingSurvivor.Features.Core.Audio
             // Fade logic
             float timer = 0f;
             float startOldVolume = oldTurntable.volume; // Store the starting volume for a linear fade
+            float targetNewVolume = music.Volume * _bgmVolumeMultiplier;
 
             while (timer < duration)
             {
                 timer += Time.deltaTime;
                 float progress = Mathf.Clamp01(timer / duration);
                 
-                newTurntable.volume = Mathf.Lerp(0, music.Volume, progress);
+                newTurntable.volume = Mathf.Lerp(0, targetNewVolume, progress);
                 oldTurntable.volume = Mathf.Lerp(startOldVolume, 0, progress); // Use stored start volume
                 yield return null;
             }
 
-            newTurntable.volume = music.Volume;
+            newTurntable.volume = targetNewVolume;
             oldTurntable.Stop();
             oldTurntable.clip = null;
         }
@@ -203,8 +236,6 @@ namespace TypingSurvivor.Features.Core.Audio
             _activeTurntable.Stop();
             _activeTurntable.clip = null;
         }
-
-        // --- Pitch Control & Utility API ---
 
         public void SetPitch(float pitch)
         {

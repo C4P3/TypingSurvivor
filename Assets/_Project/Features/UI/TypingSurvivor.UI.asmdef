@@ -7,7 +7,9 @@
         "Unity.Netcode.Runtime",
         "Unity.TextMeshPro",
         "Unity.Networking.Transport",
-        "Unity.Collections"
+        "Unity.Collections",
+        "TypingSurvivor.InputSystem",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

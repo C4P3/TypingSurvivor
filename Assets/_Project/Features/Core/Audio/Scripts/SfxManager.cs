@@ -1,4 +1,5 @@
 using TypingSurvivor.Features.Core.Audio.Data;
+using TypingSurvivor.Features.Core.Settings;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -14,6 +15,7 @@ namespace TypingSurvivor.Features.Core.Audio
 
         private AudioRegistry _registry;
         private AudioSource _sfxSource; // For local, non-positional SFX like UI sounds
+        private float _sfxVolumeMultiplier = 1.0f;
 
         public void Initialize(AudioRegistry registry)
         {
@@ -33,6 +35,28 @@ namespace TypingSurvivor.Features.Core.Audio
             _sfxSource.loop = false;
         }
 
+        private void Start()
+        {
+            if (SettingsManager.Instance == null) return;
+            
+            _sfxVolumeMultiplier = SettingsManager.Instance.Settings.SfxVolume;
+            SettingsManager.Instance.OnSfxVolumeChanged += HandleSfxVolumeChanged;
+        }
+
+        override public void OnDestroy()
+        {
+            base.OnDestroy();
+            if (SettingsManager.Instance != null)
+            {
+                SettingsManager.Instance.OnSfxVolumeChanged -= HandleSfxVolumeChanged;
+            }
+        }
+
+        private void HandleSfxVolumeChanged(float volume)
+        {
+            _sfxVolumeMultiplier = volume;
+        }
+
         /// <summary>
         /// Plays a one-shot sound effect locally (e.g., for UI).
         /// </summary>
@@ -43,7 +67,7 @@ namespace TypingSurvivor.Features.Core.Audio
 
             AudioClip clip = sfxData.Clips[Random.Range(0, sfxData.Clips.Count)];
             _sfxSource.pitch = sfxData.RandomizePitch ? Random.Range(sfxData.MinPitch, sfxData.MaxPitch) : 1.0f;
-            _sfxSource.PlayOneShot(clip, sfxData.Volume);
+            _sfxSource.PlayOneShot(clip, sfxData.Volume * _sfxVolumeMultiplier);
             _sfxSource.pitch = 1.0f; // Reset pitch immediately
         }
 
@@ -86,7 +110,7 @@ namespace TypingSurvivor.Features.Core.Audio
             AudioSource audioSource = tempAudioHost.AddComponent<AudioSource>();
 
             audioSource.clip = clip;
-            audioSource.volume = sfxData.Volume;
+            audioSource.volume = sfxData.Volume * _sfxVolumeMultiplier;
             audioSource.pitch = pitch;
             audioSource.spatialBlend = 1.0f; // Make it a 3D sound
 

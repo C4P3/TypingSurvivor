@@ -9,6 +9,7 @@ using TypingSurvivor.Features.UI.Common;
 using TypingSurvivor.Features.UI.Screens;
 using Unity.Netcode;
 using System.Collections;
+using TypingSurvivor.Features.Core.Settings;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -149,6 +150,12 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             var playerData = await appManager.CloudSaveService.LoadPlayerDataAsync();
             appManager.CachedPlayerData = playerData;
             _hasProfile = playerData != null && !string.IsNullOrWhiteSpace(playerData.PlayerName);
+
+            // Apply loaded settings to the SettingsManager
+            if (SettingsManager.Instance != null)
+            {
+                SettingsManager.Instance.LoadSettings(playerData?.Settings);
+            }
 
             if (appManager.SurvivalLeaderboardService != null)
             {

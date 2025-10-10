@@ -12,7 +12,9 @@
         "Unity.Services.CloudCode",
         "Unity.Services.Authentication.Server",
         "Unity.Services.Multiplayer.Editor.Matchmaker.Authoring",
-        "Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.Core"
+        "Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.Core",
+        "Unity.InputSystem",
+        "TypingSurvivor.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

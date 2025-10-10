@@ -1,23 +1,29 @@
+using GameControlsInput;
 using System;
+using TypingSurvivor.Features.Core.Settings;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using GameControlsInput;
 
 namespace TypingSurvivor.Features.Game.Player.Input
 {
     public class PlayerInput : MonoBehaviour
     {
-        // Gameplay Actions
         public event Action<Vector2> OnMovePerformed;
         public event Action OnMoveCanceled;
 
-        private GameControls _gameControls;
+        public GameControls GameControls { get; private set; }
         private InputAction _moveInteractAction;
 
         private void Awake()
         {
-            _gameControls = new GameControls();
-            _moveInteractAction = _gameControls.Gameplay.MoveInteract;
+            if (SettingsManager.Instance == null)
+            {
+                Debug.LogError("SettingsManager not found! PlayerInput cannot function.");
+                return;
+            }
+            // Use the shared GameControls instance from the SettingsManager
+            GameControls = SettingsManager.Instance.SharedGameControls;
+            _moveInteractAction = GameControls.Gameplay.MoveInteract;
         }
 
         private void OnEnable()
@@ -28,33 +34,31 @@ namespace TypingSurvivor.Features.Game.Player.Input
 
         private void OnDisable()
         {
+            // We don't disable the GameControls here as it's shared.
+            // The SettingsScreen might need it.
             UnsubscribeGameplayEvents();
-            _gameControls.Gameplay.Disable();
         }
-
 
         public void EnableGameplayInput()
         {
-            _gameControls.Gameplay.Enable();
+            GameControls.Gameplay.Enable();
         }
 
         private void SubscribeGameplayEvents()
         {
-            _gameControls.Gameplay.Move.performed += HandleMovePerformed;
-            _gameControls.Gameplay.Move.canceled += HandleMoveCanceled;
+            GameControls.Gameplay.Move.performed += HandleMovePerformed;
+            GameControls.Gameplay.Move.canceled += HandleMoveCanceled;
         }
 
         private void UnsubscribeGameplayEvents()
         {
-            _gameControls.Gameplay.Move.performed -= HandleMovePerformed;
-            _gameControls.Gameplay.Move.canceled -= HandleMoveCanceled;
+            GameControls.Gameplay.Move.performed -= HandleMovePerformed;
+            GameControls.Gameplay.Move.canceled -= HandleMoveCanceled;
         }
         
         private void HandleMovePerformed(InputAction.CallbackContext context)
         {
-            // MoveInteractキーが押されていなければ、移動イベントを発行しない
             if (!_moveInteractAction.IsPressed()) return;
-            
             OnMovePerformed?.Invoke(context.ReadValue<Vector2>());
         }
 

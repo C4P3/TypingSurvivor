@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace TypingSurvivor.Features.Core.CloudSave
 {
@@ -30,6 +31,14 @@ namespace TypingSurvivor.Features.Core.CloudSave
     public class PlayerSettingsData
     {
         public float MasterVolume = 1.0f;
+        
+        [Range(0.0f, 1.0f)]
+        public float BgmVolume = 0.8f;
+
+        [Range(0.0f, 1.0f)]
+        public float SfxVolume = 1.0f;
+
+        public string KeybindingsOverrideJson;
     }
 
     [System.Serializable]

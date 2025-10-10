@@ -14,6 +14,7 @@ using Unity.Netcode.Transports.UTP;
 using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.Core.VFX;
 using TypingSurvivor.Features.Core.Leaderboard;
+using TypingSurvivor.Features.Core.Settings;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
 
@@ -111,6 +112,7 @@ namespace TypingSurvivor.Features.Core.App
     [SerializeField] private SfxManager _sfxManager;
     [SerializeField] private MusicManager _musicManager;
     [SerializeField] private EffectManager _effectManager;
+    [SerializeField] private SettingsManager _settingsManager;
 
         private void Awake()
         {
@@ -127,7 +129,8 @@ namespace TypingSurvivor.Features.Core.App
             _audioRegistry.Initialize();
             _sfxManager.Initialize(_audioRegistry);
             _effectManager.Initialize(_vfxRegistry);
-            _musicManager.Initialize(_audioRegistry); 
+            _musicManager.Initialize(_audioRegistry);
+            // SettingsManager is initialized via its own Awake
         }
 
         private async Task InitializeCoreServicesAsync(bool isDedicatedServer)
@@ -142,11 +145,12 @@ namespace TypingSurvivor.Features.Core.App
             }
             else
             {
+                // Client-side services are instantiated here, but sign-in and data loading are handled by the UI flow.
                 AuthService = new ClientAuthenticationService();
+                
+                CloudSaveService = new CloudSaveService();
+                RegisterService(CloudSaveService);
             }
-
-            CloudSaveService = new CloudSaveService();
-            RegisterService(CloudSaveService);
 
             MatchmakingService = new MatchmakingService();
             RegisterService(MatchmakingService);
