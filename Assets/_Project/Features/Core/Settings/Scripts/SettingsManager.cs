@@ -3,7 +3,8 @@ using TypingSurvivor.Features.Core.CloudSave;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using GameControlsInput;
-using TypingSurvivor.Features.Core.App; // Add this using directive
+using TypingSurvivor.Features.Core.App;
+using System.Threading.Tasks; // Add this using directive
 
 namespace TypingSurvivor.Features.Core.Settings
 {
@@ -30,8 +31,31 @@ namespace TypingSurvivor.Features.Core.Settings
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
-            Settings = new PlayerSettingsData();
+            LoadSettingsFromLocalCache();
             _gameControls = new GameControls();
+        }
+
+        private void LoadSettingsFromLocalCache()
+        {
+            string json = PlayerPrefs.GetString("PlayerSettings", null);
+            if (!string.IsNullOrEmpty(json))
+            {
+                try
+                {
+                    Settings = JsonUtility.FromJson<PlayerSettingsData>(json);
+                    Debug.Log("Loaded settings from local cache.");
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Failed to load settings from local cache. Using defaults. Error: {e.Message}");
+                    Settings = new PlayerSettingsData();
+                }
+            }
+            else
+            {
+                Settings = new PlayerSettingsData();
+                Debug.Log("No local cache found. Initializing with default settings.");
+            }
         }
 
         public void LoadSettings(PlayerSettingsData settings)
@@ -74,15 +98,41 @@ namespace TypingSurvivor.Features.Core.Settings
             Debug.Log("Keybinding overrides applied.");
         }
 
-        public void SaveKeybindings()
+        public async Task<bool> SaveAllSettings()
         {
             Settings.KeybindingsOverrideJson = _gameControls.SaveBindingOverridesAsJson();
-            Debug.Log("Keybinding overrides saved.");
-            
-            // Trigger the actual cloud save
-            if (AppManager.Instance != null && AppManager.Instance.CloudSaveService != null && AppManager.Instance.CachedPlayerData != null)
+            Debug.Log("Attempting to save settings to cloud...");
+
+            if (AppManager.Instance?.CloudSaveService != null && AppManager.Instance.CachedPlayerData != null)
             {
-                AppManager.Instance.CloudSaveService.SavePlayerDataAsync(AppManager.Instance.CachedPlayerData);
+                bool success = await AppManager.Instance.CloudSaveService.SavePlayerDataAsync(AppManager.Instance.CachedPlayerData);
+                if (success)
+                {
+                    Debug.Log("Cloud save successful. Updating local cache.");
+                    SaveSettingsToLocalCache();
+                    return true;
+                }
+                else
+                {
+                    Debug.LogError("Cloud save failed. Local cache was not updated.");
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        private void SaveSettingsToLocalCache()
+        {
+            try
+            {
+                string json = JsonUtility.ToJson(Settings);
+                PlayerPrefs.SetString("PlayerSettings", json);
+                PlayerPrefs.Save();
+                Debug.Log("Settings saved to local cache.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Failed to save settings to local cache: {e.Message}");
             }
         }
 
@@ -111,7 +161,6 @@ namespace TypingSurvivor.Features.Core.Settings
                     operation.Dispose();
                     _gameControls.Enable();
                     onComplete?.Invoke(true);
-                    SaveKeybindings(); // Automatically save after a successful rebind
                 })
                 .OnCancel(operation =>
                 {

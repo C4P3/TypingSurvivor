@@ -52,10 +52,10 @@ namespace TypingSurvivor.Features.UI.Screens
             AddListeners();
         }
 
-        private void OnBackButtonClicked()
+        private async void OnBackButtonClicked()
         {
             // TODO: Add a confirmation dialog if there are unsaved changes.
-            _settingsManager.SaveKeybindings(); // Autosave on back
+            await _settingsManager.SaveAllSettings(); // Autosave on back
             _flowCoordinator.RequestStateChange(UIFlowCoordinator.PlayerUIState.InMainMenu);
         }
 
@@ -147,9 +147,9 @@ namespace TypingSurvivor.Features.UI.Screens
             UpdateAllBindingDisplays();
         }
 
-        private void OnSaveButton()
+        private async void OnSaveButton()
         {
-            _settingsManager.SaveKeybindings();
+            await _settingsManager.SaveAllSettings();
             // Optionally, show a "Saved!" confirmation message
         }
 
