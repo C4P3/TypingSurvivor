@@ -1,3 +1,8 @@
+# プロジェクト概要
+[https://github.com/TypingSurvivor-2025-ynu-pro2/TypingSurvivor](https://github.com/TypingSurvivor-2025-ynu-pro2/TypingSurvivor)
+[https://github.com/C4P3/ynu-pro2](https://github.com/C4P3/ynu-pro2/blob/main/README.md)
+の再設計を行っています。
+
 # 開発の詳細
 [Assets\_Project\README.md](.\Assets\_Project\README.md)を参照してください。
 
@@ -19,4 +24,5 @@
             - NetCode for GameObject
             - Game Server Hosting(Unity)
     - InputSystem
+
         - https://nekojara.city/unity-input-system-modifier#Button%20with%20one%20modifier%E3%81%AE%E4%BD%BF%E3%81%84%E6%96%B9
