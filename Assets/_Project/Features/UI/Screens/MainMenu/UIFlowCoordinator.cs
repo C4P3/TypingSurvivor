@@ -46,6 +46,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private RankingScreen _rankingScreen;
         [SerializeField] private ShopScreen _shopScreen;
         [SerializeField] private SettingsScreen _settingsScreen;
+        [SerializeField] private ConfirmationDialog _confirmationDialog;
 
         [Header("Matchmaking Panels")]
         [SerializeField] private MatchmakingWaitPanel _rankedWaitPanel;
@@ -99,6 +100,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _settingsScreen.Initialize(this);
             _rankingScreen.Initialize(this);
             _howToPlayScreen.Initialize(this);
+            _confirmationDialog.Initialize(_uiManager);
             
             // Initialize matchmaking
             _matchmakingService = AppManager.Instance.MatchmakingService;

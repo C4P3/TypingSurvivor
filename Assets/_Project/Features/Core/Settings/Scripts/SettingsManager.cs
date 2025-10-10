@@ -29,7 +29,6 @@ namespace TypingSurvivor.Features.Core.Settings
                 return;
             }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
 
             LoadSettingsFromLocalCache();
             _gameControls = new GameControls();
@@ -158,6 +157,9 @@ namespace TypingSurvivor.Features.Core.Settings
                 .WithControlsExcluding("<Mouse>/rightButton")
                 .OnComplete(operation =>
                 {
+                    // リバインド成功時に、現在のオーバーライド設定をSettingsオブジェクトに反映させる
+                    Settings.KeybindingsOverrideJson = _gameControls.SaveBindingOverridesAsJson();
+    
                     operation.Dispose();
                     _gameControls.Enable();
                     onComplete?.Invoke(true);

@@ -4,6 +4,7 @@ using TypingSurvivor.Features.Core.Settings;
 using TypingSurvivor.Features.UI.Common;
 using TypingSurvivor.Features.UI.Screens.MainMenu;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace TypingSurvivor.Features.UI.Screens
@@ -12,6 +13,9 @@ namespace TypingSurvivor.Features.UI.Screens
     {
         [Header("Navigation")]
         [SerializeField] private InteractiveButton _backButton;
+
+        [Header("Dialogs")]
+        [SerializeField] private ConfirmationDialog _confirmationDialog;
 
         [Header("Audio Settings")]
         [SerializeField] private Slider _bgmSlider;
@@ -35,6 +39,7 @@ namespace TypingSurvivor.Features.UI.Screens
 
         private UIFlowCoordinator _flowCoordinator;
         private SettingsManager _settingsManager;
+        private string _initialSettingsJson;
 
         public void Initialize(UIFlowCoordinator coordinator)
         {
@@ -48,15 +53,54 @@ namespace TypingSurvivor.Features.UI.Screens
                 return;
             }
 
+            // Store initial state for change detection
+            _initialSettingsJson = JsonUtility.ToJson(_settingsManager.Settings);
+
             SetupInitialValues();
             AddListeners();
         }
 
-        private async void OnBackButtonClicked()
+        public override void Show()
         {
-            // TODO: Add a confirmation dialog if there are unsaved changes.
-            await _settingsManager.SaveAllSettings(); // Autosave on back
-            _flowCoordinator.RequestStateChange(UIFlowCoordinator.PlayerUIState.InMainMenu);
+            if (_settingsManager != null)
+            {
+                _initialSettingsJson = JsonUtility.ToJson(_settingsManager.Settings);
+                SetupInitialValues();
+            }
+            base.Show();
+        }
+
+        private void OnBackButtonClicked()
+        {
+            if (HasUnsavedChanges())
+            {
+                _confirmationDialog.Show(
+                    message: "未保存の設定を保存しますか？",
+                    onConfirm: async () => {
+                        await _settingsManager.SaveAllSettings();
+                        _flowCoordinator.RequestStateChange(UIFlowCoordinator.PlayerUIState.InMainMenu);
+                    },
+                    onDecline: () => {
+                        // Revert changes before going back
+                        JsonUtility.FromJsonOverwrite(_initialSettingsJson, _settingsManager.Settings);
+                        _settingsManager.LoadSettings(_settingsManager.Settings); // Reload to notify all systems
+                        SetupInitialValues(); // Visually revert UI
+
+                        _flowCoordinator.RequestStateChange(UIFlowCoordinator.PlayerUIState.InMainMenu);
+                    },
+                    onCancel: () => { /* Do nothing, just close dialog */ }
+                );
+            }
+            else
+            {
+                _flowCoordinator.RequestStateChange(UIFlowCoordinator.PlayerUIState.InMainMenu);
+            }
+        }
+
+        private bool HasUnsavedChanges()
+        {
+            string currentSettingsJson = JsonUtility.ToJson(_settingsManager.Settings);
+            return _initialSettingsJson != currentSettingsJson;
         }
 
         private void OnDestroy()
@@ -131,6 +175,8 @@ namespace TypingSurvivor.Features.UI.Screens
             {
                 if (success)
                 {
+                    // The new binding is saved automatically by SettingsManager
+                    // We just need to update the display
                     displayText.text = GetBindingDisplayString(actionName, bindingIndex);
                 }
                 else
@@ -150,6 +196,8 @@ namespace TypingSurvivor.Features.UI.Screens
         private async void OnSaveButton()
         {
             await _settingsManager.SaveAllSettings();
+            // Update initial state to prevent subsequent "unsaved changes" dialog
+            _initialSettingsJson = JsonUtility.ToJson(_settingsManager.Settings);
             // Optionally, show a "Saved!" confirmation message
         }
 
