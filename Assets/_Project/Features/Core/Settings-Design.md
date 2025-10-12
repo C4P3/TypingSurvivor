@@ -117,3 +117,48 @@ graph TD
     *   「保存して戻る」「デフォルトに戻す」ボタンを提供する。
 
 ---
+
+## **5. プレイヤー名変更機能**
+
+### **5.1. 目的**
+
+プレイヤーがゲーム内で表示される自身の名前を変更できるようにする。
+
+### **5.2. UIコンポーネント (`SettingsScreen.cs`)**
+
+*   **`_playerNameInput` (`TMP_InputField`)**: プレイヤーが新しい名前を入力するための入力フィールド。
+*   **`_changeNameButton` (`Button`)**: 名前の変更処理をトリガーするボタン。
+
+### **5.3. データフロー**
+
+```mermaid
+graph TD
+    subgraph "UI Layer (SettingsScreen)"
+        A[Player Name InputField] --> B{Change Name Button};
+    end
+
+    subgraph "Logic Layer (SettingsManager)"
+        C[ChangePlayerNameAsync(newName)];
+    end
+
+    subgraph "Service Layer"
+        D[AppManager];
+        E[CloudSaveService];
+        F[ClientAuthenticationService];
+    end
+
+    B -- "1. OnClick" --> C;
+    C -- "2. Get Services & Data" --> D;
+    D -- "3. Provides" --> E & F;
+    C -- "4. Update Cached Name" --> D;
+    C -- "5. Save Player Data" --> E;
+    C -- "6. Update Auth Name" --> F;
+```
+
+1.  **入力**: ユーザーが`SettingsScreen`で新しい名前を入力し、`_changeNameButton`をクリックします。
+2.  **UIイベント**: ボタンの`onClick`イベントが`SettingsManager.ChangePlayerNameAsync(newName)`を呼び出します。
+3.  **名前更新**: `SettingsManager`は`AppManager`から取得した`CachedPlayerData`の`PlayerName`プロパティを更新します。
+4.  **データ永続化**: `SettingsManager`は`CloudSaveService`を呼び出し、更新された`PlayerSaveData`オブジェクト全体をUGS Cloud Saveに保存します。
+5.  **認証情報更新**: `SettingsManager`は`ClientAuthenticationService`の`UpdatePlayerNameAsync`を呼び出し、UGS Authenticationサービスのプレイヤー表示名も更新します。
+
+---

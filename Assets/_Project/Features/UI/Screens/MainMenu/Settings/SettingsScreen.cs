@@ -1,5 +1,6 @@
 using System;
 using TMPro;
+using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Core.Settings;
 using TypingSurvivor.Features.UI.Common;
 using TypingSurvivor.Features.UI.Screens.MainMenu;
@@ -36,6 +37,10 @@ namespace TypingSurvivor.Features.UI.Screens
         [Header("Action Buttons")]
         [SerializeField] private Button _saveButton;
         [SerializeField] private Button _resetButton;
+
+        [Header("Player Name")]
+        [SerializeField] private TMP_InputField _playerNameInput;
+        [SerializeField] private Button _changeNameButton;
 
         private UIFlowCoordinator _flowCoordinator;
         private SettingsManager _settingsManager;
@@ -82,7 +87,7 @@ namespace TypingSurvivor.Features.UI.Screens
                     },
                     onDecline: () => {
                         // Revert changes before going back
-                        JsonUtility.FromJsonOverwrite(_initialSettingsJson, _settingsManager.Settings);
+                        JsonUtility.FromJsonOverwrite(_initialSettingsJson, _settingsManager.Settings); // Revert non-keybinding settings
                         _settingsManager.LoadSettings(_settingsManager.Settings); // Reload to notify all systems
                         SetupInitialValues(); // Visually revert UI
 
@@ -112,6 +117,10 @@ namespace TypingSurvivor.Features.UI.Screens
         {
             _bgmSlider.value = _settingsManager.Settings.BgmVolume;
             _sfxSlider.value = _settingsManager.Settings.SfxVolume;
+            if (AppManager.Instance != null && AppManager.Instance.CachedPlayerData != null)
+            {
+                _playerNameInput.text = AppManager.Instance.CachedPlayerData.PlayerName;
+            }
             UpdateAllBindingDisplays();
         }
 
@@ -129,6 +138,7 @@ namespace TypingSurvivor.Features.UI.Screens
 
             _resetButton.onClick.AddListener(OnResetButton);
             _saveButton.onClick.AddListener(OnSaveButton);
+            _changeNameButton.onClick.AddListener(OnChangeNameButtonClicked);
         }
 
         private void RemoveListeners()
@@ -145,6 +155,37 @@ namespace TypingSurvivor.Features.UI.Screens
 
             _resetButton.onClick.RemoveAllListeners();
             _saveButton.onClick.RemoveAllListeners();
+            _changeNameButton.onClick.RemoveAllListeners();
+        }
+
+        private async void OnChangeNameButtonClicked()
+        {
+            string newName = _playerNameInput.text;
+            if (string.IsNullOrWhiteSpace(newName))
+            {
+                // Show some feedback to the user, e.g., a tooltip or a message
+                Debug.LogWarning("Player name cannot be empty.");
+                return;
+            }
+
+            _changeNameButton.interactable = false;
+            // You might want to show a spinner or some visual feedback here
+
+            bool success = await _settingsManager.ChangePlayerNameAsync(newName);
+
+            if (success)
+            {
+                Debug.Log("Player name changed successfully on the backend.");
+                // Optionally show a success message
+            }
+            else
+            {
+                Debug.LogError("Failed to change player name.");
+                // Optionally show an error message and revert the input field
+                _playerNameInput.text = AppManager.Instance.CachedPlayerData.PlayerName;
+            }
+
+            _changeNameButton.interactable = true;
         }
 
         private void UpdateAllBindingDisplays()

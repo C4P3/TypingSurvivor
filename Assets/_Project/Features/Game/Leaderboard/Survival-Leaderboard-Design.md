@@ -21,12 +21,28 @@ public interface ISurvivalLeaderboardService
     /// </summary>
     /// <returns>プレイヤーの順位と、リーダーボードの総エントリー数を含むタプル。</returns>
     Task<(int playerRank, int totalPlayers)> GetPlayerRankAsync();
+
+    /// <summary>
+    /// 指定された範囲のリーダーボードのエントリーを取得します。
+    /// </summary>
+    Task<List<LeaderboardEntry>> GetLeaderboardAsync(int offset, int limit);
 }
 ```
+*（`LeaderboardEntry` は `Rating` 機能アセンブリで定義されている共有モデル）*
 
-## 3. UGS (Unity Dashboard) 設定
+### 2.1. 実装の分離 (クライアント/サーバー)
 
-このサービスが機能するためには、Unity Dashboardで以下の設定が必要です。
+本サービスは、実行環境に応じて2つの実装が存在します。`AppManager`が実行環境を判別し、適切な実装を注入します。
+
+*   **`SurvivalLeaderboardService` (サーバー用実装)**
+    *   本ドキュメントで後述するCloud Codeスクリプトを呼び出す、従来のサーバーサイド向け実装です。
+
+*   **`ClientSurvivalLeaderboardService` (クライアント用実装)**
+    *   クライアントから安全にリーダーボード機能を利用するために、`Unity.Services.Leaderboards` SDKを直接使用する実装です。Cloud Codeを介しません。
+
+## 3. UGS (Unity Dashboard) 設定 （サーバー用）
+
+`SurvivalLeaderboardService`（サーバー用実装）が機能するためには、Unity Dashboardで以下の設定が必要です。
 
 ### 3.1. Leaderboardの作成
 

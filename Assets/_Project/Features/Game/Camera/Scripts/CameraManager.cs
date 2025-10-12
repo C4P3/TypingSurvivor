@@ -47,7 +47,7 @@ namespace TypingSurvivor.Features.Game.Camera
             return assignedCameras;
         }
 
-        private void Start()
+        public void Activate()
         {
             if (_gameStateReader != null)
             {

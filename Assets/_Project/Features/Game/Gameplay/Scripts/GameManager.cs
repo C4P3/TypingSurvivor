@@ -17,7 +17,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
 {
     public class GameManager : NetworkBehaviour, IGameStateWriter
     {
-        public static GameManager Instance { get; private set; }
+
 
         private GameState _gameState;
         private IGameModeStrategy _gameModeStrategy;
@@ -92,15 +92,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         }
 
 
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-        }
+
 
         public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig, Grid grid)
         {
@@ -114,6 +106,11 @@ namespace TypingSurvivor.Features.Game.Gameplay
         }
 
         public override void OnNetworkSpawn()
+        {
+            // Logic moved to StartGameLoop() to be called after all dependencies are injected.
+        }
+
+        public void StartGameLoop()
         {
             if (IsClient)
             {
@@ -402,6 +399,12 @@ namespace TypingSurvivor.Features.Game.Gameplay
             if (finishedTask.IsFaulted)
             {
                 Debug.LogError(finishedTask.Exception);
+                // If the finish phase fails catastrophically, stop the entire game loop
+                // to prevent infinitely attempting to restart the round.
+                if (_serverGameLoop != null)
+                {
+                    StopCoroutine(_serverGameLoop);
+                }
             }
         }
 

@@ -152,8 +152,59 @@ module.exports = async ({ context, params }) => {
     const leaderboardsApi = new LeaderboardsApi({ accessToken });
     const leaderboardId = "RATING_LEADERBOARD";
 
-    const response = await leaderboardsApi.getLeaderboardScores(projectId, leaderboardId, { offset, limit });
-
-    return response.data;
-};
-```
+        const response = await leaderboardsApi.getLeaderboardScores(projectId, leaderboardId, { offset, limit });
+    
+        return response.data;
+    }; 
+    ```
+    
+    ## 6. クライアント側実装
+    
+    ### 6.1. 目的
+    
+    Cloud Codeで定義されたAPIを呼び出し、取得したランキング情報をUIに表示する。
+    
+    ### 6.2. データフロー
+    
+    ```mermaid
+    graph TD
+        subgraph "UI Layer (RankingScreen)"
+            A[Tabs: Rating / Survival] --> B{Fetch Button / OnShow};
+        end
+    
+        subgraph "Service Layer (Client)"
+            C[IRatingLeaderboardService];
+            D[ISurvivalLeaderboardService];
+        end
+    
+        subgraph "Cloud Code (UGS)"
+            E[GetLeaderboard.js];
+            F[GetSurvivalRank.js];
+        end
+    
+        B -- "Rating Tab" --> C;
+        B -- "Survival Tab" --> D;
+        C -- "CallEndpointAsync" --> E;
+        D -- "CallEndpointAsync" --> F;
+        E --> C;
+        F --> D;
+        C --> A;
+        D --> A;
+    ```
+    
+    ### 6.3. ランキングサービス (`IRatingLeaderboardService`)
+    
+    *   **役割**: レートランキングの取得に特化したサービスクラス。
+    *   **責務**: 
+        *   `GetLeaderboardAsync(offset, limit)`メソッドを提供する。
+        *   内部でCloud Codeの`GetLeaderboard`エンドポイントを呼び出し、結果を`List<LeaderboardEntry>`として整形して返す。
+    *   **実装**: `RatingLeaderboardService.cs`
+    
+    ### 6.4. UI (`RankingScreen.cs`)
+    
+    *   **役割**: ランキング画面のUI表示とインタラクションを管理する。
+    *   **責務**:
+        *   **タブ切り替え**: 「レート」と「サバイバル」のタブに応じて、表示するパネルと呼び出すサービスを切り替える。
+        *   **データ取得**: `IRatingLeaderboardService`（レート）と`ISurvivalLeaderboardService`（サバイバル）を介して、ランキングデータを非同期に取得する。
+        *   **UI生成**: 取得したデータリストに基づき、ランキングの各行を表す`RankingEntry`プレハブを動的に生成・表示する。
+        *   **ページネーション**: レートランキングにおいて、次／前ページのボタンを提供し、表示するデータのオフセットを管理する。

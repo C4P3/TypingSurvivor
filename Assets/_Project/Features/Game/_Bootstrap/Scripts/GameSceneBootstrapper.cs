@@ -35,15 +35,24 @@ namespace TypingSurvivor.Features.Game.Gameplay
         [SerializeField] private CameraManager _cameraManager;
         [SerializeField] private GameUIManager _gameUIManager;
 
-        private void Awake()
+
+
+        private System.Collections.IEnumerator Start()
         {
             var serviceLocator = AppManager.Instance;
             if (serviceLocator == null)
             {
                 Debug.LogError("AppManager instance not found! Make sure the AppManager scene is loaded first.");
-                return;
+                yield break; // Stop if AppManager isn't even there
             }
 
+            // Wait until the core services in AppManager are ready
+            while (!serviceLocator.IsCoreServicesInitialized)
+            {
+                yield return null;
+            }
+
+            // Now that services are ready, proceed with initialization
             // 1. Initialize Game services with data from GameConfig
             serviceLocator.InitializeGameServices(_gameConfig.PlayerStats);
 
@@ -52,6 +61,10 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
             // 3. Inject dependencies into the systems that need them
             InjectDependencies(serviceLocator);
+
+            // 4. All dependencies are set. Now, start the game loop.
+            _gameManager.StartGameLoop();
+            _cameraManager.Activate();
         }
 
         private void RegisterServices(IServiceLocator serviceLocator)

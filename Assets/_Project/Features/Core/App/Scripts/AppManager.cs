@@ -17,6 +17,7 @@ using TypingSurvivor.Features.Core.Leaderboard;
 using TypingSurvivor.Features.Core.Settings;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
+using TypingSurvivor.Features.Core.Leaderboard.Rating;
 
 namespace TypingSurvivor.Features.Core.App
 {
@@ -38,6 +39,7 @@ namespace TypingSurvivor.Features.Core.App
         public ICloudSaveService CloudSaveService { get; private set; }
         public MatchmakingService MatchmakingService { get; private set; }
         public ISurvivalLeaderboardService SurvivalLeaderboardService { get; private set; }
+        public IRatingLeaderboardService RatingLeaderboardService { get; private set; }
         public IPlayerStatusSystemReader StatusReader { get; private set; }
         public IPlayerStatusSystemWriter StatusWriter { get; private set; }
 
@@ -147,16 +149,28 @@ namespace TypingSurvivor.Features.Core.App
             {
                 // Client-side services are instantiated here, but sign-in and data loading are handled by the UI flow.
                 AuthService = new ClientAuthenticationService();
-                
-                CloudSaveService = new CloudSaveService();
-                RegisterService(CloudSaveService);
             }
+
+            // Cloud Save is required for both clients (saving player data) and servers (calculating ratings).
+            CloudSaveService = new CloudSaveService();
+            RegisterService(CloudSaveService);
 
             MatchmakingService = new MatchmakingService();
             RegisterService(MatchmakingService);
 
-            SurvivalLeaderboardService = new SurvivalLeaderboardService();
+            if (isDedicatedServer)
+            {
+                SurvivalLeaderboardService = new SurvivalLeaderboardService();
+                RatingLeaderboardService = new RatingLeaderboardService();
+            }
+            else
+            {
+                SurvivalLeaderboardService = new ClientSurvivalLeaderboardService();
+                RatingLeaderboardService = new ClientRatingLeaderboardService();
+            }
+
             RegisterService<ISurvivalLeaderboardService>(SurvivalLeaderboardService);
+            RegisterService<IRatingLeaderboardService>(RatingLeaderboardService);
             
             IsCoreServicesInitialized = true;
             // Notify listeners that core services are ready

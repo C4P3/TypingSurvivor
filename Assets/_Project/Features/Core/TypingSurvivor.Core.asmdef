@@ -14,7 +14,8 @@
         "Unity.Services.Multiplayer.Editor.Matchmaker.Authoring",
         "Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.Core",
         "Unity.InputSystem",
-        "TypingSurvivor.InputSystem"
+        "TypingSurvivor.InputSystem",
+        "Unity.Services.Leaderboards"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

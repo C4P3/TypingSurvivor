@@ -4,7 +4,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using GameControlsInput;
 using TypingSurvivor.Features.Core.App;
-using System.Threading.Tasks; // Add this using directive
+using System.Threading.Tasks;
+using TypingSurvivor.Features.Core.Auth; // Add this using directive
 
 namespace TypingSurvivor.Features.Core.Settings
 {
@@ -142,36 +143,65 @@ namespace TypingSurvivor.Features.Core.Settings
             Debug.Log("Keybinding overrides have been reset.");
         }
 
-        public void PerformRebinding(string actionName, int bindingIndex, Action<bool> onComplete)
-        {
-            var action = _gameControls.asset.FindAction(actionName);
-            if (action == null)
-            {
-                onComplete?.Invoke(false);
-                return;
+                public void PerformRebinding(string actionName, int bindingIndex, Action<bool> onComplete)
+                {
+                    var action = _gameControls.asset.FindAction(actionName);
+                    if (action == null)
+                    {
+                        onComplete?.Invoke(false);
+                        return;
+                    }
+        
+                    _gameControls.Disable();
+                    action.PerformInteractiveRebinding(bindingIndex)
+                        .WithControlsExcluding("<Mouse>/leftButton")
+                        .WithControlsExcluding("<Mouse>/rightButton")
+                        .OnComplete(operation =>
+                        {
+                            // リバインド成功時に、現在のオーバーライド設定をSettingsオブジェクトに反映させる
+                            Settings.KeybindingsOverrideJson = _gameControls.SaveBindingOverridesAsJson();
+            
+                            operation.Dispose();
+                            _gameControls.Enable();
+                            onComplete?.Invoke(true);
+                        })
+                        .OnCancel(operation =>
+                        {
+                            operation.Dispose();
+                            _gameControls.Enable();
+                            onComplete?.Invoke(false);
+                        })
+                        .Start();
+                }
+                #endregion
+        
+                public async Task<bool> ChangePlayerNameAsync(string newName)
+                {
+                    if (AppManager.Instance == null || AppManager.Instance.CachedPlayerData == null)
+                    {
+                        Debug.LogError("AppManager or CachedPlayerData is not available.");
+                        return false;
+                    }
+        
+                    AppManager.Instance.CachedPlayerData.PlayerName = newName;
+        
+                    // Save to Cloud Save
+                    bool cloudSaveSuccess = await AppManager.Instance.CloudSaveService.SavePlayerDataAsync(AppManager.Instance.CachedPlayerData);
+        
+                    if (!cloudSaveSuccess)
+                    {
+                        Debug.LogError("Failed to save player name to Cloud Save.");
+                        return false;
+                    }
+        
+                    // Update Auth service display name
+                    if (AppManager.Instance.AuthService is ClientAuthenticationService clientAuth)
+                    {
+                        await clientAuth.UpdatePlayerNameAsync(newName);
+                    }
+        
+                    Debug.Log("Player name updated successfully.");
+                    return true;
+                }
             }
-
-            _gameControls.Disable();
-            action.PerformInteractiveRebinding(bindingIndex)
-                .WithControlsExcluding("<Mouse>/leftButton")
-                .WithControlsExcluding("<Mouse>/rightButton")
-                .OnComplete(operation =>
-                {
-                    // リバインド成功時に、現在のオーバーライド設定をSettingsオブジェクトに反映させる
-                    Settings.KeybindingsOverrideJson = _gameControls.SaveBindingOverridesAsJson();
-    
-                    operation.Dispose();
-                    _gameControls.Enable();
-                    onComplete?.Invoke(true);
-                })
-                .OnCancel(operation =>
-                {
-                    operation.Dispose();
-                    _gameControls.Enable();
-                    onComplete?.Invoke(false);
-                })
-                .Start();
         }
-        #endregion
-    }
-}

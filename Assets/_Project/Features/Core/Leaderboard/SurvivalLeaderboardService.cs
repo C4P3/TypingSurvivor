@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using TypingSurvivor.Features.Core.Leaderboard;
+using TypingSurvivor.Features.Core.Leaderboard.Rating;
 using Unity.Services.CloudCode;
 using UnityEngine;
 
@@ -9,7 +9,6 @@ namespace TypingSurvivor.Features.Core.Leaderboard
 {
     public class SurvivalLeaderboardService : ISurvivalLeaderboardService
     {
-        // Helper classes to deserialize the result from Cloud Code
         private class GetRankResult
         {
             public int playerRank { get; set; }
@@ -44,6 +43,13 @@ namespace TypingSurvivor.Features.Core.Leaderboard
                 Debug.LogError($"[SurvivalLeaderboardService] Failed to get player rank: {e.Message}");
                 return (0, 0); // Return default/error values
             }
+        }
+
+        public Task<List<LeaderboardEntry>> GetLeaderboardAsync(int offset, int limit)
+        {
+            // This is not implemented for the server-side service.
+            // The server-side logic might not need to fetch leaderboards in this way.
+            throw new NotImplementedException();
         }
     }
 }

@@ -39,6 +39,7 @@ namespace TypingSurvivor.Features.Game.Player
         private IPlayerStatusSystemReader _statusReader;
         private IGameStateWriter _gameStateWriter;
         private Grid _grid;
+        private GameManager _gameManager;
 
         // --- 同期変数 ---
         private readonly NetworkVariable<PlayerState> _currentState = new(writePerm: NetworkVariableWritePermission.Server);
@@ -58,6 +59,7 @@ namespace TypingSurvivor.Features.Game.Player
         public ITypingService TypingService => _typingService;
         #endregion
 
+
         #region Unity & Network Callbacks
 
         private void Awake()
@@ -69,6 +71,13 @@ namespace TypingSurvivor.Features.Game.Player
         {
             _currentState.OnValueChanged += OnStateChanged;
             NetworkGridPosition.OnValueChanged += OnGridPositionChanged;
+
+            // Find the GameManager in the scene. This works for both server and clients.
+            _gameManager = FindFirstObjectByType<GameManager>();
+            if (_gameManager == null)
+            {
+                Debug.LogError("Could not find GameManager in scene!");
+            }
 
             var serviceLocator = AppManager.Instance;
             if (serviceLocator == null)
@@ -111,15 +120,16 @@ namespace TypingSurvivor.Features.Game.Player
                 }
 
                 // Register this client's PlayerId and Name with the server
-                if (GameManager.Instance != null)
+                if (_gameManager != null)
                 {
                     var playerId = AuthenticationService.Instance.PlayerId;
-                    GameManager.Instance.RegisterPlayerIdServerRpc(playerId);
+                    _gameManager.RegisterPlayerIdServerRpc(playerId);
                     LoadAndRegisterPlayerName();
                 }
                 else
                 {
-                    Debug.LogError("GameManager instance not found! Cannot register PlayerId.");
+                    // This log is now more critical as it indicates a fundamental scene setup issue.
+                    Debug.LogError("GameManager could not be found, cannot register PlayerId!");
                 }
 
                 if (IsServer) OnPlayerSpawned_Server?.Invoke(OwnerClientId, transform.position);

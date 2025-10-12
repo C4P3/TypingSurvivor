@@ -43,5 +43,22 @@ namespace TypingSurvivor.Features.Core.Auth
                 return false;
             }
         }
+
+        public async Task UpdatePlayerNameAsync(string newName)
+        {
+            try
+            {
+                await AuthenticationService.Instance.UpdatePlayerNameAsync(newName);
+                Debug.Log($"Player name updated to: {newName}");
+            }
+            catch (AuthenticationException ex)
+            {
+                Debug.LogError($"Failed to update player name: {ex.Message}");
+            }
+            catch (RequestFailedException ex)
+            {
+                Debug.LogError($"Failed to update player name: {ex.Message}");
+            }
+        }
     }
 }
