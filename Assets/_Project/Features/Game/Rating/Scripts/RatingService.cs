@@ -98,10 +98,15 @@ namespace TypingSurvivor.Features.Game.Rating
                 return (0, 0, 0, 0);
             }
 
-            Debug.Log("[RatingService] Calling _cloudSaveService.GetRatingAsync...");
-            // Load ratings directly using the new service method
-            int oldWinnerRating = await _cloudSaveService.GetRatingAsync(winnerAuthId);
-            int oldLoserRating = await _cloudSaveService.GetRatingAsync(loserAuthId);
+            Debug.Log("[RatingService] Calling _cloudSaveService.GetRatingAsync for both players...");
+            // Load ratings in parallel for efficiency and robustness
+            Task<int> winnerRatingTask = _cloudSaveService.GetRatingAsync(winnerAuthId);
+            Task<int> loserRatingTask = _cloudSaveService.GetRatingAsync(loserAuthId);
+
+            await Task.WhenAll(winnerRatingTask, loserRatingTask);
+
+            int oldWinnerRating = winnerRatingTask.Result;
+            int oldLoserRating = loserRatingTask.Result;
             Debug.Log($"[RatingService] Ratings loaded: Winner={oldWinnerRating}, Loser={oldLoserRating}");
 
             double expectedWinner = 1.0 / (1.0 + System.Math.Pow(10, (double)(oldLoserRating - oldWinnerRating) / 400.0));
