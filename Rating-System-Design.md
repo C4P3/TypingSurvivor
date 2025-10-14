@@ -208,3 +208,29 @@ module.exports = async ({ context, params }) => {
         *   **データ取得**: `IRatingLeaderboardService`（レート）と`ISurvivalLeaderboardService`（サバイバル）を介して、ランキングデータを非同期に取得する。
         *   **UI生成**: 取得したデータリストに基づき、ランキングの各行を表す`RankingEntry`プレハブを動的に生成・表示する。
         *   **ページネーション**: レートランキングにおいて、次／前ページのボタンを提供し、表示するデータのオフセットを管理する。
+    
+    ## 7. 実装上の注意点 (Implementation Notes)
+    
+    ### 7.1. Cloud CodeのHTTPレスポンス構造
+    
+    サーバー側のC#コード(`CloudSaveService`)のように、Cloud CodeのエンドポイントをSDKではなく生のHTTPリクエストで直接呼び出す場合、JSONレスポンスの構造に注意が必要である。
+    
+    クライアントSDKの`CloudCodeService.Instance.CallEndpointAsync<T>()`はレスポンスのラッパーを自動で処理してくれるが、HTTPで直接呼び出した場合、返り値は`output`オブジェクトでラップされる。
+    
+    **誤った想定:**
+    ```json
+    {
+      "Rating": 1500
+    }
+    ```
+    
+    **実際のレスポンス構造:**
+    ```json
+    {
+      "output": {
+        "Rating": 1500
+      }
+    }
+    ```
+    
+    このため、サーバー側でレスポンスをデシリアライズする際は、この`output`ラッパーを考慮したクラス構造を定義する必要がある。これを怠ると、値が取得できず`NullReferenceException`等の原因となる。

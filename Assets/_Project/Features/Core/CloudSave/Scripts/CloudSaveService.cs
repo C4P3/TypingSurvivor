@@ -130,14 +130,11 @@ namespace TypingSurvivor.Features.Core.CloudSave
                 response.EnsureSuccessStatusCode();
 
                 var responseBody = await response.Content.ReadAsStringAsync();
-                Debug.Log($"[CloudSaveService] GetRating response body for player {playerId}: {responseBody}");
-
                 // Cloud Code HTTP response wraps the actual return value in a 'data' object.
                 // We need to deserialize to a wrapper class first.
                 var cloudCodeResponse = JsonConvert.DeserializeObject<CloudCodeHttpResponse<GetRatingResult>>(responseBody);
                 var result = cloudCodeResponse.Output;
 
-                Debug.Log($"[CloudSaveService] Parsed rating for player {playerId}: {result.Rating}");
                 return result.Rating;
             }
             catch (Exception e)
