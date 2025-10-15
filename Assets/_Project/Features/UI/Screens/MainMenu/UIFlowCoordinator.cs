@@ -29,7 +29,8 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             InRanking,
             InShop,
             InSettings,
-            EnteringMatchCode
+            EnteringMatchCode,
+            InTestServerMenu
         }
 
         [Header("UI System")]
@@ -47,6 +48,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private ShopScreen _shopScreen;
         [SerializeField] private SettingsScreen _settingsScreen;
         [SerializeField] private ConfirmationDialog _confirmationDialog;
+        [SerializeField] private TestServerPanel _testServerPanel;
 
         [Header("Matchmaking Panels")]
         [SerializeField] private MatchmakingWaitPanel _rankedWaitPanel;
@@ -101,6 +103,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _rankingScreen.Initialize(this);
             _howToPlayScreen.Initialize(this);
             _confirmationDialog.Initialize(_uiManager);
+            _testServerPanel.Initialize(this);
             
             // Initialize matchmaking
             _matchmakingService = AppManager.Instance.MatchmakingService;
@@ -202,6 +205,9 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                     break;
                 case PlayerUIState.EnteringMatchCode:
                     _uiManager.PushPanel(_matchCodeScreen);
+                    break;
+                case PlayerUIState.InTestServerMenu:
+                    _uiManager.PushPanel(_testServerPanel);
                     break;
                 case PlayerUIState.InHowToPlay:
                     _uiManager.ShowScreen(_howToPlayScreen);
@@ -349,61 +355,20 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             Debug.Log($"Matchmaking Status: {status}");
         }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        private string _ipAddressTest = "127.0.0.1";
-        private string _portTest = "7777";
-
-        private void OnGUI()
+    #region test用サーバー立ち上げ及び参加
+        public void StartTestClient(string ip, ushort port)
         {
-            // メインメニューにいて、まだ接続していない場合のみUIを表示
-            if (_currentState == PlayerUIState.InMainMenu && !NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
-            {
-                // UI要素の表示領域を定義
-                GUILayout.BeginArea(new Rect(10, 10, 400, 400));
-
-                // IPアドレス入力欄
-                GUILayout.Label("IP Address");
-                _ipAddressTest = GUILayout.TextField(_ipAddressTest);
-
-                // ポート番号入力欄
-                GUILayout.Label("Port");
-                _portTest = GUILayout.TextField(_portTest);
-
-                // Clientボタンが押された時の処理
-                if (GUILayout.Button("Client (Free Match)"))
-                {
-                    // ushort型に変換して使用
-                    if (ushort.TryParse(_portTest, out ushort portNumber))
-                    {
-                        AppManager.Instance.StartClient(_ipAddressTest, portNumber, GameModeType.MultiPlayer);
-                    }
-                    else
-                    {
-                        Debug.LogError("Invalid Port Number!");
-                    }
-                }
-
-                // Serverボタンが押された時の処理
-                if (GUILayout.Button("Server (Free Match)"))
-                {
-                    // ushort型に変換して使用
-                    if (ushort.TryParse(_portTest, out ushort portNumber))
-                    {
-                        AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
-                        NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData(_ipAddressTest, portNumber);
-                        NetworkManager.Singleton.StartServer();
-                        NetworkManager.Singleton.SceneManager.LoadScene("Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
-                    }
-                    else
-                    {
-                        Debug.LogError("Invalid Port Number!");
-                    }
-                }
-
-                GUILayout.EndArea();
-            }
+            AppManager.Instance.StartClient(ip, port, GameModeType.MultiPlayer);
         }
-#endif
+
+        public void StartTestServer(string ip, ushort port)
+        {
+            AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
+            NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData(ip, port);
+            NetworkManager.Singleton.StartServer();
+            NetworkManager.Singleton.SceneManager.LoadScene("Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
+        }
+    #endregion
     }
 }
 

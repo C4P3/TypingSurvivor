@@ -13,6 +13,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private InteractiveButton _rankedMatchButton;
         [SerializeField] private InteractiveButton _privateMatchButton;
         [SerializeField] private InteractiveButton _backButton;
+        [SerializeField] private InteractiveButton _testServerButton;
 
         private UIFlowCoordinator _flowCoordinator;
         
@@ -28,6 +29,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _rankedMatchButton.onClick.AddListener(OnRankedMatchClicked);
             _privateMatchButton.onClick.AddListener(OnPrivateMatchClicked);
             _backButton.onClick.AddListener(OnBackButtonClicked);
+            if(_testServerButton) _testServerButton.onClick.AddListener(OnTestServerClicked);
         }
 
         private async void OnFreeMatchClicked()
@@ -45,6 +47,11 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _flowCoordinator.RequestStateChange(UIFlowCoordinator.PlayerUIState.EnteringMatchCode);
         }
 
+        private void OnTestServerClicked()
+        {
+            _flowCoordinator.RequestStateChange(UIFlowCoordinator.PlayerUIState.InTestServerMenu);
+        }
+
         private void OnBackButtonClicked()
         {
             _flowCoordinator.CloseCurrentPanel();
@@ -56,6 +63,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _rankedMatchButton.onClick.RemoveAllListeners();
             _privateMatchButton.onClick.RemoveAllListeners();
             _backButton.onClick.RemoveAllListeners();
+            if(_testServerButton) _testServerButton.onClick.RemoveAllListeners();
         }
     }
 }
