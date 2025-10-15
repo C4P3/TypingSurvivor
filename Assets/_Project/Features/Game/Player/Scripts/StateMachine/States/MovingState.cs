@@ -21,7 +21,7 @@ namespace TypingSurvivor.Features.Game.Player
 
         public void Enter(PlayerState stateFrom)
         {
-            ResetMovement();
+            ResetMovement(_facade.NetworkGridPosition.Value);
         }
 
         public void Execute()
@@ -43,20 +43,20 @@ namespace TypingSurvivor.Features.Game.Player
             }
         }
 
-        public void OnTargetPositionChanged()
+        public void OnTargetPositionChanged(Vector3Int newValue)
         {
             // サーバーから目標座標の変更通知が来たので、移動アニメーションをリセット
-            ResetMovement();
+            ResetMovement(newValue);
         }
 
-        private void ResetMovement()
+        private void ResetMovement(Vector3Int newValue)
         {
             var grid = _facade.Grid;
             if (grid == null) return; // Facadeの準備ができていない場合は何もしない
 
             _moveDuration = _facade.MoveDuration;
             _startPos = _transform.position;
-            _targetPos = grid.GetCellCenterWorld(_facade.NetworkGridPosition.Value);
+            _targetPos = grid.GetCellCenterWorld(newValue);
             _elapsedTime = 0f;
         }
     }

@@ -14,6 +14,7 @@ using TypingSurvivor.Features.Game.Level;
 
 using TypingSurvivor.Features.Game.Level.Data;
 using TypingSurvivor.Features.Game.Gameplay;
+using TypingSurvivor.Features.Game.Gameplay.Data;
 
 namespace TypingSurvivor.Features.Game.Player
 {
@@ -38,6 +39,7 @@ namespace TypingSurvivor.Features.Game.Player
         private IItemService _itemService;
         private IPlayerStatusSystemReader _statusReader;
         private IGameStateWriter _gameStateWriter;
+        private IGameStateReader _gameStateReader;
         private Grid _grid;
         private GameManager _gameManager;
 
@@ -88,12 +90,16 @@ namespace TypingSurvivor.Features.Game.Player
             _grid = serviceLocator.GetService<Grid>();
             if (_grid == null) Debug.LogError("Grid not found in services.");
 
+            _gameStateReader = serviceLocator.GetService<IGameStateReader>();
+            if (_gameStateReader == null) Debug.LogError("IGameStateReaderの実装が見つかりません。");
+
             if (IsServer)
             {
                 _levelService = serviceLocator.GetService<ILevelService>();
                 _itemService = serviceLocator.GetService<IItemService>();
                 _statusReader = serviceLocator.StatusReader;
                 _gameStateWriter = serviceLocator.GetService<IGameStateWriter>();
+
                 if (_levelService == null) Debug.LogError("ILevelServiceの実装が見つかりません。");
                 if (_itemService == null) Debug.LogError("IItemServiceの実装が見つかりません。");
                 if (_statusReader == null) Debug.LogError("IPlayerStatusSystemReaderの実装が見つかりません。");
@@ -196,7 +202,7 @@ namespace TypingSurvivor.Features.Game.Player
         {
             var states = new IPlayerState[]
             {
-                new RoamingState(),
+                new RoamingState(this),
                 new MovingState(this, transform),
                 new TypingState(this)
             };
@@ -425,8 +431,8 @@ namespace TypingSurvivor.Features.Game.Player
             // This avoids the race condition of checking the player's state, which might not have been updated yet.
             if (IsClient)
             {
-                // If the distance is greater than a normal move (e.g., > sqrt(2) for diagonals), it's a teleport.
-                if (Vector3Int.Distance(previousValue, newValue) > 1.5f)
+                // 初期スポーン以外での座標変化は瞬間移動で対応する
+                if (_gameStateReader?.CurrentPhaseNV?.Value != GamePhase.Playing)
                 {
                     // Snap the position instantly for spawns and respawns.
                     transform.position = _grid.GetCellCenterWorld(newValue);
@@ -436,7 +442,7 @@ namespace TypingSurvivor.Features.Game.Player
             // Always notify the state machine.
             // - For a move, it will start the Lerp from the current position.
             // - For a teleport, it will start the Lerp from the newly snapped position (resulting in no movement, which is correct).
-            _stateMachine.CurrentIPlayerState?.OnTargetPositionChanged();
+            _stateMachine.CurrentIPlayerState?.OnTargetPositionChanged(newValue);
         }
         
         #endregion

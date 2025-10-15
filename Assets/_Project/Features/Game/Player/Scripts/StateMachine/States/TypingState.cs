@@ -40,7 +40,7 @@ namespace TypingSurvivor.Features.Game.Player
             }
         }
 
-        public void OnTargetPositionChanged()
+        public void OnTargetPositionChanged(Vector3Int newValue)
         {
             // Typing状態では何もしない
         }
