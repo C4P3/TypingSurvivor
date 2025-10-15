@@ -350,38 +350,54 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private string _ipAddressTest = "127.0.0.1";
+        private string _portTest = "7777";
+
         private void OnGUI()
         {
-            // Only show the buttons if we are in the main menu and not connected
+            // メインメニューにいて、まだ接続していない場合のみUIを表示
             if (_currentState == PlayerUIState.InMainMenu && !NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
             {
-                // Position the buttons in the top-left corner
-                GUILayout.BeginArea(new Rect(10, 10, 200, 200));
+                // UI要素の表示領域を定義
+                GUILayout.BeginArea(new Rect(10, 10, 400, 400));
 
-                if (GUILayout.Button("Client (Ranked)"))
-                {
-                    AppManager.Instance.StartClient("127.0.0.1", 7777, GameModeType.RankedMatch);
-                }
+                // IPアドレス入力欄
+                GUILayout.Label("IP Address");
+                _ipAddressTest = GUILayout.TextField(_ipAddressTest);
 
+                // ポート番号入力欄
+                GUILayout.Label("Port");
+                _portTest = GUILayout.TextField(_portTest);
+
+                // Clientボタンが押された時の処理
                 if (GUILayout.Button("Client (Free Match)"))
                 {
-                    AppManager.Instance.StartClient("127.0.0.1", 7777, GameModeType.MultiPlayer);
+                    // ushort型に変換して使用
+                    if (ushort.TryParse(_portTest, out ushort portNumber))
+                    {
+                        AppManager.Instance.StartClient(_ipAddressTest, portNumber, GameModeType.MultiPlayer);
+                    }
+                    else
+                    {
+                        Debug.LogError("Invalid Port Number!");
+                    }
                 }
 
+                // Serverボタンが押された時の処理
                 if (GUILayout.Button("Server (Free Match)"))
                 {
-                    AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
-                    NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData("127.0.0.1", 7777);
-                    NetworkManager.Singleton.StartServer();
-                    NetworkManager.Singleton.SceneManager.LoadScene("Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
-                }
-
-                if (GUILayout.Button("Server (Ranked)"))
-                {
-                    AppManager.Instance.SetGameMode(GameModeType.RankedMatch);
-                    NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData("127.0.0.1", 7777);
-                    NetworkManager.Singleton.StartServer();
-                    NetworkManager.Singleton.SceneManager.LoadScene("Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                    // ushort型に変換して使用
+                    if (ushort.TryParse(_portTest, out ushort portNumber))
+                    {
+                        AppManager.Instance.SetGameMode(GameModeType.MultiPlayer);
+                        NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>().SetConnectionData(_ipAddressTest, portNumber);
+                        NetworkManager.Singleton.StartServer();
+                        NetworkManager.Singleton.SceneManager.LoadScene("Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                    }
+                    else
+                    {
+                        Debug.LogError("Invalid Port Number!");
+                    }
                 }
 
                 GUILayout.EndArea();
