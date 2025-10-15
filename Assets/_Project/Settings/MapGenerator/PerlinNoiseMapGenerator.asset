@@ -15,5 +15,5 @@ MonoBehaviour:
   _width: 100
   _height: 100
   _terrainPreset: {fileID: 11400000, guid: cdd2b47155f8bfb428d60d74e44b9506, type: 2}
-  _noiseScale: 0.01
+  _noiseScale: 0.00001
   _blockThreshold: 0

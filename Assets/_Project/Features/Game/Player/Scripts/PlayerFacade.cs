@@ -110,9 +110,16 @@ namespace TypingSurvivor.Features.Game.Player
 
             if (IsOwner)
             {
-                _input.enabled = true;
+                // _input.enabled is now controlled by HandleGamePhaseChanged
                 _input.OnMovePerformed += HandleMovePerformed;
                 _input.OnMoveCanceled += HandleMoveCanceled;
+
+                if (_gameStateReader != null)
+                {
+                    _gameStateReader.CurrentPhaseNV.OnValueChanged += HandleGamePhaseChanged;
+                    // Set initial state
+                    HandleGamePhaseChanged(GamePhase.WaitingForPlayers, _gameStateReader.CurrentPhaseNV.Value);
+                }
 
                 _typingService = serviceLocator.GetService<ITypingService>();
                 if (_typingService != null)
@@ -172,6 +179,11 @@ namespace TypingSurvivor.Features.Game.Player
                 _input.OnMovePerformed -= HandleMovePerformed;
                 _input.OnMoveCanceled -= HandleMoveCanceled;
 
+                if (_gameStateReader != null)
+                {
+                    _gameStateReader.CurrentPhaseNV.OnValueChanged -= HandleGamePhaseChanged;
+                }
+
                 if (_typingService != null)
                 {
                     _typingService.OnTypingSuccess -= HandleTypingSuccess;
@@ -181,6 +193,23 @@ namespace TypingSurvivor.Features.Game.Player
             }
             
             if(IsServer) OnPlayerDespawned_Server?.Invoke(OwnerClientId);
+        }
+
+        private void HandleGamePhaseChanged(GamePhase previous, GamePhase current)
+        {
+            if (!IsOwner) return;
+
+            switch (current)
+            {
+                case GamePhase.Playing:
+                    _input.enabled = true;
+                    break;
+                case GamePhase.Countdown:
+                case GamePhase.Finished:
+                case GamePhase.WaitingForPlayers:
+                    _input.enabled = false;
+                    break;
+            }
         }
 
         private void Update()
