@@ -13,6 +13,8 @@ namespace TypingSurvivor.Features.UI.Common
 
         protected Coroutine _fadeCoroutine;
 
+        public bool IsVisible => _canvasGroup != null && _canvasGroup.alpha > 0;
+
         protected virtual void Awake()
         {
             if (_canvasGroup == null)
@@ -38,12 +40,45 @@ namespace TypingSurvivor.Features.UI.Common
 
         public virtual void Hide()
         {
+            // 実行中のフェードがあれば止める
             if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
-            
-            _canvasGroup.interactable = false;
-            _canvasGroup.blocksRaycasts = false;
 
-            _fadeCoroutine = StartCoroutine(Fade(0f, null));
+            // 子階層のAnimationSequencerをすべてリセットする
+            var sequencers = GetComponentsInChildren<AnimationSequencer>(true);
+            foreach (var sequencer in sequencers)
+            {
+                if (sequencer != null)
+                {
+                    sequencer.ResetSequenceAndStop();
+                }
+            }
+
+            // "現在表示されている" 子階層の ScreenBase をすべて非表示にする
+            var childScreens = GetComponentsInChildren<ScreenBase>(true);
+            foreach (var screen in childScreens)
+            {
+                if (screen != null && screen != this && screen.IsVisible)
+                {
+                    screen.Hide();
+                }
+            }
+
+            // 自身のインタラクションを無効にし、フェードアウトを開始する
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.interactable = false;
+                _canvasGroup.blocksRaycasts = false;
+            }
+            
+            if (gameObject.activeInHierarchy)
+            {
+                _fadeCoroutine = StartCoroutine(Fade(0f, null));
+            }
+            else
+            {
+                // ゲームオブジェクトが非アクティブなら、即座にalphaを0にする
+                if (_canvasGroup != null) _canvasGroup.alpha = 0;
+            }
         }
 
         protected virtual IEnumerator Fade(float targetAlpha, System.Action onCompleted = null)

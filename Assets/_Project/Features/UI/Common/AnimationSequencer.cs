@@ -37,6 +37,30 @@ public class AnimationSequencer : MonoBehaviour
     private bool _isWaitingForResume = false;
     private Coroutine _sequenceCoroutine;
 
+    public void ResetSequenceAndStop()
+    {
+        if (_sequenceCoroutine != null)
+        {
+            StopCoroutine(_sequenceCoroutine);
+            _sequenceCoroutine = null;
+        }
+
+        foreach (var step in _sequence)
+        {
+            if (step.panel != null)
+            {
+                // パネルが非アクティブならHide()が効かない可能性があるのでアクティブにする
+                if (!step.panel.gameObject.activeInHierarchy)
+                {
+                    step.panel.gameObject.SetActive(true);
+                }
+                step.panel.Hide();
+            }
+        }
+        _isSkipped = false;
+        if (_skipButton) _skipButton.gameObject.SetActive(false);
+    }
+
     private void Awake()
     {
         _skipButton?.onClick.AddListener(Skip);
