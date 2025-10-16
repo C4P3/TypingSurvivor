@@ -116,9 +116,14 @@ public class LevelManager : NetworkBehaviour, ILevelService
             PlayerFacade.OnPlayerDespawned_Server += HandlePlayerDespawned;
             PlayerFacade.OnPlayerMoved_Server += HandlePlayerMoved;
 
-            foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+            // スポーン済みの既存プレイヤーを処理
+            // これにより、LevelManagerより先にPlayerFacadeがスポーンした場合の競合状態を防ぐ
+            foreach (var player in FindObjectsByType<PlayerFacade>(FindObjectsSortMode.None))
             {
-                HandleClientConnected(client.ClientId);
+                if (player.IsSpawned)
+                {
+                    HandlePlayerSpawned(player.OwnerClientId, player.transform.position);
+                }
             }
         }
 
@@ -511,12 +516,6 @@ public class LevelManager : NetworkBehaviour, ILevelService
         }
     }
 
-    private void HandleClientConnected(ulong clientId)
-    {
-        _playerChunkPositions_Server[clientId] = Vector2Int.zero;
-        UpdateActiveChunks();
-    }
-    
     private void HandlePlayerSpawned(ulong clientId, Vector3 spawnPosition)
     {
         _playerChunkPositions_Server[clientId] = WorldToChunkPos(spawnPosition);

@@ -405,11 +405,17 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     Vector3Int gridPos = spawnPoints[i];
                     Vector3 spawnPos = _grid.GetCellCenterWorld(gridPos);
 
-                    GameObject playerInstance = Instantiate(_gameConfig.PlayerPrefab, spawnPos, Quaternion.identity);
+                    // Instantiate at (0,0) and then explicitly set position after spawning
+                    // to avoid position reset during Netcode's spawn process.
+                    GameObject playerInstance = Instantiate(_gameConfig.PlayerPrefab, Vector3.zero, Quaternion.identity);
+                    
                     var playerNetworkObject = playerInstance.GetComponent<NetworkObject>();
                     playerNetworkObject.SpawnAsPlayerObject(clientId, true);
 
                     var playerFacade = playerInstance.GetComponent<TypingSurvivor.Features.Game.Player.PlayerFacade>();
+
+                    // Explicitly set position and grid data on the server after spawning.
+                    playerInstance.transform.position = spawnPos;
                     playerFacade.NetworkGridPosition.Value = gridPos;
 
                     // Register initial position in the GameState
