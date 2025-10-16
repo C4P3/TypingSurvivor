@@ -37,7 +37,19 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private readonly HashSet<ulong> _rematchRequesters = new();
         private Coroutine _serverGameLoop;
         private GameConfig _gameConfig;
-        private float oxygenDecreaseRate = 5.0f;
+
+        // --- Oxygen Decrease Settings ---
+        // Phase 1 (Linear)
+        private const float OXYGEN_DECREASE_START_RATE = 2.5f;
+        private const float OXYGEN_DECREASE_MID_RATE = 5.0f;
+        private const float TIME_TO_SWITCH_TO_LOG = 300.0f; // 10 minutes
+        private float _linearRateOfChange;
+
+        // Phase 2 (Logarithmic)
+        private const float LOG_TIME_SCALE = 60.0f; // Scales the time input for the log function
+        private float _logCoefficient;
+        // --- End Oxygen Decrease Settings ---
+
         private const float LowOxygenThreshold = 0.3f; // 30%
         private readonly HashSet<ulong> _playersInLowOxygen = new();
         public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
@@ -118,6 +130,11 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
             if (IsServer)
             {
+                // --- Calculate oxygen decrease rates ---
+                _linearRateOfChange = (OXYGEN_DECREASE_MID_RATE - OXYGEN_DECREASE_START_RATE) / TIME_TO_SWITCH_TO_LOG;
+                _logCoefficient = _linearRateOfChange * LOG_TIME_SCALE;
+                // ---
+
                 NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnected;
                 NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnected;
                 
@@ -273,6 +290,23 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 _gameState.GameTimer.Value += Time.deltaTime;
 
+                // --- Calculate current oxygen decrease rate based on game time ---
+                float gameTime = _gameState.GameTimer.Value;
+                float currentRate;
+
+                if (gameTime <= TIME_TO_SWITCH_TO_LOG)
+                {
+                    // Phase 1: Linear increase
+                    currentRate = OXYGEN_DECREASE_START_RATE + (gameTime * _linearRateOfChange);
+                }
+                else
+                {
+                    // Phase 2: Logarithmic increase
+                    float timeSinceSwitch = gameTime - TIME_TO_SWITCH_TO_LOG;
+                    currentRate = OXYGEN_DECREASE_MID_RATE + _logCoefficient * Mathf.Log(timeSinceSwitch / LOG_TIME_SCALE + 1);
+                }
+                // ---
+
                 // Decrease oxygen and check for low oxygen state changes
                 for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
                 {
@@ -282,7 +316,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     // --- Oxygen Decrease Logic ---
                     float damageReduction = _statusReader.GetStatValue(data.ClientId, PlayerStat.DamageReduction);
                     damageReduction = Mathf.Clamp01(damageReduction);
-                    float actualDecrease = oxygenDecreaseRate * (1.0f - damageReduction);
+                    float actualDecrease = currentRate * (1.0f - damageReduction);
                     data.Oxygen -= actualDecrease * Time.deltaTime;
 
                     if (data.Oxygen <= 0)
