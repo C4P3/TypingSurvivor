@@ -627,6 +627,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             if (!IsServer) return;
 
+            // Reset any pending oxygen changes from the previous round
+            _oxygenDeltaThisFrame.Clear();
+
             for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
             {
                 var data = _gameState.PlayerDatas[i];
