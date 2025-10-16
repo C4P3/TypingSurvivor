@@ -17,8 +17,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
 {
     public class GameManager : NetworkBehaviour, IGameStateWriter
     {
-
-
         private GameState _gameState;
         private IGameModeStrategy _gameModeStrategy;
         private ILevelService _levelService;
@@ -27,6 +25,9 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private Grid _grid;
         private readonly Dictionary<ulong, PlayerFacade> _playerInstances = new();
         private readonly Dictionary<ulong, string> _clientIdToPlayerIdMap = new();
+
+        // --- Oxygen Change Management ---
+        private readonly Dictionary<ulong, float> _oxygenDeltaThisFrame = new();
 
         public string GetPlayerId(ulong clientId)
         {
@@ -103,9 +104,6 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
         }
 
-
-
-
         public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig, Grid grid)
         {
             _gameState = gameState;
@@ -159,6 +157,26 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnected;
                 NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnected;
             }
+        }
+
+        private void LateUpdate()
+        {
+            if (!IsServer) return;
+            if (_oxygenDeltaThisFrame.Count == 0) return;
+
+            // Apply all accumulated oxygen changes for this frame
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                var data = _gameState.PlayerDatas[i];
+                if (_oxygenDeltaThisFrame.TryGetValue(data.ClientId, out float delta))
+                {
+                    float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
+                    data.Oxygen = Mathf.Clamp(data.Oxygen + delta, 0, maxOxygen);
+                    _gameState.PlayerDatas[i] = data;
+                }
+            }
+
+            _oxygenDeltaThisFrame.Clear();
         }
 
         private void HandleClientConnected(ulong clientId)
@@ -317,14 +335,18 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     float damageReduction = _statusReader.GetStatValue(data.ClientId, PlayerStat.DamageReduction);
                     damageReduction = Mathf.Clamp01(damageReduction);
                     float actualDecrease = currentRate * (1.0f - damageReduction);
-                    data.Oxygen -= actualDecrease * Time.deltaTime;
+                    
+                    // Record the decrease in the delta dictionary
+                    if (!_oxygenDeltaThisFrame.ContainsKey(data.ClientId)) _oxygenDeltaThisFrame[data.ClientId] = 0;
+                    _oxygenDeltaThisFrame[data.ClientId] -= actualDecrease * Time.deltaTime;
 
-                    if (data.Oxygen <= 0)
+                    // Check if oxygen will be depleted this frame to set game over state
+                    if (data.Oxygen + _oxygenDeltaThisFrame[data.ClientId] <= 0)
                     {
-                        data.Oxygen = 0;
-                        data.IsGameOver = true;
+                        var mutableData = _gameState.PlayerDatas[i];
+                        mutableData.IsGameOver = true;
+                        _gameState.PlayerDatas[i] = mutableData;
                     }
-                    _gameState.PlayerDatas[i] = data;
                     // --- End Oxygen Decrease ---
 
                     // --- Low Oxygen State Change Check ---
@@ -632,17 +654,12 @@ namespace TypingSurvivor.Features.Game.Gameplay
         public void AddOxygen(ulong clientId, float amount)
         {
             if (!IsServer) return;
-            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            
+            if (!_oxygenDeltaThisFrame.ContainsKey(clientId))
             {
-                if (_gameState.PlayerDatas[i].ClientId == clientId)
-                {
-                    var data = _gameState.PlayerDatas[i];
-                    float maxOxygen = _statusReader.GetStatValue(clientId, PlayerStat.MaxOxygen);
-                    data.Oxygen = Mathf.Clamp(data.Oxygen + amount, 0, maxOxygen);
-                    _gameState.PlayerDatas[i] = data;
-                    return;
-                }
+                _oxygenDeltaThisFrame[clientId] = 0;
             }
+            _oxygenDeltaThisFrame[clientId] += amount;
         }
 
         public void UpdatePlayerPosition(ulong clientId, Vector3Int gridPosition)
@@ -803,6 +820,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             MusicManager.Instance.Play(bgmId, 0f);
         }
+
+
 
         // BGM停止用のRPC
         [ClientRpc]
