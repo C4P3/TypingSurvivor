@@ -53,7 +53,6 @@ namespace TypingSurvivor.Features.Game.Typing.Builder
                 {
                     case KanaType.Sokuon:
                         ProcessSokuonToken(nextToken);
-                        i++; // 促音は次のトークンも消費するため、インデックスを1つ進める
                         break;
                     case KanaType.Hatsuon:
                         ProcessHatsuonToken(nextToken);
@@ -122,8 +121,9 @@ namespace TypingSurvivor.Features.Game.Typing.Builder
         private void ProcessSokuonToken(KanaToken nextToken)
         {
             var rule = _table.Rules.Sokuon;
-            var romajiPatterns = new HashSet<string>(); // 重複を避ける
+            var romajiPatterns = new HashSet<string>(); // Use HashSet to avoid duplicates
 
+            // 1. Add consonant-doubling patterns by looking ahead
             if (nextToken != null && _table.Definitions.TryGetValue(nextToken.Kana, out var nextRomajiPatterns))
             {
                 foreach (var pattern in nextRomajiPatterns)
@@ -131,19 +131,26 @@ namespace TypingSurvivor.Features.Game.Typing.Builder
                     if (pattern.Length > 0)
                     {
                         string consonant = pattern.Substring(0, 1);
-                        if (rule.Consonants.TryGetValue(consonant, out var repeatConsonant))
+                        if (rule.Consonants.ContainsKey(consonant))
                         {
-                            // 繰り返す子音 + 本来のローマ字パターン
-                            romajiPatterns.Add(repeatConsonant + pattern);
+                            romajiPatterns.Add(consonant);
                         }
                     }
                 }
             }
 
-            // パターンが見つからなかった場合、またはデフォルトパターンがまだ追加されていない場合
-            if (romajiPatterns.Count == 0 || !romajiPatterns.Contains(rule.Default))
+            // 2. Add all default/fallback patterns for 'っ' from the main definitions
+            if (_table.Definitions.TryGetValue(rule.Character, out var defaultPatterns))
             {
-                 romajiPatterns.Add(rule.Default);
+                foreach (var pattern in defaultPatterns)
+                {
+                    romajiPatterns.Add(pattern);
+                }
+            }
+            else
+            {
+                // Failsafe in case 'っ' isn't in the definitions table
+                romajiPatterns.Add(rule.Default);
             }
             
             AddNewLeaves(romajiPatterns.ToList());
