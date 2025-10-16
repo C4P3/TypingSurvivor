@@ -461,7 +461,7 @@ namespace TypingSurvivor.Features.Game.Player
             if (IsClient)
             {
                 // 初期スポーン以外での座標変化は瞬間移動で対応する
-                if (_gameStateReader?.CurrentPhaseNV?.Value != GamePhase.Playing)
+                if (_gameStateReader?.CurrentPhaseNV?.Value != GamePhase.Playing && _gameStateReader?.CurrentPhaseNV?.Value != GamePhase.Finished)
                 {
                     // Snap the position instantly for spawns and respawns.
                     transform.position = _grid.GetCellCenterWorld(newValue);
