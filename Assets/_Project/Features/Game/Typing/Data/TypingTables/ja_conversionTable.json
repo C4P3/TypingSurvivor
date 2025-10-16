@@ -268,225 +268,381 @@
       "po"
     ],
     "きゃ": [
-      "kya"
+      "kya",
+      "kixya",
+      "kilya"
     ],
     "きゅ": [
-      "kyu"
+      "kyu",
+      "kixyu",
+      "kilyu"
     ],
     "きょ": [
-      "kyo"
+      "kyo",
+      "kixyo",
+      "kilyo"
     ],
     "ぎゃ": [
-      "gya"
+      "gya",
+      "gixya",
+      "gilya"
     ],
     "ぎゅ": [
-      "gyu"
+      "gyu",
+      "gixyu",
+      "gilyu"
     ],
     "ぎょ": [
-      "gyo"
+      "gyo",
+      "gixyo",
+      "gilyo"
     ],
     "しゃ": [
       "sya",
       "sha",
-      "sya"
+      "shixya",
+      "shilya",
+      "sixya",
+      "silya"
     ],
     "しゅ": [
       "syu",
       "shu",
-      "syu"
+      "shixyu",
+      "shilyu",
+      "sixyu",
+      "silyu"
     ],
     "しょ": [
       "syo",
       "sho",
-      "syo"
+      "shixyo",
+      "shilyo",
+      "sixyo",
+      "silyo"
     ],
     "じゃ": [
       "zya",
-      "ja"
+      "ja",
+      "jixya",
+      "jilya",
+      "zixya",
+      "zilya"
     ],
     "じゅ": [
       "zyu",
-      "ju"
+      "ju",
+      "jixyu",
+      "jilyu",
+      "zixyu",
+      "zilyu"
     ],
     "じょ": [
       "zyo",
-      "jo"
+      "jo",
+      "jixyo",
+      "jilyo",
+      "zixyo",
+      "zilyo"
     ],
     "ちゃ": [
       "tya",
       "cha",
-      "tya"
+      "chixya",
+      "chilya",
+      "tixya",
+      "tilya"
     ],
     "ちゅ": [
       "tyu",
       "chu",
-      "tyu"
+      "chixyu",
+      "chilyu",
+      "tixyu",
+      "tilyu"
     ],
     "ちょ": [
       "tyo",
       "cho",
-      "tyo"
+      "chixyo",
+      "chilyo",
+      "tixyo",
+      "tilyo"
     ],
     "ぢゃ": [
-      "dya"
+      "dya",
+      "dixya",
+      "dilya"
     ],
     "ぢゅ": [
-      "dyu"
+      "dyu",
+      "dixyu",
+      "dilyu"
     ],
     "ぢょ": [
-      "dyo"
+      "dyo",
+      "dixyo",
+      "dilyo"
     ],
     "にゃ": [
-      "nya"
+      "nya",
+      "nixya",
+      "nilya"
     ],
     "にゅ": [
-      "nyu"
+      "nyu",
+      "nixyu",
+      "nilyu"
     ],
     "にょ": [
-      "nyo"
+      "nyo",
+      "nixyo",
+      "nilyo"
     ],
     "ひゃ": [
-      "hya"
+      "hya",
+      "hixya",
+      "hilya"
     ],
     "ひゅ": [
-      "hyu"
+      "hyu",
+      "hixyu",
+      "hilyu"
     ],
     "ひょ": [
-      "hyo"
+      "hyo",
+      "hixyo",
+      "hilyo"
     ],
     "びゃ": [
-      "bya"
+      "bya",
+      "bixya",
+      "bilya"
     ],
     "びゅ": [
-      "byu"
+      "byu",
+      "bixyu",
+      "bilyu"
     ],
     "びょ": [
-      "byo"
+      "byo",
+      "bixyo",
+      "bilyo"
     ],
     "ぴゃ": [
-      "pya"
+      "pya",
+      "pixya",
+      "pilya"
     ],
     "ぴゅ": [
-      "pyu"
+      "pyu",
+      "pixyu",
+      "pilyu"
     ],
     "ぴょ": [
-      "pyo"
+      "pyo",
+      "pixyo",
+      "pilyo"
     ],
     "みゃ": [
-      "mya"
+      "mya",
+      "mixya",
+      "milya"
     ],
     "みゅ": [
-      "myu"
+      "myu",
+      "mixyu",
+      "milyu"
     ],
     "みょ": [
-      "myo"
+      "myo",
+      "mixyo",
+      "milyo"
     ],
     "りゃ": [
-      "rya"
+      "rya",
+      "rixya",
+      "rilya"
     ],
     "りゅ": [
-      "ryu"
+      "ryu",
+      "rixyu",
+      "rilyu"
     ],
     "りょ": [
-      "ryo"
+      "ryo",
+      "rixyo",
+      "rilyo"
     ],
     "うぁ": [
-      "wha"
+      "wha",
+      "ula",
+      "uxa"
     ],
     "うぃ": [
       "wi",
-      "whi"
+      "whi",
+      "uli",
+      "uxi"
     ],
     "うぇ": [
       "we",
-      "whe"
+      "whe",
+      "ule",
+      "uxe"
     ],
     "うぉ": [
-      "who"
+      "who",
+      "ulo",
+      "uxo"
     ],
     "つぁ": [
-      "tsa"
+      "tsa",
+      "tsuxa",
+      "tsula"
     ],
     "つぃ": [
-      "tsi"
+      "tsi",
+      "tsuxi",
+      "tsuli"
     ],
     "つぇ": [
-      "tse"
+      "tse",
+      "tsuxe",
+      "tsule"
     ],
     "つぉ": [
-      "tso"
+      "tso",
+      "tsuxo",
+      "tsulo"
     ],
     "てゃ": [
-      "tha"
+      "tha",
+      "texya",
+      "telya"
     ],
     "てぃ": [
-      "thi"
+      "thi",
+      "texi",
+      "teli"
     ],
     "てゅ": [
-      "thu"
+      "thu",
+      "texyu",
+      "telyu"
     ],
     "てぇ": [
-      "the"
+      "the",
+      "texe",
+      "tele"
     ],
     "てょ": [
-      "tho"
+      "tho",
+      "texyo",
+      "telyo"
     ],
     "とぁ": [
-      "twa"
+      "twa",
+      "toxa",
+      "tola"
     ],
     "とぃ": [
-      "twi"
+      "twi",
+      "toxi",
+      "toli"
     ],
     "とぅ": [
-      "twu"
+      "twu",
+      "toxu",
+      "tolu"
     ],
     "とぇ": [
-      "twe"
+      "twe",
+      "toxe",
+      "tole"
     ],
     "とぉ": [
-      "two"
+      "two",
+      "toxo",
+      "tolo"
     ],
     "でゃ": [
-      "dha"
+      "dha",
+      "dexya",
+      "delya"
     ],
     "でぃ": [
-      "dhi"
+      "dhi",
+      "dexi",
+      "deli"
     ],
     "でゅ": [
-      "dhu"
+      "dhu",
+      "dexyu",
+      "delyu"
     ],
     "でぇ": [
-      "dhe"
+      "dhe",
+      "dexe",
+      "dele"
     ],
     "でょ": [
-      "dho"
+      "dho",
+      "dexyo",
+      "delyo"
     ],
     "どぁ": [
-      "dwa"
+      "dwa",
+      "doxa",
+      "dola"
     ],
     "どぃ": [
-      "dwi"
+      "dwi",
+      "doxi",
+      "doli"
     ],
     "どぅ": [
-      "dwu"
+      "dwu",
+      "doxu",
+      "dolu"
     ],
     "どぇ": [
-      "dwe"
+      "dwe",
+      "doxe",
+      "dole"
     ],
     "どぉ": [
-      "dwo"
+      "dwo",
+      "doxo",
+      "dolo"
     ],
     "ふぁ": [
-      "fa"
+      "fa",
+      "fuxa",
+      "fula",
+      "huxa",
+      "hula"
     ],
     "ふぃ": [
-      "fi"
+      "fi",
+      "fuxi",
+      "fuli",
+      "huxi",
+      "huli"
     ],
     "ふぇ": [
-      "fe"
+      "fe",
+      "fuxe",
+      "fule",
+      "huxe",
+      "hule"
     ],
     "ふぉ": [
-      "fo"
+      "fo",
+      "fuxo",
+      "fulo",
+      "huxo",
+      "hulo"
     ],
     "ー": [
       "-"
