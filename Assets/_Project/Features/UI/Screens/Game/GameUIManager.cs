@@ -413,7 +413,7 @@ namespace TypingSurvivor.Features.UI
 
             if (_disconnectNotificationScreen == null) return;
             _uiManager.ShowScreen(_disconnectNotificationScreen);
-            _disconnectNotificationScreen.Show("サーバーとの接続が切断されました。", "メインメニューへ戻る", ReturnToMainMenu);
+            _disconnectNotificationScreen.Show("サーバーとの接続が切断されました。", "メインメニュー", ReturnToMainMenu);
         }
 
         #endregion
