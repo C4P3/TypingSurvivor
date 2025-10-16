@@ -13,8 +13,8 @@ namespace TypingSurvivor.Features.UI.Screens
         [SerializeField] private InteractiveButton _backButton;
 
         [Header("Tabs")]
-        [SerializeField] private Button _ratingTabButton;
-        [SerializeField] private Button _survivalTabButton;
+        [SerializeField] private InteractiveButton _ratingTabButton;
+        [SerializeField] private InteractiveButton _survivalTabButton;
 
         [Header("Content Panels")]
         [SerializeField] private RatingRankingPanel _ratingPanel;
