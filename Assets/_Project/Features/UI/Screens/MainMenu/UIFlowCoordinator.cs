@@ -145,7 +145,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
             if (!AppManager.Instance.AuthService.IsSignedIn)
             {
-                bool success = await AppManager.Instance.AuthService.SignInAnonymouslyAsync();
+                bool success = await AppManager.Instance.AuthService.SignInWithLastUsedProfileAsync();
                 if (!success)
                 {
                     RequestStateChange(PlayerUIState.SignInFailed);

@@ -51,6 +51,9 @@ namespace TypingSurvivor.Features.Core.Auth
             if (await SignInAnonymouslyAsync())
             {
                 AddProfileToLocalCache(profileName);
+                PlayerPrefs.SetString("LastUsedProfile", profileName);
+                PlayerPrefs.Save();
+                Debug.Log($"Set '{profileName}' as the last used profile.");
                 return true;
             }
 
@@ -76,7 +79,7 @@ namespace TypingSurvivor.Features.Core.Auth
                 var json = JsonUtility.ToJson(wrapper);
                 
                 PlayerPrefs.SetString(KnownProfilesKey, json);
-                PlayerPrefs.Save();
+                // PlayerPrefs.Save() is called after setting LastUsedProfile
                 Debug.Log($"Saved new profile '{profileName}' to local cache.");
             }
         }
@@ -111,21 +114,70 @@ namespace TypingSurvivor.Features.Core.Auth
             }
         }
 
-        public async Task UpdatePlayerNameAsync(string newName)
-        {
-            try
-            {
-                await AuthenticationService.Instance.UpdatePlayerNameAsync(newName);
-                Debug.Log($"Player name updated to: {newName}");
+                public async Task UpdatePlayerNameAsync(string newName)
+
+                {
+
+                    try
+
+                    {
+
+                        await AuthenticationService.Instance.UpdatePlayerNameAsync(newName);
+
+                        Debug.Log($"Player name updated to: {newName}");
+
+                    }
+
+                    catch (AuthenticationException ex)
+
+                    {
+
+                        Debug.LogError($"Failed to update player name: {ex.Message}");
+
+                    }
+
+                    catch (RequestFailedException ex)
+
+                    {
+
+                        Debug.LogError($"Failed to update player name: {ex.Message}");
+
+                    }
+
+                }
+
+        
+
+                public async Task<bool> SignInWithLastUsedProfileAsync()
+
+                {
+
+                    string lastProfile = PlayerPrefs.GetString("LastUsedProfile", null);
+
+                    if (!string.IsNullOrEmpty(lastProfile))
+
+                    {
+
+                        Debug.Log($"Found last used profile: '{lastProfile}'. Attempting to sign in...");
+
+                        return await SwitchProfileAndSignInAsync(lastProfile);
+
+                    }
+
+                    else
+
+                    {
+
+                        Debug.Log("No last used profile found. Signing in with default profile...");
+
+                        return await SignInAnonymouslyAsync();
+
+                    }
+
+                }
+
             }
-            catch (AuthenticationException ex)
-            {
-                Debug.LogError($"Failed to update player name: {ex.Message}");
-            }
-            catch (RequestFailedException ex)
-            {
-                Debug.LogError($"Failed to update player name: {ex.Message}");
-            }
+
         }
-    }
-}
+
+        

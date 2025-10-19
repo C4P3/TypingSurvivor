@@ -43,7 +43,7 @@ namespace TypingSurvivor.Features.Core.Settings
                 try
                 {
                     Settings = JsonUtility.FromJson<PlayerSettingsData>(json);
-                    Debug.Log("Loaded settings from local cache.");
+                    Debug.Log($"[SettingsManager] Loaded settings from LOCAL cache. BGM Volume: {Settings.BgmVolume}");
                 }
                 catch (Exception e)
                 {
@@ -54,18 +54,24 @@ namespace TypingSurvivor.Features.Core.Settings
             else
             {
                 Settings = new PlayerSettingsData();
-                Debug.Log("No local cache found. Initializing with default settings.");
+                Debug.Log("[SettingsManager] No local cache found. Initializing with default settings.");
             }
         }
 
         public void LoadSettings(PlayerSettingsData settings)
         {
             Settings = settings ?? new PlayerSettingsData();
-            
+
+            string profileName = AppManager.Instance?.AuthService?.CurrentProfile ?? "Unknown";
+            Debug.Log($"[SettingsManager] Applying settings from CLOUD for profile: '{profileName}'. BGM Volume: {Settings.BgmVolume}");
+
             OnBgmVolumeChanged?.Invoke(Settings.BgmVolume);
             OnSfxVolumeChanged?.Invoke(Settings.SfxVolume);
 
             ApplyKeybindings();
+
+            // Also update the local cache so it reflects the settings of the last logged-in user
+            SaveSettingsToLocalCache();
         }
 
         #region Audio

@@ -69,6 +69,18 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 // Reload player data for the new profile
                 var playerData = await _appManager.CloudSaveService.LoadPlayerDataAsync();
                 _appManager.CachedPlayerData = playerData;
+
+                // Apply the loaded settings for the new profile
+                if (TypingSurvivor.Features.Core.Settings.SettingsManager.Instance != null)
+                {
+                    TypingSurvivor.Features.Core.Settings.SettingsManager.Instance.LoadSettings(playerData?.Settings);
+                }
+
+                // Also, re-fetch the rank for the new profile
+                if (_appManager.SurvivalLeaderboardService != null)
+                {
+                    _appManager.CachedRankData = await _appManager.SurvivalLeaderboardService.GetPlayerRankAsync();
+                }
                 
                 // Proceed to the main menu
                 _flowCoordinator.RequestStateChange(UIFlowCoordinator.PlayerUIState.InMainMenu);

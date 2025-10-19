@@ -29,13 +29,27 @@ namespace TypingSurvivor.Features.Core.Leaderboard
                 var scoresPage = await LeaderboardsService.Instance.GetScoresAsync(SurvivalLeaderboardId, new GetScoresOptions { Limit = 1 });
                 return (scoreResponse?.Rank + 1 ?? 0, scoresPage.Total);
             }
-            catch (LeaderboardsException e)
+            catch (Exception e) // Catch a more general exception
             {
-                if (e.Reason == LeaderboardsExceptionReason.NotFound)
+                // Check if the exception message contains the 404 Not Found code
+                if (e.Message.Contains("404")) 
                 {
-                    return (0, 0);
+                    Debug.Log("Player is not on the survival leaderboard yet. Returning rank 0.");
+                    // To get the total number of players, we still need to query the leaderboard info
+                    try
+                    {
+                        var scoresPage = await LeaderboardsService.Instance.GetScoresAsync(SurvivalLeaderboardId, new GetScoresOptions { Limit = 1 });
+                        return (0, scoresPage.Total);
+                    }
+                    catch (Exception totalPlayersException)
+                    {
+                        Debug.LogError($"Could not retrieve total players from leaderboard after a 404 on player rank. {totalPlayersException.Message}");
+                        return (0, 0);
+                    }
                 }
-                Debug.LogError(e);
+                
+                // For any other exception, log it as an error
+                Debug.LogError($"An unexpected error occurred while fetching player rank: {e.Message}");
                 return (0, 0);
             }
         }

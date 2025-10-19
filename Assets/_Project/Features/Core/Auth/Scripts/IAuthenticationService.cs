@@ -47,5 +47,11 @@ namespace TypingSurvivor.Features.Core.Auth
         /// Signs out the current player.
         /// </summary>
         void SignOut();
+
+        /// <summary>
+        /// Signs in with the last used profile, or the default profile if none is found.
+        /// </summary>
+        /// <returns>True if sign-in was successful, false otherwise.</returns>
+        Task<bool> SignInWithLastUsedProfileAsync();
     }
 }
