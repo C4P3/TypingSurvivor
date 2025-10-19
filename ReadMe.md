@@ -16,7 +16,7 @@
 `File > Build Settings` を開き、`Scenes In Build` のリストの**一番上 (インデックス 0)** に `App.unity` が設定されていることを確認してください。
 
 # 開発タスク
-[TODO.md](./TODO.md)を参照してください。
+[TODO.md](./Assets/_Project/TODO.md)を参照してください。
 
 # 参考文献
     - マルチプレイ
@@ -24,5 +24,4 @@
             - NetCode for GameObject
             - Game Server Hosting(Unity)
     - InputSystem
-
         - https://nekojara.city/unity-input-system-modifier#Button%20with%20one%20modifier%E3%81%AE%E4%BD%BF%E3%81%84%E6%96%B9
