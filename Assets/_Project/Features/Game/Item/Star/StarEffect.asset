@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05d4d56fda6c36d498b805d21fc30501, type: 3}
   m_Name: StarEffect
   m_EditorClassIdentifier: TypingSurvivor.Game::TypingSurvivor.Features.Game.Items.Effects.StarEffect
-  _duration: 7
+  _duration: 4
   _starVFX: 6
   _starSound: 206

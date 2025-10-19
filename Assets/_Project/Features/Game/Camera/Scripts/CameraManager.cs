@@ -49,7 +49,7 @@ namespace TypingSurvivor.Features.Game.Camera
 
         public void Activate()
         {
-            if (NetworkManager.Singleton.IsServer) return;
+            if (NetworkManager.Singleton.IsServer && !NetworkManager.Singleton.IsHost) return;
 
             if (_gameStateReader != null)
             {
@@ -84,7 +84,7 @@ namespace TypingSurvivor.Features.Game.Camera
 
         private void SetupCameras(IReadOnlyList<PlayerFacade> players)
         {
-            if (NetworkManager.Singleton.IsServer) return;
+            if (NetworkManager.Singleton.IsServer && !NetworkManager.Singleton.IsHost) return;
 
             foreach (var cam in _cameras)
             {
