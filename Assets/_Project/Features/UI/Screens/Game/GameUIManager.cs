@@ -373,28 +373,40 @@ namespace TypingSurvivor.Features.UI
             float survivalTime = resultDto.FinalGameTime;
             var appManager = Core.App.AppManager.Instance;
 
-            // 1. Use cached data for immediate display
-            float personalBest = appManager.CachedPlayerData?.Progress.SinglePlayHighScore ?? 0;
-            int playerRank = appManager.CachedRankData.playerRank;
-            int totalPlayers = appManager.CachedRankData.totalPlayers;
+            float personalBest = appManager.CachedPlayerData?.Progress.SinglePlayHighScore ?? 0f;
+            bool isNewRecord = survivalTime > personalBest;
 
-            // 2. Show the result screen immediately with cached data
-            _resultScreen.Show(resultDto, personalBest, playerRank, totalPlayers);
-
-            // 3. In the background, submit the new score and update save data if needed
-            if (survivalTime > personalBest)
+            // If it's a new record, submit the score and update all data before showing the result.
+            if (isNewRecord)
             {
-                // Update leaderboard
-                _survivalLeaderboardService?.SubmitScoreAsync(survivalTime);
+                // Submit the new score to the leaderboard.
+                if (_survivalLeaderboardService != null)
+                {
+                    await _survivalLeaderboardService.SubmitScoreAsync(survivalTime);
+                }
 
-                // Update Cloud Save
+                // Update the high score in Cloud Save.
                 var saveData = appManager.CachedPlayerData ?? new PlayerSaveData();
                 saveData.Progress.SinglePlayHighScore = survivalTime;
-                await _cloudSaveService.SavePlayerDataAsync(saveData);
+                if (_cloudSaveService != null)
+                {
+                    await _cloudSaveService.SavePlayerDataAsync(saveData);
+                }
                 
-                // Update the cache in AppManager as well
+                // Update the local cache in AppManager as well.
                 appManager.CachedPlayerData = saveData;
+
+                // Re-fetch the player's rank now that the score is submitted.
+                if (_survivalLeaderboardService != null)
+                {
+                    appManager.CachedRankData = await _survivalLeaderboardService.GetPlayerRankAsync();
+                }
             }
+
+            // Now, show the result screen with the most up-to-date rank information.
+            int playerRank = appManager.CachedRankData.playerRank;
+            int totalPlayers = appManager.CachedRankData.totalPlayers;
+            _resultScreen.Show(resultDto, personalBest, playerRank, totalPlayers);
         }
 
         private void HandleRematchClicked()
