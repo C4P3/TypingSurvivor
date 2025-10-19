@@ -538,25 +538,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // --- Handle ranked match rating calculation in the background ---
             if (OnGameFinished != null && _gameModeStrategy is RankedMatchStrategy)
             {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        var ratings = await OnGameFinished.Invoke(result);
-                        var ratingsDto = new RatingsDto
-                        {
-                            OldWinnerRating = ratings.Item1,
-                            NewWinnerRating = ratings.Item2,
-                            OldLoserRating = ratings.Item3,
-                            NewLoserRating = ratings.Item4,
-                        };
-                        UpdateRatingsOnResultScreenClientRpc(ratingsDto);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError($"[GameManager] Failed to calculate and send ratings: {e.Message}");
-                    }
-                });
+                CalculateAndSendRatings_FireAndForget(result);
             }
 
             // --- Rematch logic can now proceed without waiting for rating calculation ---
@@ -917,6 +899,26 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
                     _gameState.PlayerDatas.RemoveAt(i);
                 }
+            }
+        }
+
+        private async void CalculateAndSendRatings_FireAndForget(GameResult result)
+        {
+            try
+            {
+                var ratings = await OnGameFinished.Invoke(result);
+                var ratingsDto = new RatingsDto
+                {
+                    OldWinnerRating = ratings.Item1,
+                    NewWinnerRating = ratings.Item2,
+                    OldLoserRating = ratings.Item3,
+                    NewLoserRating = ratings.Item4,
+                };
+                UpdateRatingsOnResultScreenClientRpc(ratingsDto);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[GameManager] Failed to calculate and send ratings: {e.Message}");
             }
         }
     }

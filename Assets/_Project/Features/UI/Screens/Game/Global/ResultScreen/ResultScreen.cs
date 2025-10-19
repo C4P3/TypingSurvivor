@@ -65,16 +65,16 @@ namespace TypingSurvivor.Features.UI.Screens
 
         private IResultView InstantiateView(GameResultDto dto, float personalBest)
         {
-            bool isSinglePlayer = Core.App.AppManager.Instance.GameMode == GameModeType.SinglePlayer;
+            GameModeType gameMode = Core.App.AppManager.Instance.GameMode;
 
-            if (isSinglePlayer)
+            if (gameMode == GameModeType.SinglePlayer)
             {
                 bool isNewRecord = dto.FinalGameTime > personalBest && personalBest > 0;
                 return isNewRecord ? Instantiate(_spNewRecordPrefab, transform) : Instantiate(_spNormalPrefab, transform);
             }
             else // Multiplayer
             {
-                bool isRanked = dto.NewWinnerRating != 0 || dto.NewLoserRating != 0;
+                bool isRanked = gameMode == GameModeType.RankedMatch;
                 return isRanked ? Instantiate(_mpRankedPrefab, transform) : Instantiate(_mpFreePrefab, transform);
             }
         }

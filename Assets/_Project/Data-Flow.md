@@ -92,32 +92,62 @@ sequenceDiagram
 
 ## **4. フロー④：ゲームが終了し、リザルトが表示される**
 
-サーバーがゲーム終了を判断し、最終的な統計情報を含んだリザルトデータを全クライアントに送信し、各クライアントがそれに応じて演出付きのリザルト画面を表示するまでの一連の流れです。
+ゲーム終了からリザルト表示までのフローは、UX向上のため、**シングルプレイ**と**ランクマッチ**で異なります。
+
+### **4.1. シングルプレイ のフロー**
+
+自己ベストを更新した場合のみ、スコア送信とランク再取得を行ってからリザルトを表示します。
 
 ```mermaid
 sequenceDiagram
     participant S_GameManager as GameManager (Server)
-    participant S_Strategy as IGameModeStrategy (Server)
-    participant C_GameManager as GameManager (Client)
     participant C_UIManager as GameUIManager (Client)
+    participant C_Leaderboard as ISurvivalLeaderboardService (Client)
     participant C_ResultScreen as ResultScreen (Client)
 
-    Note over S_GameManager: ゲーム終了条件を満たす
+    Note over S_GameManager, C_ResultScreen: ゲーム終了条件を満たす
+    S_GameManager->>C_UIManager: SendResultsToClientsClientRpc(resultDto)
+    C_UIManager->>C_UIManager: HandleResultReceived()
+    note right of C_UIManager: 自己ベスト更新かチェック (isNewRecord)
+
+    alt isNewRecord is true
+        C_UIManager->>C_Leaderboard: SubmitScoreAsync(score)
+        C_Leaderboard-->>C_UIManager: スコア送信完了
+        C_UIManager->>C_Leaderboard: GetPlayerRankAsync()
+        C_Leaderboard-->>C_UIManager: 最新ランクを返す
+    end
+
+    C_UIManager->>C_ResultScreen: Show(最新のランク情報)
+    C_ResultScreen->>C_ResultScreen: アニメーション再生
+```
+
+### **4.2. ランクマッチ のフロー**
+
+まず基本的なリザルトを即時表示し、時間のかかるレート計算は裏で行い、完了後にUIへ反映させます。
+
+```mermaid
+sequenceDiagram
+    participant S_GameManager as GameManager (Server)
+    participant S_CloudCode as OnGameFinished (Server)
+    participant C_UIManager as GameUIManager (Client)
+    participant C_ResultScreen as ResultScreen (Client)
+    participant C_ResultView as MultiplayerResultView (Client)
+
+    Note over S_GameManager, C_ResultView: ゲーム終了条件を満たす
     S_GameManager->>S_GameManager: FinishedPhaseAsync() を開始
-    S_GameManager->>S_Strategy: CalculateResult(gameState)
-    S_Strategy-->>S_GameManager: GameResult (全プレイヤーの最終データ入り) を返す
-
-    S_GameManager->>S_GameManager: GameResultをGameResultDtoに変換
-    note right of S_GameManager: この際、切断者がいれば<br>OpponentDisconnectedフラグがtrueになる
-    S_GameManager->>C_GameManager: SendResultsToClientsClientRpc(resultDto)
-
-    C_GameManager->>C_GameManager: OnResultReceived_Client イベント発行
     
-    Note left of C_UIManager: イベントを購読している
-    C_UIManager->>C_ResultScreen: Show(resultDto)
+    Note over S_GameManager: --- 1. リザルト即時表示 ---
+    S_GameManager->>C_UIManager: SendResultsToClientsClientRpc(基本リザルト)
+    C_UIManager->>C_ResultScreen: Show(基本リザルト)
+    C_ResultScreen->>C_ResultView: Populate(レートは「計算中...」)
+    C_ResultView->>C_ResultView: アニメーション再生
 
-    C_ResultScreen->>C_ResultScreen: ShowSequenceCoroutine() を開始
-    Note right of C_ResultScreen: DtoのOpponentDisconnectedフラグをチェックし、<br>必要なら切断メッセージを表示し再戦ボタンを無効化する。<br>その後、勝敗バナー、統計情報、ボタンなどを<br>順番にアニメーション表示する
+    Note over S_GameManager: --- 2. レート非同期計算＆通知 ---
+    S_GameManager->>S_CloudCode: (awaitなしで) レート計算をバックグラウンド実行
+    S_CloudCode-->>S_GameManager: レート計算完了
+    S_GameManager->>C_UIManager: UpdateRatingsOnResultScreenClientRpc(レート情報)
+    C_UIManager->>C_ResultView: UpdateRatingInfo(レート情報)
+    C_ResultView->>C_ResultView: レート表示を更新
 ```
 
 **全体のドキュメント:**　[README.md](./README.md)
