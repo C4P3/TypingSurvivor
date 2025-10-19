@@ -15,6 +15,13 @@ namespace TypingSurvivor.Features.Core.VFX
 
         void OnEnable()
         {
+            // This is a client-side visual effect and should not run on a dedicated server.
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+            {
+                enabled = false;
+                return;
+            }
+
             // Dynamically create a material with the custom shader
             Shader shader = Shader.Find("Hidden/LowHealthOverlay");
             if (shader != null)
@@ -29,7 +36,7 @@ namespace TypingSurvivor.Features.Core.VFX
 
         void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            if (_material == null || overlayTexture == null)
+            if (_material == null || overlayTexture == null || !enabled)
             {
                 Graphics.Blit(source, destination);
                 return;
