@@ -71,6 +71,12 @@ namespace TypingSurvivor.Features.Game.Player
 
         public override void OnNetworkSpawn()
         {
+            // The PlayerInput component should be disabled on the server entirely.
+            if (IsServer)
+            {
+                if (_input != null) _input.enabled = false;
+            }
+
             _currentState.OnValueChanged += OnStateChanged;
             NetworkGridPosition.OnValueChanged += OnGridPositionChanged;
 
