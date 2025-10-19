@@ -23,5 +23,10 @@ namespace TypingSurvivor.Features.UI.Screens.Result
         /// 他のプレイヤーが切断したことをビューに通知します。
         /// </summary>
         void NotifyOpponentDisconnected();
+
+        /// <summary>
+        /// 非同期で取得したレート情報をビューに通知し、表示を更新します。
+        /// </summary>
+        void UpdateRatingInfo(RatingsDto ratingsDto);
     }
 }

@@ -1,7 +1,6 @@
 using TMPro;
 using TypingSurvivor.Features.Game.Gameplay.Data;
 using UnityEngine;
-using static TypingSurvivor.Features.Game.Gameplay.GameManager;
 
 namespace TypingSurvivor.Features.UI.Screens.Result
 {
@@ -19,7 +18,7 @@ namespace TypingSurvivor.Features.UI.Screens.Result
         [SerializeField] private GameObject _ratingSection;
         [SerializeField] private TextMeshProUGUI _ratingChangeText;
 
-        public void Populate(PlayerData playerData, bool isRanked, int newRating, int oldRating)
+        public void Populate(PlayerData playerData, bool isRanked)
         {
             if (_playerNameText != null)
             {
@@ -50,9 +49,18 @@ namespace TypingSurvivor.Features.UI.Screens.Result
                 _ratingSection.SetActive(isRanked);
                 if (isRanked && _ratingChangeText != null)
                 {
-                    // TODO: Pass old rating to calculate and show the change.
-                    _ratingChangeText.text = $"{oldRating} → {newRating} ({newRating - oldRating})";
+                    _ratingChangeText.text = "Calculating...";
                 }
+            }
+        }
+
+        public void UpdateRating(int newRating, int oldRating)
+        {
+            if (_ratingSection != null && _ratingSection.activeSelf && _ratingChangeText != null)
+            {
+                int diff = newRating - oldRating;
+                string sign = diff >= 0 ? "+" : "";
+                _ratingChangeText.text = $"{oldRating} → {newRating} ({sign}{diff})";
             }
         }
     }

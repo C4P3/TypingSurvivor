@@ -59,6 +59,11 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             // Not used in single player
         }
 
+        public void UpdateRatingInfo(RatingsDto ratingsDto)
+        {
+            // Not used in single player
+        }
+
         private void SetStepEnabledInAllSequencers(string stepName, bool isEnabled)
         {
             foreach (var sequencer in _allSequencersInHierarchy)
@@ -95,8 +100,8 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             // PlayerResultCardに統計データの設定を委譲
             if (_playerCard != null)
             {
-                // シングルプレイなので、isRankedはfalse, newRatingは0
-                _playerCard.Populate(playerData, false, 0, 0);
+                // シングルプレイなので、isRankedはfalse
+                _playerCard.Populate(playerData, false);
             }
         }
 

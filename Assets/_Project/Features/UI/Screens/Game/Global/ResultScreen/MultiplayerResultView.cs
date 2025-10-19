@@ -100,6 +100,25 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             _rematchButton.interactable = false; // Disable rematch button
         }
 
+        public void UpdateRatingInfo(RatingsDto ratingsDto)
+        {
+            // This assumes the same sorting logic as PrepareUIContent
+            var sortedPlayers = GetSortedPlayersFromLastDto();
+            if (sortedPlayers == null || sortedPlayers.Count < 2) return;
+
+            var player1Data = sortedPlayers[0];
+            var player2Data = sortedPlayers[1];
+
+            int player1NewRating = player1Data.ClientId == _lastWinnerId ? ratingsDto.NewWinnerRating : ratingsDto.NewLoserRating;
+            int player1OldRating = player1Data.ClientId == _lastWinnerId ? ratingsDto.OldWinnerRating : ratingsDto.OldLoserRating;
+
+            int player2NewRating = player2Data.ClientId == _lastWinnerId ? ratingsDto.NewWinnerRating : ratingsDto.NewLoserRating;
+            int player2OldRating = player2Data.ClientId == _lastWinnerId ? ratingsDto.OldWinnerRating : ratingsDto.OldLoserRating;
+
+            if (_player1Card) _player1Card.UpdateRating(player1NewRating, player1OldRating);
+            if (_player2Card) _player2Card.UpdateRating(player2NewRating, player2OldRating);
+        }
+
         private void SetStepEnabledInAllSequencers(string stepName, bool isEnabled)
         {
             foreach (var sequencer in _allSequencersInHierarchy)
@@ -108,8 +127,22 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             }
         }
 
+        // Cache the DTO to re-use its data for rating updates
+        private PlayerData[] _lastFinalPlayerDatas;
+        private ulong _lastWinnerId;
+
+        private System.Collections.Generic.List<PlayerData> GetSortedPlayersFromLastDto()
+        {
+            if (_lastFinalPlayerDatas == null) return null;
+            return _lastFinalPlayerDatas.OrderBy(p => p.ClientId).ToList();
+        }
+
         private void PrepareUIContent(GameResultDto dto)
         {
+            // Cache data for later use in UpdateRatingInfo
+            _lastFinalPlayerDatas = dto.FinalPlayerDatas;
+            _lastWinnerId = dto.WinnerClientId;
+
             // Reset state for new results
             _opponentDisconnected = false;
             _showRematchRequesterUntil = -1f;
@@ -121,8 +154,8 @@ namespace TypingSurvivor.Features.UI.Screens.Result
                 NotifyOpponentDisconnected();
             }
 
-            // ランクマッチかどうかを判定
-            bool isRanked = dto.NewWinnerRating != 0 || dto.NewLoserRating != 0;
+            // For ranked matches, the rating section will be shown, but with "Calculating..."
+            bool isRanked = Core.App.AppManager.Instance.GameMode == Core.App.GameModeType.RankedMatch;
 
             // 勝敗テキストを設定
             bool localPlayerWon = dto.WinnerClientId == Unity.Netcode.NetworkManager.Singleton.LocalClientId;
@@ -136,29 +169,15 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             }
 
             // CameraManagerと同様に、ClientIdでプレイヤーをソートし、P1/P2を確定させる
-            var sortedPlayers = dto.FinalPlayerDatas.OrderBy(p => p.ClientId).ToList();
-            if (sortedPlayers.Count < 2) return; // Should not happen in multiplayer
+            var sortedPlayers = GetSortedPlayersFromLastDto();
+            if (sortedPlayers == null || sortedPlayers.Count < 2) return; // Should not happen in multiplayer
 
             var player1Data = sortedPlayers[0];
             var player2Data = sortedPlayers[1];
 
-            // プレイヤーカードにデータを設定
-            if (isRanked)
-            {
-                int player1NewRating = player1Data.ClientId == dto.WinnerClientId ? dto.NewWinnerRating : dto.NewLoserRating;
-                int player1OldRating = player1Data.ClientId == dto.WinnerClientId ? dto.OldWinnerRating : dto.OldLoserRating;
-
-                int player2NewRating = player2Data.ClientId == dto.WinnerClientId ? dto.NewWinnerRating : dto.NewLoserRating;
-                int player2OldRating = player2Data.ClientId == dto.WinnerClientId ? dto.OldWinnerRating : dto.OldLoserRating;
-
-                if(_player1Card) _player1Card.Populate(player1Data, true, player1NewRating, player1OldRating);
-                if(_player2Card) _player2Card.Populate(player2Data, true, player2NewRating, player2OldRating);
-            }
-            else
-            {
-                if(_player1Card) _player1Card.Populate(player1Data, false, 0, 0);
-                if(_player2Card) _player2Card.Populate(player2Data, false, 0, 0);
-            }
+            // プレイヤーカードにデータを設定 (レート情報は含めない)
+            if(_player1Card) _player1Card.Populate(player1Data, isRanked);
+            if(_player2Card) _player2Card.Populate(player2Data, isRanked);
         }
     }
 }

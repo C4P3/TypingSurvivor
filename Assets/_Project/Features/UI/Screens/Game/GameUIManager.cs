@@ -104,6 +104,7 @@ namespace TypingSurvivor.Features.UI
             _gameManager.OnOpponentDisconnectedResult_Client += HandleOpponentDisconnectedResult;
             _gameManager.OnReturnToMainMenu_Client += HandleReturnToMainMenu;
             _gameManager.OnRematchStatusChanged_Client += HandleRematchStatusChanged;
+            _gameManager.OnRatingsCalculated_Client += HandleRatingsCalculated; // Added
             _cameraManager.OnCameraAssigned += HandleCameraAssigned;
 
             if (_typingService != null)
@@ -142,6 +143,7 @@ namespace TypingSurvivor.Features.UI
                 _gameManager.OnOpponentDisconnectedResult_Client -= HandleOpponentDisconnectedResult;
                 _gameManager.OnReturnToMainMenu_Client -= HandleReturnToMainMenu;
                 _gameManager.OnRematchStatusChanged_Client -= HandleRematchStatusChanged;
+                _gameManager.OnRatingsCalculated_Client -= HandleRatingsCalculated; // Added
             }
             if (_cameraManager != null) _cameraManager.OnCameraAssigned -= HandleCameraAssigned;
             
@@ -357,14 +359,28 @@ namespace TypingSurvivor.Features.UI
 
         private void HandleResultReceived(GameManager.GameResultDto resultDto)
         {
-            // For single player, process high score logic before showing the screen
+            // For both single player and multiplayer, show the result screen immediately.
+            // The rating/ranking info will be populated from cache or updated later.
             if (Core.App.AppManager.Instance.GameMode == Core.App.GameModeType.SinglePlayer)
             {
-                ProcessSinglePlayerResultAsync(resultDto);
+                var appManager = Core.App.AppManager.Instance;
+                float personalBest = appManager.CachedPlayerData?.Progress.SinglePlayHighScore ?? 0f;
+                int playerRank = appManager.CachedRankData.playerRank;
+                int totalPlayers = appManager.CachedRankData.totalPlayers;
+                _resultScreen.Show(resultDto, personalBest, playerRank, totalPlayers);
             }
             else
             {
-                _resultScreen.Show(resultDto, 0, 0, 0); // No high score or rank info for multiplaye
+                // For multiplayer, rating info will arrive later.
+                _resultScreen.Show(resultDto, 0, 0, 0);
+            }
+        }
+
+        private void HandleRatingsCalculated(GameManager.RatingsDto ratingsDto)
+        {
+            if (_resultScreen.CurrentView != null)
+            {
+                _resultScreen.CurrentView.UpdateRatingInfo(ratingsDto);
             }
         }
 

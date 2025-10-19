@@ -56,11 +56,31 @@ namespace TypingSurvivor.Features.Game.Gameplay
         public event System.Action<ulong, bool> OnLowOxygenStateChanged_Client;
         public event System.Func<GameResult, System.Threading.Tasks.Task<(int, int, int, int)>> OnGameFinished;
         public event Action<GameResultDto> OnResultReceived_Client;
+        public event Action<RatingsDto> OnRatingsCalculated_Client; // For async rating updates
         public event Action OnOpponentDisconnectedInGame_Client;
         public event Action OnOpponentDisconnectedResult_Client;
         public event Action OnReturnToMainMenu_Client;
         public event Action<int, int> OnRematchStatusChanged_Client;
         private Coroutine _shutdownCoroutine;
+
+        // DTO for async rating updates
+        public struct RatingsDto : INetworkSerializable
+        {
+            public int OldWinnerRating;
+            public int NewWinnerRating;
+            public int OldLoserRating;
+            public int NewLoserRating;
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref OldWinnerRating);
+                serializer.SerializeValue(ref NewWinnerRating);
+                serializer.SerializeValue(ref OldLoserRating);
+                serializer.SerializeValue(ref NewLoserRating);
+            }
+        }
+
+        // DTO to send all relevant result info to clients
 
         // DTO to send all relevant result info to clients
         public struct GameResultDto : INetworkSerializable
@@ -225,6 +245,12 @@ namespace TypingSurvivor.Features.Game.Gameplay
         private void SendResultsToClientsClientRpc(GameResultDto resultDto)
         {
             OnResultReceived_Client?.Invoke(resultDto);
+        }
+
+        [ClientRpc]
+        private void UpdateRatingsOnResultScreenClientRpc(RatingsDto ratingsDto)
+        {
+            OnRatingsCalculated_Client?.Invoke(ratingsDto);
         }
 
         [ClientRpc]
@@ -476,43 +502,64 @@ namespace TypingSurvivor.Features.Game.Gameplay
             GameResult result = _gameModeStrategy.CalculateResult(_gameState);
             PlayJingleThenMusicClientRpc(result.WinnerClientId);
 
-            // --- レート計算　---
-            int oldWinnerRating = 0, newWinnerRating = 0, oldLoserRating = 0, newLoserRating = 0;
-            if (OnGameFinished != null)
+            // --- Handle single player score submission ---
+            if (_gameModeStrategy is SinglePlayerStrategy)
             {
-                var ratings = await OnGameFinished.Invoke(result);
-                oldWinnerRating = ratings.Item1;
-                newWinnerRating = ratings.Item2;
-                oldLoserRating = ratings.Item3;
-                newLoserRating = ratings.Item4;
+                var leaderboardService = Core.App.AppManager.Instance.GetService<Core.Leaderboard.ISurvivalLeaderboardService>();
+                if (leaderboardService != null)
+                {
+                    float survivalTime = _gameState.GameTimer.Value;
+                    _ = leaderboardService.SubmitScoreAsync(survivalTime);
+                    Debug.Log($"[GameManager] Submitted single player survival time: {survivalTime}");
+                }
             }
-            
-            // Check if the game ended due to a disconnection
+
+            // --- Send initial result to clients immediately ---
             bool opponentDisconnected = false;
-            foreach (var playerData in _gameState.PlayerDatas)
+            foreach (var p in _gameState.PlayerDatas)
             {
-                if (playerData.IsDisconnected)
+                if (p.IsDisconnected)
                 {
                     opponentDisconnected = true;
                     break;
                 }
             }
-
-            // 全クライエントに結果通知をブロードキャスト
-            var resultDto = new GameResultDto
+            var initialResultDto = new GameResultDto
             {
                 IsDraw = result.IsDraw,
                 WinnerClientId = result.WinnerClientId,
                 FinalGameTime = _gameState.GameTimer.Value,
                 FinalPlayerDatas = result.FinalPlayerDatas.ToArray(),
-                OldWinnerRating = oldWinnerRating,
-                NewWinnerRating = newWinnerRating,
-                OldLoserRating = oldLoserRating,
-                NewLoserRating = newLoserRating,
-                OpponentDisconnected = opponentDisconnected
+                OpponentDisconnected = opponentDisconnected,
+                // Rating values are default (0) and will be sent later
             };
-            SendResultsToClientsClientRpc(resultDto);
+            SendResultsToClientsClientRpc(initialResultDto);
 
+            // --- Handle ranked match rating calculation in the background ---
+            if (OnGameFinished != null && _gameModeStrategy is RankedMatchStrategy)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var ratings = await OnGameFinished.Invoke(result);
+                        var ratingsDto = new RatingsDto
+                        {
+                            OldWinnerRating = ratings.Item1,
+                            NewWinnerRating = ratings.Item2,
+                            OldLoserRating = ratings.Item3,
+                            NewLoserRating = ratings.Item4,
+                        };
+                        UpdateRatingsOnResultScreenClientRpc(ratingsDto);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"[GameManager] Failed to calculate and send ratings: {e.Message}");
+                    }
+                });
+            }
+
+            // --- Rematch logic can now proceed without waiting for rating calculation ---
             _rematchRequesters.Clear();
 
             // --- ゲームモードに応じた再戦待機ロジック ---
