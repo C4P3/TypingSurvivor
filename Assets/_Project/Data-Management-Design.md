@@ -86,6 +86,19 @@ public class PlayerSettingsData { /* 音量、キーコンフィグなど */ }
 public class PlayerProgressData { /* ハイスコア、アンロック状況など */ }
 ```
 
+### **4.2. プロファイル管理 (ローカルキャッシュ)**
+
+本プロジェクトでは、匿名認証(Anonymous Authentication)を使いつつ、複数のアカウントを切り替えてテストやプレイができるように、プロファイル管理システムを実装しています。
+
+- **UGSプロファイル**: UGSの匿名認証では、`AuthenticationService.Instance.SwitchProfile(profileName)` を呼び出すことで、デバイス内で複数のプレイヤーIDを使い分けることができます。新しいプロファイル名は、そのまま新しいプレイヤーIDとして扱われます。
+
+- **ローカルキャッシュの役割**: UGSのSDKは、作成済みのプロファイル一覧を取得する機能を提供していません。そのため、どのプロファイル名が存在するかを管理するために、ローカルキャッシュとして `PlayerPrefs` を利用します。
+    - `KnownProfiles`: 一度でも使用されたプロファイル名の一覧をJSON形式で保存します。プロファイル選択画面では、このリストを読み込んで表示します。
+    - `LastUsedProfile`: 最後に正常にサインインしたプロファイル名を保存します。次回アプリ起動時、この値を読み込んで自動的にそのプロファイルでサインインを試みます。
+
+- **データロードフローとの連携**: アプリ起動時やプロファイル切り替え時、`LastUsedProfile` や選択されたプロファイルでUGSにサインインした後、そのプロファイルに紐づく `PlayerSaveData` がCloud Saveから取得されます。その後、`SettingsManager` が `PlayerSaveData` 内の `Settings` を読み込み、ローカルキャッシュ(`PlayerPrefs`の`PlayerSettings`キー)も更新します。これにより、常に現在のアカウント設定がゲームに反映され、かつ次回の高速な起動にも備えることができます。
+
+
 **関連ドキュメント:**
 * [README.md](./README.md)
 * [./Architecture-Overview.md](./Architecture-Overview.md)  
