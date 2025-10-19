@@ -30,7 +30,8 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             InShop,
             InSettings,
             EnteringMatchCode,
-            InTestServerMenu
+            InTestServerMenu,
+            SelectingProfile // Added
         }
 
         [Header("UI System")]
@@ -39,6 +40,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [Header("Screens & Panels")]
         [SerializeField] private TitleScreenController _titleScreen;
         [SerializeField] private ProfileCreationController _profileCreationScreen;
+        [SerializeField] private ProfileSelectionController _profileSelectionScreen; // Added
         [SerializeField] private MainMenuController _mainMenuScreen;
         [SerializeField] private SinglePlayerSelectController _singlePlayerSelectScreen;
         [SerializeField] private MultiplayerSelectController _multiplayerSelectScreen;
@@ -58,7 +60,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         // --- State ---
         private PlayerUIState _currentState;
         private bool _isInitialized = false;
-        private bool _hasProfile = false;
+        public bool HasProfile { get; private set; } = false;
 
         // --- Matchmaking State ---
         private MatchmakingService _matchmakingService;
@@ -94,6 +96,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             // Initialize all child controllers
             _titleScreen.Initialize(this);
             _profileCreationScreen.Initialize(this, AppManager.Instance);
+            _profileSelectionScreen.Initialize(this, AppManager.Instance); // Added
             _mainMenuScreen.Initialize(this);
             _singlePlayerSelectScreen.Initialize(this);
             _multiplayerSelectScreen.Initialize(this);
@@ -154,7 +157,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             var appManager = AppManager.Instance;
             var playerData = await appManager.CloudSaveService.LoadPlayerDataAsync();
             appManager.CachedPlayerData = playerData;
-            _hasProfile = playerData != null && !string.IsNullOrWhiteSpace(playerData.PlayerName);
+            HasProfile = playerData != null && !string.IsNullOrWhiteSpace(playerData.PlayerName);
 
             // Apply loaded settings to the SettingsManager
             if (SettingsManager.Instance != null)
@@ -172,6 +175,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         public void RequestStateChange(PlayerUIState newState)
         {
+            if (_currentState == newState && newState != PlayerUIState.OnTitle) return; // Avoid redundant state changes
             _currentState = newState;
             Debug.Log($"UI State changed to: {newState}");
 
@@ -180,18 +184,21 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 case PlayerUIState.SigningIn:
                     MusicManager.Instance.Play(SoundId.TitleMusic, 0f);
                     _uiManager.ShowScreen(_titleScreen);
-                    _titleScreen.UpdateView("Signing In...", false);
+                    _titleScreen.UpdateView("Signing In...", false, false);
                     break;
                 case PlayerUIState.SignInFailed:
                     _uiManager.ShowScreen(_titleScreen);
-                    _titleScreen.UpdateView("Sign-In Failed. Click to Retry.", true);
+                    _titleScreen.UpdateView("Sign-In Failed. Click to Retry.", true, false);
                     break;
                 case PlayerUIState.OnTitle:
                     _uiManager.ShowScreen(_titleScreen);
-                    _titleScreen.UpdateView("Click to Start", true);
+                    _titleScreen.UpdateView("Click to Start", true, true);
                     break;
                 case PlayerUIState.NeedsProfile:
                     _uiManager.PushPanel(_profileCreationScreen);
+                    break;
+                case PlayerUIState.SelectingProfile: // Added
+                    _uiManager.PushPanel(_profileSelectionScreen);
                     break;
                 case PlayerUIState.InMainMenu:
                     MusicManager.Instance.Play(SoundId.MainMenuMusic, 0f);
@@ -233,12 +240,10 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             if (_currentState == PlayerUIState.SignInFailed)
             {
                 _ = CheckAuthenticationAndProceed();
-                return;
             }
-
-            if (AppManager.Instance.AuthService.IsSignedIn)
+            else if (AppManager.Instance.AuthService.IsSignedIn)
             {
-                if (_hasProfile)
+                if (HasProfile)
                 {
                     RequestStateChange(PlayerUIState.InMainMenu);
                 }
@@ -251,7 +256,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         public void OnProfileCreated()
         {
-            _hasProfile = true;
+            HasProfile = true;
             RequestStateChange(PlayerUIState.InMainMenu);
         }
 
@@ -357,7 +362,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
     #region test用サーバー立ち上げ及び参加
         public void StartTestClient(string ip, ushort port)
-        {
+        { 
             AppManager.Instance.StartClient(ip, port, GameModeType.MultiPlayer);
         }
 
@@ -371,4 +376,3 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
     #endregion
     }
 }
-

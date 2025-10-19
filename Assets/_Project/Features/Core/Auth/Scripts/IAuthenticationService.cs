@@ -17,5 +17,35 @@ namespace TypingSurvivor.Features.Core.Auth
         /// </summary>
         /// <returns>A task that represents the asynchronous sign-in operation. The task result contains true if the sign-in was successful, and false otherwise.</returns>
         Task<bool> SignInAnonymouslyAsync();
+
+        /// <summary>
+        /// Gets the name of the current profile.
+        /// </summary>
+        string CurrentProfile { get; }
+
+        /// <summary>
+        /// Gets a list of all available profiles.
+        /// </summary>
+        /// <returns>A list of profile names.</returns>
+        System.Collections.Generic.IReadOnlyList<string> ListProfiles();
+
+        /// <summary>
+        /// Switches to a different profile and signs in anonymously.
+        /// </summary>
+        /// <param name="profileName">The name of the profile to switch to.</param>
+        /// <returns>True if the switch and sign-in were successful, false otherwise.</returns>
+        Task<bool> SwitchProfileAndSignInAsync(string profileName);
+
+        /// <summary>
+        /// Updates the display name of the currently signed-in player.
+        /// </summary>
+        /// <param name="newName">The new name for the player.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        Task UpdatePlayerNameAsync(string newName);
+
+        /// <summary>
+        /// Signs out the current player.
+        /// </summary>
+        void SignOut();
     }
 }

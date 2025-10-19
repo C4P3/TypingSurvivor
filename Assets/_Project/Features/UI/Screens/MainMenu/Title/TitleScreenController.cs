@@ -9,7 +9,8 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
     /// </summary>
     public class TitleScreenController : ScreenBase
     {
-        [SerializeField] private InteractiveButton _actionButton;
+        [SerializeField] private InteractiveButton _startButton;
+        [SerializeField] private InteractiveButton _switchProfileButton;
         [SerializeField] private TMP_Text _statusText;
 
         private UIFlowCoordinator _flowCoordinator;
@@ -22,24 +23,31 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         public void Initialize(UIFlowCoordinator coordinator)
         {
             _flowCoordinator = coordinator;
-            _actionButton.onClick.AddListener(OnActionButtonClicked);
+            _startButton.onClick.AddListener(OnStartButtonClicked);
+            _switchProfileButton.onClick.AddListener(OnSwitchProfileButtonClicked);
         }
 
         private void OnDestroy()
         {
-            _actionButton.onClick.RemoveListener(OnActionButtonClicked);
+            _startButton.onClick.RemoveListener(OnStartButtonClicked);
+            _switchProfileButton.onClick.RemoveListener(OnSwitchProfileButtonClicked);
         }
 
-        private void OnActionButtonClicked()
+        private void OnStartButtonClicked()
         {
             _flowCoordinator.OnTitleScreenAction();
         }
 
-        public void UpdateView(string status, bool interactable)
+        private void OnSwitchProfileButtonClicked()
+        {
+            _flowCoordinator.RequestStateChange(UIFlowCoordinator.PlayerUIState.SelectingProfile);
+        }
+
+        public void UpdateView(string status, bool isStartButtonInteractable, bool isSwitchProfileButtonVisible)
         {
             if(_statusText != null) _statusText.text = status;
-            if(_actionButton != null) _actionButton.interactable = interactable;
+            if(_startButton != null) _startButton.interactable = isStartButtonInteractable;
+            if(_switchProfileButton != null) _switchProfileButton.gameObject.SetActive(isSwitchProfileButtonVisible);
         }
     }
 }
-

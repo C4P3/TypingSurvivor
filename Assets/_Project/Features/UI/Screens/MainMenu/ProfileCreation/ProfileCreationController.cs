@@ -1,8 +1,8 @@
 using UnityEngine;
 using TMPro;
 using TypingSurvivor.Features.UI.Common;
-using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.Core.App;
+using System.Threading.Tasks;
 
 namespace TypingSurvivor.Features.UI.Screens.MainMenu
 {
@@ -45,37 +45,52 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             _confirmButton.interactable = false;
             if(_errorText != null) _errorText.gameObject.SetActive(false);
 
-            string playerName = _nameInputField.text;
+            string profileName = _nameInputField.text;
 
             // 簡単な入力値検証
-            if (string.IsNullOrWhiteSpace(playerName) || playerName.Length < 3)
+            if (string.IsNullOrWhiteSpace(profileName) || profileName.Length < 3)
             {
-                if(_errorText != null)
-                {
-                    _errorText.text = "Please enter at least 3 characters.";
-                    _errorText.gameObject.SetActive(true);
-                }
-                _confirmButton.interactable = true;
+                ShowError("Please enter at least 3 characters.");
                 return;
             }
 
-            var newPlayerData = new PlayerSaveData(playerName);
-            bool success = await _appManager.CloudSaveService.SavePlayerDataAsync(newPlayerData);
+            // 1. Switch to the new profile and sign in. This will create the profile if it doesn't exist.
+            bool signInSuccess = await _appManager.AuthService.SwitchProfileAndSignInAsync(profileName);
 
-            if (success)
+            if (!signInSuccess)
             {
-                // 成功したらUIFlowCoordinatorに通知
+                ShowError("Failed to create profile. Please try again.");
+                return;
+            }
+
+            // 2. Update the player name for the new profile.
+            // Note: UGS PlayerName is different from Profile Name.
+            await _appManager.AuthService.UpdatePlayerNameAsync(profileName);
+
+            // 3. Save initial data for the new player.
+            var newPlayerData = new Core.CloudSave.PlayerSaveData(profileName);
+            bool saveDataSuccess = await _appManager.CloudSaveService.SavePlayerDataAsync(newPlayerData);
+
+            if (saveDataSuccess)
+            {
+                // 4. Notify the flow coordinator that the profile is ready.
+                _appManager.CachedPlayerData = newPlayerData;
                 _flowCoordinator.OnProfileCreated();
             }
             else
             {
-                if(_errorText != null)
-                {
-                    _errorText.text = "Failed to save name. Please try again.";
-                    _errorText.gameObject.SetActive(true);
-                }
-                _confirmButton.interactable = true;
+                ShowError("Failed to save initial data. Please try again.");
             }
+        }
+
+        private void ShowError(string message)
+        {
+            if (_errorText != null)
+            {
+                _errorText.text = message;
+                _errorText.gameObject.SetActive(true);
+            }
+            _confirmButton.interactable = true;
         }
     }
 }
