@@ -49,6 +49,8 @@ namespace TypingSurvivor.Features.Game.Camera
 
         public void Activate()
         {
+            if (NetworkManager.Singleton.IsServer) return;
+
             if (_gameStateReader != null)
             {
                 _gameStateReader.SpawnedPlayers.OnListChanged += HandlePlayersChanged;
@@ -82,6 +84,8 @@ namespace TypingSurvivor.Features.Game.Camera
 
         private void SetupCameras(IReadOnlyList<PlayerFacade> players)
         {
+            if (NetworkManager.Singleton.IsServer) return;
+
             foreach (var cam in _cameras)
             {
                 cam.gameObject.SetActive(false);
