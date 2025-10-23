@@ -35,6 +35,8 @@ namespace TypingSurvivor.Features.UI.Screens.Result
         private int _requesterCount = 0;
         private int _totalPlayers = 0;
 
+        private bool _lastWasDraw;
+
         private void Awake()
         {
             _allSequencersInHierarchy = GetComponentsInChildren<AnimationSequencer>(true);
@@ -109,11 +111,25 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             var player1Data = sortedPlayers[0];
             var player2Data = sortedPlayers[1];
 
-            int player1NewRating = player1Data.ClientId == _lastWinnerId ? ratingsDto.NewWinnerRating : ratingsDto.NewLoserRating;
-            int player1OldRating = player1Data.ClientId == _lastWinnerId ? ratingsDto.OldWinnerRating : ratingsDto.OldLoserRating;
+            int player1NewRating, player1OldRating, player2NewRating, player2OldRating;
 
-            int player2NewRating = player2Data.ClientId == _lastWinnerId ? ratingsDto.NewWinnerRating : ratingsDto.NewLoserRating;
-            int player2OldRating = player2Data.ClientId == _lastWinnerId ? ratingsDto.OldWinnerRating : ratingsDto.OldLoserRating;
+            if (_lastWasDraw)
+            {
+                // In a draw, the DTO sends player1's ratings in the "winner" slots
+                // and player2's ratings in the "loser" slots, sorted by ClientId on the server.
+                player1OldRating = ratingsDto.OldWinnerRating;
+                player1NewRating = ratingsDto.NewWinnerRating;
+                player2OldRating = ratingsDto.OldLoserRating;
+                player2NewRating = ratingsDto.NewLoserRating;
+            }
+            else
+            {
+                player1NewRating = player1Data.ClientId == _lastWinnerId ? ratingsDto.NewWinnerRating : ratingsDto.NewLoserRating;
+                player1OldRating = player1Data.ClientId == _lastWinnerId ? ratingsDto.OldWinnerRating : ratingsDto.OldLoserRating;
+
+                player2NewRating = player2Data.ClientId == _lastWinnerId ? ratingsDto.NewWinnerRating : ratingsDto.NewLoserRating;
+                player2OldRating = player2Data.ClientId == _lastWinnerId ? ratingsDto.OldWinnerRating : ratingsDto.OldLoserRating;
+            }
 
             if (_player1Card) _player1Card.UpdateRating(player1NewRating, player1OldRating);
             if (_player2Card) _player2Card.UpdateRating(player2NewRating, player2OldRating);
@@ -142,6 +158,7 @@ namespace TypingSurvivor.Features.UI.Screens.Result
             // Cache data for later use in UpdateRatingInfo
             _lastFinalPlayerDatas = dto.FinalPlayerDatas;
             _lastWinnerId = dto.WinnerClientId;
+            _lastWasDraw = dto.IsDraw;
 
             // Reset state for new results
             _opponentDisconnected = false;

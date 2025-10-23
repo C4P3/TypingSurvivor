@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using TypingSurvivor.Features.Core.CloudSave;
 using TypingSurvivor.Features.Game.Gameplay;
@@ -28,8 +30,47 @@ namespace TypingSurvivor.Features.Game.Rating
 
             if (result.IsDraw)
             {
-                Debug.Log("[RatingService] Game was a draw. No rating change.");
-                return (0, 0, 0, 0); // Return no change
+                Debug.Log("[RatingService] Game was a draw. Fetching current ratings without change.");
+
+                if (_gameStateReader.PlayerDatas.Count < 2)
+                {
+                    Debug.LogError("[RatingService] Draw detected, but less than 2 players in game state. Aborting.");
+                    return (0, 0, 0, 0);
+                }
+
+                // Convert NetworkList to a regular List to use LINQ
+                var playerDatas = new List<PlayerData>();
+                foreach (var p in _gameStateReader.PlayerDatas)
+                {
+                    playerDatas.Add(p);
+                }
+
+                // Sort players by ClientId to match client-side logic
+                var sortedPlayers = playerDatas.OrderBy(p => p.ClientId).ToList();
+
+                var player1Data = sortedPlayers[0];
+                var player2Data = sortedPlayers[1];
+
+                string player1AuthId = _gameManager.GetPlayerId(player1Data.ClientId);
+                string player2AuthId = _gameManager.GetPlayerId(player2Data.ClientId);
+
+                if (string.IsNullOrEmpty(player1AuthId) || string.IsNullOrEmpty(player2AuthId))
+                {
+                    Debug.LogError("[RatingService] Could not find AuthenticationId for a client in a draw. Aborting rating change.");
+                    return (0, 0, 0, 0);
+                }
+
+                Task<int> player1RatingTask = _cloudSaveService.GetRatingAsync(player1AuthId);
+                Task<int> player2RatingTask = _cloudSaveService.GetRatingAsync(player2AuthId);
+
+                await Task.WhenAll(player1RatingTask, player2RatingTask);
+
+                int player1Rating = player1RatingTask.Result;
+                int player2Rating = player2RatingTask.Result;
+
+                // The tuple is (oldWinner, newWinner, oldLoser, newLoser).
+                // We'll use "winner" for player1 and "loser" for player2.
+                return (player1Rating, player1Rating, player2Rating, player2Rating);
             }
 
             Debug.Log($"[RatingService] WinnerClientId from GameResult: {result.WinnerClientId}");
