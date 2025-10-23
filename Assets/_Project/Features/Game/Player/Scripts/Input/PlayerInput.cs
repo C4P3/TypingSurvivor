@@ -14,6 +14,7 @@ namespace TypingSurvivor.Features.Game.Player.Input
         public GameControls GameControls { get; private set; }
         private InputAction _moveInteractAction;
 
+#if !UNITY_SERVER
         private void Awake()
         {
             if (SettingsManager.Instance == null)
@@ -22,6 +23,7 @@ namespace TypingSurvivor.Features.Game.Player.Input
                 return;
             }
             // Use the shared GameControls instance from the SettingsManager
+
             GameControls = SettingsManager.Instance.SharedGameControls;
             _moveInteractAction = GameControls.Gameplay.MoveInteract;
         }
@@ -38,12 +40,17 @@ namespace TypingSurvivor.Features.Game.Player.Input
             // The SettingsScreen might need it.
             UnsubscribeGameplayEvents();
         }
+#endif
 
         public void EnableGameplayInput()
         {
+#if UNITY_SERVER
+            return;
+#else
             GameControls.Gameplay.Enable();
+#endif
         }
-
+#if !UNITY_SERVER
         private void SubscribeGameplayEvents()
         {
             GameControls.Gameplay.Move.performed += HandleMovePerformed;
@@ -66,5 +73,6 @@ namespace TypingSurvivor.Features.Game.Player.Input
         {
             OnMoveCanceled?.Invoke();
         }
+#endif
     }
 }

@@ -316,11 +316,12 @@ namespace TypingSurvivor.Features.Game.Gameplay
             // The countdown will be 3 seconds. Play a sound each second.
             for (int i = 3; i > 0; i--)
             {
-                SfxManager.Instance.PlaySfx(SoundId.Countdown);
+                PlaySfxClientRpc(SoundId.Countdown);
                 yield return new WaitForSeconds(1);
             }
             // カウントダウン終了時の音を再生
-            SfxManager.Instance.PlaySfx(SoundId.CountdownEnd);
+            PlaySfxClientRpc(SoundId.CountdownEnd);
+            yield return new WaitForSeconds(0.1f);
         }
 
         private IEnumerator PlayingPhase()
@@ -847,6 +848,13 @@ namespace TypingSurvivor.Features.Game.Gameplay
         }
 
         // --- Music Control RPCs ---
+        [ClientRpc]
+        private void PlaySfxClientRpc(SoundId sfxId)
+        {
+            SfxManager.Instance.PlaySfx(sfxId);
+        }
+
+
         [ClientRpc]
         private void PlayBgmClientRpc(SoundId bgmId)
         {
