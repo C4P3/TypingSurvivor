@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 011ff8147f5a8634aa5f0821aad54de1, type: 3}
   m_Name: FbmCaveGeneratorWithAdjustments
   m_EditorClassIdentifier: TypingSurvivor.Game::FbmCaveGeneratorWithAdjustments
-  _width: 100
-  _height: 100
+  _width: 500
+  _height: 500
   _noiseScale: 0.7
   _octaves: 4
   _lacunarity: 2

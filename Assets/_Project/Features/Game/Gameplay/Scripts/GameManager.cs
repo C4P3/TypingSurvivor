@@ -687,12 +687,22 @@ namespace TypingSurvivor.Features.Game.Gameplay
         public void AddOxygen(ulong clientId, float amount)
         {
             if (!IsServer) return;
-            
+
             if (!_oxygenDeltaThisFrame.ContainsKey(clientId))
             {
                 _oxygenDeltaThisFrame[clientId] = 0;
             }
-            _oxygenDeltaThisFrame[clientId] += amount;
+            if(amount > 0)
+            {
+                _oxygenDeltaThisFrame[clientId] += amount;
+            }
+            else
+            {
+                float damageReduction = _statusReader.GetStatValue(clientId, PlayerStat.DamageReduction);
+                damageReduction = Mathf.Clamp01(damageReduction);
+                float actualDecrease = amount * (1.0f - damageReduction);
+                _oxygenDeltaThisFrame[clientId] -= actualDecrease;
+            }
         }
 
         public void UpdatePlayerPosition(ulong clientId, Vector3Int gridPosition)
