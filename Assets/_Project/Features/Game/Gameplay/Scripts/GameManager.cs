@@ -701,7 +701,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 float damageReduction = _statusReader.GetStatValue(clientId, PlayerStat.DamageReduction);
                 damageReduction = Mathf.Clamp01(damageReduction);
                 float actualDecrease = amount * (1.0f - damageReduction);
-                _oxygenDeltaThisFrame[clientId] -= actualDecrease;
+                _oxygenDeltaThisFrame[clientId] += actualDecrease;
             }
         }
 

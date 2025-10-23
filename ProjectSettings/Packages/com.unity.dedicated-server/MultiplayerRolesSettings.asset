@@ -13,6 +13,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.DedicatedServer.MultiplayerRoles.Editor::Unity.Multiplayer.Editor.MultiplayerRolesSettings
   m_MultiplayerRoleForClassicProfile:
-    m_Keys:
-    - 91d938b35f6f4798811e41f2acf9377f
-    m_Values: 01000000
+    m_Keys: []
+    m_Values: 
