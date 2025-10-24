@@ -504,6 +504,7 @@ namespace TypingSurvivor.Features.UI
 
         private void ReturnToMainMenu()
         {
+            ResetLowOxygenEffects();
             NetworkManager.Singleton.Shutdown();
             UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
         }
