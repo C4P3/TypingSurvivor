@@ -40,7 +40,6 @@ namespace TypingSurvivor.Features.UI.Screens
 
         [Header("Player Name")]
         [SerializeField] private TMP_InputField _playerNameInput;
-        [SerializeField] private Button _changeNameButton;
 
         private UIFlowCoordinator _flowCoordinator;
         private SettingsManager _settingsManager;
@@ -82,7 +81,7 @@ namespace TypingSurvivor.Features.UI.Screens
                 _confirmationDialog.Show(
                     message: "未保存の設定を保存しますか？",
                     onConfirm: async () => {
-                        await _settingsManager.SaveAllSettings();
+                        await _settingsManager.SaveAllSettingsAsync(_playerNameInput.text);
                         _flowCoordinator.RequestStateChange(UIFlowCoordinator.PlayerUIState.InMainMenu);
                     },
                     onDecline: () => {
@@ -104,8 +103,18 @@ namespace TypingSurvivor.Features.UI.Screens
 
         private bool HasUnsavedChanges()
         {
+            // Check settings
             string currentSettingsJson = JsonUtility.ToJson(_settingsManager.Settings);
-            return _initialSettingsJson != currentSettingsJson;
+            bool settingsChanged = _initialSettingsJson != currentSettingsJson;
+
+            // Check player name
+            bool nameChanged = false;
+            if (AppManager.Instance.CachedPlayerData != null)
+            {
+                nameChanged = AppManager.Instance.CachedPlayerData.PlayerName != _playerNameInput.text;
+            }
+
+            return settingsChanged || nameChanged;
         }
 
         private void OnDestroy()
@@ -120,6 +129,12 @@ namespace TypingSurvivor.Features.UI.Screens
             if (AppManager.Instance != null && AppManager.Instance.CachedPlayerData != null)
             {
                 _playerNameInput.text = AppManager.Instance.CachedPlayerData.PlayerName;
+                _playerNameInput.interactable = true;
+            }
+            else
+            {
+                _playerNameInput.text = "[NO DATA]";
+                _playerNameInput.interactable = false;
             }
             UpdateAllBindingDisplays();
         }
@@ -138,7 +153,6 @@ namespace TypingSurvivor.Features.UI.Screens
 
             _resetButton.onClick.AddListener(OnResetButton);
             _saveButton.onClick.AddListener(OnSaveButton);
-            _changeNameButton.onClick.AddListener(OnChangeNameButtonClicked);
         }
 
         private void RemoveListeners()
@@ -155,38 +169,8 @@ namespace TypingSurvivor.Features.UI.Screens
 
             _resetButton.onClick.RemoveAllListeners();
             _saveButton.onClick.RemoveAllListeners();
-            _changeNameButton.onClick.RemoveAllListeners();
         }
 
-        private async void OnChangeNameButtonClicked()
-        {
-            string newName = _playerNameInput.text;
-            if (string.IsNullOrWhiteSpace(newName))
-            {
-                // Show some feedback to the user, e.g., a tooltip or a message
-                Debug.LogWarning("Player name cannot be empty.");
-                return;
-            }
-
-            _changeNameButton.interactable = false;
-            // You might want to show a spinner or some visual feedback here
-
-            bool success = await _settingsManager.ChangePlayerNameAsync(newName);
-
-            if (success)
-            {
-                Debug.Log("Player name changed successfully on the backend.");
-                // Optionally show a success message
-            }
-            else
-            {
-                Debug.LogError("Failed to change player name.");
-                // Optionally show an error message and revert the input field
-                _playerNameInput.text = AppManager.Instance.CachedPlayerData.PlayerName;
-            }
-
-            _changeNameButton.interactable = true;
-        }
 
         private void UpdateAllBindingDisplays()
         {
@@ -236,7 +220,7 @@ namespace TypingSurvivor.Features.UI.Screens
 
         private async void OnSaveButton()
         {
-            await _settingsManager.SaveAllSettings();
+            await _settingsManager.SaveAllSettingsAsync(_playerNameInput.text);
             // Update initial state to prevent subsequent "unsaved changes" dialog
             _initialSettingsJson = JsonUtility.ToJson(_settingsManager.Settings);
             // Optionally, show a "Saved!" confirmation message

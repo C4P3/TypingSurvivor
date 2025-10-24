@@ -5,7 +5,8 @@ using UnityEngine.InputSystem;
 using GameControlsInput;
 using TypingSurvivor.Features.Core.App;
 using System.Threading.Tasks;
-using TypingSurvivor.Features.Core.Auth; // Add this using directive
+using TypingSurvivor.Features.Core.Auth;
+using Unity.Services.Authentication; // Add this using directive
 
 namespace TypingSurvivor.Features.Core.Settings
 {
@@ -104,18 +105,58 @@ namespace TypingSurvivor.Features.Core.Settings
             Debug.Log("Keybinding overrides applied.");
         }
 
-        public async Task<bool> SaveAllSettings()
+        public async Task<bool> SaveAllSettingsAsync(string newPlayerName)
         {
-            Settings.KeybindingsOverrideJson = _gameControls.SaveBindingOverridesAsJson();
-            Debug.Log("Attempting to save settings to cloud...");
+            if (AppManager.Instance.CachedPlayerData == null)
+            {
+                Debug.LogError("Cannot save settings. CachedPlayerData is null. The user's data might be corrupted or missing.");
+                return false;
+            }
 
-            if (AppManager.Instance?.CloudSaveService != null && AppManager.Instance.CachedPlayerData != null)
+            // Part 1: Handle Name Change
+            string oldPlayerName = AppManager.Instance.CachedPlayerData.PlayerName;
+            bool isNameChanging = !string.IsNullOrWhiteSpace(newPlayerName) && oldPlayerName != newPlayerName;
+
+            if (isNameChanging)
+            {
+                Debug.Log($"Attempting to change player name from '{oldPlayerName}' to '{newPlayerName}'.");
+
+                // This updates the display name on the backend for services like Lobby
+                await AuthenticationService.Instance.UpdatePlayerNameAsync(newPlayerName);
+            
+                // This updates the name in the cached data object
+                AppManager.Instance.CachedPlayerData.PlayerName = newPlayerName;
+                
+                // Update the new display name cache here
+                if (AppManager.Instance.AuthService is ClientAuthenticationService clientAuth)
+                {
+                    clientAuth.UpdateCachedDisplayName(clientAuth.CurrentProfile, newPlayerName);
+                }
+            }
+
+            // Part 2: Handle Settings (Audio, Keys)
+            Settings.KeybindingsOverrideJson = _gameControls.SaveBindingOverridesAsJson();
+    
+            // Update the settings object within the main player data cache
+            if (AppManager.Instance.CachedPlayerData != null)
+            {
+                AppManager.Instance.CachedPlayerData.Settings = this.Settings;
+            }
+            else
+            {
+                Debug.LogError("CachedPlayerData is null. Cannot save settings.");
+                return false;
+            }
+
+            // Part 3: Save Everything to Cloud and Local Cache
+            Debug.Log("Attempting to save all data to cloud...");
+            if (AppManager.Instance?.CloudSaveService != null)
             {
                 bool success = await AppManager.Instance.CloudSaveService.SavePlayerDataAsync(AppManager.Instance.CachedPlayerData);
                 if (success)
                 {
-                    Debug.Log("Cloud save successful. Updating local cache.");
-                    SaveSettingsToLocalCache();
+                    Debug.Log("Cloud save successful. Updating local settings cache.");
+                    SaveSettingsToLocalCache(); // This saves PlayerSettingsData to PlayerPrefs
                     return true;
                 }
                 else
@@ -124,8 +165,10 @@ namespace TypingSurvivor.Features.Core.Settings
                     return false;
                 }
             }
+
             return false;
         }
+
 
         private void SaveSettingsToLocalCache()
         {
@@ -181,33 +224,6 @@ namespace TypingSurvivor.Features.Core.Settings
                 }
                 #endregion
         
-                public async Task<bool> ChangePlayerNameAsync(string newName)
-                {
-                    if (AppManager.Instance == null || AppManager.Instance.CachedPlayerData == null)
-                    {
-                        Debug.LogError("AppManager or CachedPlayerData is not available.");
-                        return false;
-                    }
-        
-                    AppManager.Instance.CachedPlayerData.PlayerName = newName;
-        
-                    // Save to Cloud Save
-                    bool cloudSaveSuccess = await AppManager.Instance.CloudSaveService.SavePlayerDataAsync(AppManager.Instance.CachedPlayerData);
-        
-                    if (!cloudSaveSuccess)
-                    {
-                        Debug.LogError("Failed to save player name to Cloud Save.");
-                        return false;
-                    }
-        
-                    // Update Auth service display name
-                    if (AppManager.Instance.AuthService is ClientAuthenticationService clientAuth)
-                    {
-                        await clientAuth.UpdatePlayerNameAsync(newName);
-                    }
-        
-                    Debug.Log("Player name updated successfully.");
-                    return true;
-                }
+
             }
         }

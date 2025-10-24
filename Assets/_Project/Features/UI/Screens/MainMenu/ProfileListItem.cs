@@ -15,12 +15,12 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
         [SerializeField] private InteractiveButton _button;
 
         private Action<string> _onSelected;
-        private string _profileName;
+        private string _profileId;
 
-        public void Initialize(string profileName, Action<string> onSelected)
+        public void Initialize(string displayName, Action<string> onSelected, string profileId)
         {
-            _profileName = profileName;
-            _profileNameText.text = profileName;
+            _profileId = profileId;
+            _profileNameText.text = displayName;
             _onSelected = onSelected;
             _button.onClick.AddListener(HandleClick);
         }
@@ -32,7 +32,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
 
         private void HandleClick()
         {
-            _onSelected?.Invoke(_profileName);
+            _onSelected?.Invoke(_profileId);
         }
     }
 }

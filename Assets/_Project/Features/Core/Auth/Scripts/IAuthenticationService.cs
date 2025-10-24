@@ -24,10 +24,10 @@ namespace TypingSurvivor.Features.Core.Auth
         string CurrentProfile { get; }
 
         /// <summary>
-        /// Gets a list of all available profiles.
+        /// Gets a dictionary of all available profiles, mapping profile ID to display name.
         /// </summary>
-        /// <returns>A list of profile names.</returns>
-        System.Collections.Generic.IReadOnlyList<string> ListProfiles();
+        /// <returns>A dictionary of profile data.</returns>
+        System.Collections.Generic.IReadOnlyDictionary<string, string> GetProfileDisplayData();
 
         /// <summary>
         /// Switches to a different profile and signs in anonymously.

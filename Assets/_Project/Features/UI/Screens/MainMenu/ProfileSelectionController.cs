@@ -48,27 +48,33 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
                 Destroy(child.gameObject);
             }
 
-            IReadOnlyList<string> profiles = _appManager.AuthService.ListProfiles();
+            // Use the new method to get both ID and display name
+            var profiles = _appManager.AuthService.GetProfileDisplayData();
+            if (profiles == null) return;
 
-            foreach (string profileName in profiles)
+            foreach (var profile in profiles)
             {
                 GameObject buttonGO = Instantiate(_profileButtonPrefab, _profileListContainer);
-                var profileButton = buttonGO.GetComponent<ProfileListItem>(); // Assuming the prefab has a ProfileListItem component
+                var profileButton = buttonGO.GetComponent<ProfileListItem>();
                 if (profileButton != null)
                 {
-                    profileButton.Initialize(profileName, OnProfileSelected);
+                    // Pass the display name for the button text, and the ID for the callback
+                    profileButton.Initialize(profile.Value, OnProfileSelected, profile.Key);
                 }
             }
         }
 
-        private async void OnProfileSelected(string profileName)
+        private async void OnProfileSelected(string profileId)
         {
-            bool success = await _appManager.AuthService.SwitchProfileAndSignInAsync(profileName);
+            bool success = await _appManager.AuthService.SwitchProfileAndSignInAsync(profileId);
             if (success)
             {
                 // Reload player data for the new profile
                 var playerData = await _appManager.CloudSaveService.LoadPlayerDataAsync();
                 _appManager.CachedPlayerData = playerData;
+
+                // After loading data, update the display name cache
+                await _appManager.PostSignInProcessAsync();
 
                 // Apply the loaded settings for the new profile
                 if (TypingSurvivor.Features.Core.Settings.SettingsManager.Instance != null)
@@ -88,7 +94,7 @@ namespace TypingSurvivor.Features.UI.Screens.MainMenu
             else
             {
                 // Handle switch failure (e.g., show an error message)
-                Debug.LogError($"Failed to switch to profile: {profileName}");
+                Debug.LogError($"Failed to switch to profile: {profileId}");
             }
         }
 

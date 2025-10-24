@@ -7,26 +7,106 @@ using System.Linq;
 
 namespace TypingSurvivor.Features.Core.Auth
 {
-    /// <summary>
-    /// Implements the IAuthenticationService using Unity Gaming Services
-    /// and local PlayerPrefs for profile management.
-    /// </summary>
-    public class ClientAuthenticationService : IAuthenticationService
-    {
-        public bool IsSignedIn => AuthenticationService.Instance.IsSignedIn;
-        public string CurrentProfile => AuthenticationService.Instance.Profile;
-
-        private const string KnownProfilesKey = "TypingSurvivor.KnownProfiles";
-
-        // Helper class for JSON serialization
+    // Custom serializable dictionary for Unity
         [System.Serializable]
-        private class ProfileListWrapper
+        public class SerializableDictionary<TKey, TValue> : Dictionary<TKey, TValue>, ISerializationCallbackReceiver
         {
-            public List<string> profiles = new List<string>();
+            [SerializeField]
+            private List<TKey> keys = new List<TKey>();
+    
+            [SerializeField]
+            private List<TValue> values = new List<TValue>();
+    
+            public void OnBeforeSerialize()
+            {
+                keys.Clear();
+                values.Clear();
+                foreach (KeyValuePair<TKey, TValue> pair in this)
+                {
+                    keys.Add(pair.Key);
+                    values.Add(pair.Value);
+                }
+            }
+    
+            public void OnAfterDeserialize()
+            {
+                this.Clear();
+    
+                if (keys.Count != values.Count)
+                    throw new System.Exception($"There are {keys.Count} keys and {values.Count} values after deserialization. Make sure that both key and value types are serializable.");
+    
+                for (int i = 0; i < keys.Count; i++)
+                    this.Add(keys[i], values[i]);
+            }
         }
-
-        public IReadOnlyList<string> ListProfiles()
+    
+        /// <summary>
+        /// Implements the IAuthenticationService using Unity Gaming Services
+        /// and local PlayerPrefs for profile management.
+        /// </summary>
+        public class ClientAuthenticationService : IAuthenticationService
         {
+            public bool IsSignedIn => AuthenticationService.Instance.IsSignedIn;
+            public string CurrentProfile => AuthenticationService.Instance.Profile;
+    
+            private const string KnownProfilesKey = "TypingSurvivor.KnownProfiles";
+            private const string DisplayNamesKey = "TypingSurvivor.ProfileDisplayNames";
+    
+            // Helper class for JSON serialization
+            [System.Serializable]
+            private class ProfileListWrapper
+            {
+                public List<string> profiles = new List<string>();
+            }
+    
+            [System.Serializable]
+            private class DisplayNameDictWrapper
+            {
+                public SerializableDictionary<string, string> displayNames = new SerializableDictionary<string, string>();
+            }
+    
+            private SerializableDictionary<string, string> GetDisplayNames()
+            {
+                var json = PlayerPrefs.GetString(DisplayNamesKey, "{}");
+                var wrapper = JsonUtility.FromJson<DisplayNameDictWrapper>(json);
+                return wrapper.displayNames ?? new SerializableDictionary<string, string>();
+            }
+    
+            public void UpdateCachedDisplayName(string profileId, string newName)
+            {
+                if (string.IsNullOrEmpty(profileId) || string.IsNullOrEmpty(newName)) return;
+    
+                var displayNames = GetDisplayNames();
+                displayNames[profileId] = newName;
+    
+                var wrapper = new DisplayNameDictWrapper { displayNames = displayNames };
+                var json = JsonUtility.ToJson(wrapper);
+                PlayerPrefs.SetString(DisplayNamesKey, json);
+                PlayerPrefs.Save();
+                Debug.Log($"Updated display name cache for profile '{profileId}' to '{newName}'.");
+            }
+    
+            public IReadOnlyDictionary<string, string> GetProfileDisplayData()
+            {
+                var profileIds = ListProfileIds();
+                var displayNames = GetDisplayNames();
+                var result = new Dictionary<string, string>();
+    
+                foreach (var id in profileIds)
+                {
+                    if (displayNames.TryGetValue(id, out var displayName) && !string.IsNullOrEmpty(displayName))
+                    {
+                        result[id] = displayName;
+                    }
+                    else
+                    {
+                        result[id] = id; // Fallback to the profile ID itself
+                    }
+                }
+                return result;
+            }
+    
+            private IReadOnlyList<string> ListProfileIds()        {
             var json = PlayerPrefs.GetString(KnownProfilesKey, "{}");
             var wrapper = JsonUtility.FromJson<ProfileListWrapper>(json);
             return wrapper.profiles ?? new List<string>();
@@ -70,7 +150,7 @@ namespace TypingSurvivor.Features.Core.Auth
 
         private void AddProfileToLocalCache(string profileName)
         {
-            var profiles = ListProfiles().ToList();
+            var profiles = ListProfileIds().ToList();
             if (!profiles.Contains(profileName))
             {
                 profiles.Add(profileName);
@@ -175,6 +255,7 @@ namespace TypingSurvivor.Features.Core.Auth
                     }
 
                 }
+
 
             }
 

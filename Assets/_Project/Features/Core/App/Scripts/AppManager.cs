@@ -220,6 +220,18 @@ namespace TypingSurvivor.Features.Core.App
             IsGameServicesInitialized = true;
         }
 
+        public async Task PostSignInProcessAsync()
+        {
+            if (AuthService is ClientAuthenticationService clientAuth && CachedPlayerData != null)
+            {
+                string profileId = clientAuth.CurrentProfile;
+                string playerName = CachedPlayerData.PlayerName;
+                clientAuth.UpdateCachedDisplayName(profileId, playerName);
+            }
+            await Task.CompletedTask;
+        }
+
+
         #region Network Start-up
 
         public void StartGame(GameModeType gameMode)
