@@ -359,15 +359,9 @@ namespace TypingSurvivor.Features.UI
 
         private void HandleResultReceived(GameManager.GameResultDto resultDto)
         {
-            // For both single player and multiplayer, show the result screen immediately.
-            // The rating/ranking info will be populated from cache or updated later.
             if (Core.App.AppManager.Instance.GameMode == Core.App.GameModeType.SinglePlayer)
             {
-                var appManager = Core.App.AppManager.Instance;
-                float personalBest = appManager.CachedPlayerData?.Progress.SinglePlayHighScore ?? 0f;
-                int playerRank = appManager.CachedRankData.playerRank;
-                int totalPlayers = appManager.CachedRankData.totalPlayers;
-                _resultScreen.Show(resultDto, personalBest, playerRank, totalPlayers);
+                ProcessSinglePlayerResultAsync(resultDto);
             }
             else
             {
