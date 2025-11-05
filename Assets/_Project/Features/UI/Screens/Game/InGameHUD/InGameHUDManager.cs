@@ -121,6 +121,7 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
             if (clientId != PlayerOwnerId) return;
             if (_playerStatusReader == null) return;
 
+            // TODO: _playerStatusReader の管理が杜撰だったので、実装方法を変える。PlayerDataに含めて、ここでは関数の引数で受けるようにする
             _oxygenView.UpdateView(newOxygenValue, _playerStatusReader.GetStatValue(PlayerOwnerId, PlayerStat.MaxOxygen));
         }
 
