@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using TypingSurvivor.Features.Core.Audio;
-using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Core.VFX;
 using TypingSurvivor.Features.Game.Camera;
 using TypingSurvivor.Features.Game.Gameplay;
@@ -37,7 +36,6 @@ namespace TypingSurvivor.Features.UI
         [SerializeField] private float _lowOxygenPitch = 1.2f;
         
         private IGameStateReader _gameStateReader;
-        private IPlayerStatusSystemReader _playerStatusReader;
         private GameManager _gameManager;
         private ITypingService _typingService;
         private CameraManager _cameraManager;
@@ -55,10 +53,9 @@ namespace TypingSurvivor.Features.UI
             _onPlayerListChangedHandler = OnPlayerListChanged;
         }
 
-        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader, GameManager gameManager, ITypingService typingService, CameraManager cameraManager, ICloudSaveService cloudSaveService, ISurvivalLeaderboardService survivalLeaderboardService)
+        public void Initialize(IGameStateReader gameStateReader, GameManager gameManager, ITypingService typingService, CameraManager cameraManager, ICloudSaveService cloudSaveService, ISurvivalLeaderboardService survivalLeaderboardService)
         {
             _gameStateReader = gameStateReader;
-            _playerStatusReader = playerStatusReader;
             _gameManager = gameManager;
             _typingService = typingService;
             _cameraManager = cameraManager;
@@ -194,7 +191,7 @@ namespace TypingSurvivor.Features.UI
             
             // Initialize and set camera immediately
             newHud.SetPlayerOwnerId(clientId);
-            newHud.Initialize(_gameStateReader, _playerStatusReader);
+            newHud.Initialize(_gameStateReader);
             newHud.SetRenderCamera(camera);
             _playerHuds[clientId] = newHud;
 

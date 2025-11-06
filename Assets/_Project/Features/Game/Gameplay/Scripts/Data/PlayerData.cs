@@ -22,6 +22,13 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
         public int TotalKeyPresses;
         public bool IsDisconnected; // To track if the player has disconnected
 
+        // --- PlayerStatusSystem Refactor ---
+        public float MoveSpeed;
+        public float MaxOxygen;
+        public float RadarRange;
+        public float DamageReduction;
+        // --- PlayerStatusSystem Refactor ---
+
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref ClientId);
@@ -35,6 +42,13 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
             serializer.SerializeValue(ref TotalCharsTyped);
             serializer.SerializeValue(ref TotalKeyPresses);
             serializer.SerializeValue(ref IsDisconnected);
+
+            // --- PlayerStatusSystem Refactor ---
+            serializer.SerializeValue(ref MoveSpeed);
+            serializer.SerializeValue(ref MaxOxygen);
+            serializer.SerializeValue(ref RadarRange);
+            serializer.SerializeValue(ref DamageReduction);
+            // --- PlayerStatusSystem Refactor ---
         }
 
         public bool Equals(PlayerData other)
@@ -49,7 +63,13 @@ namespace TypingSurvivor.Features.Game.Gameplay.Data
                 && TotalTimeTyping.Equals(other.TotalTimeTyping)
                 && TotalCharsTyped == other.TotalCharsTyped
                 && TotalKeyPresses == other.TotalKeyPresses
-                && IsDisconnected == other.IsDisconnected;
+                && IsDisconnected == other.IsDisconnected
+                // --- PlayerStatusSystem Refactor ---
+                && MoveSpeed.Equals(other.MoveSpeed)
+                && MaxOxygen.Equals(other.MaxOxygen)
+                && RadarRange.Equals(other.RadarRange)
+                && DamageReduction.Equals(other.DamageReduction);
+                // --- PlayerStatusSystem Refactor ---
         }
     }
 }

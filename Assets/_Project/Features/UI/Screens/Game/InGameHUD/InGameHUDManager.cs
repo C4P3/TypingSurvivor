@@ -1,8 +1,5 @@
 using UnityEngine;
 using Unity.Netcode;
-using TypingSurvivor.Features.Core.PlayerStatus;
-
-using TypingSurvivor.Features.Core.Audio;
 using TypingSurvivor.Features.UI.Common;
 
 namespace TypingSurvivor.Features.UI.Screens.InGameHUD
@@ -13,9 +10,7 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
         [SerializeField] private OxygenView _oxygenView;
         [SerializeField] private PlayerInfoView _playerInfoView;
 
-
         private IGameStateReader _gameStateReader;
-        private IPlayerStatusSystemReader _playerStatusReader;
         
         private Canvas _canvas;
         
@@ -43,10 +38,9 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
             }
         }
 
-        public void Initialize(IGameStateReader gameStateReader, IPlayerStatusSystemReader playerStatusReader)
+        public void Initialize(IGameStateReader gameStateReader)
         {
             _gameStateReader = gameStateReader;
-            _playerStatusReader = playerStatusReader;
             SubscribeEvents();
         }
 
@@ -86,7 +80,6 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
         {
             if (_gameStateReader != null)
             {
-                _gameStateReader.OnOxygenChanged += OnOxygenChanged;
                 _gameStateReader.PlayerDatas.OnListChanged += OnPlayerDatasChanged;
             }
         }
@@ -95,7 +88,6 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
         {
             if (_gameStateReader != null)
             {
-                _gameStateReader.OnOxygenChanged -= OnOxygenChanged;
                 _gameStateReader.PlayerDatas.OnListChanged -= OnPlayerDatasChanged;
             }
         }
@@ -105,25 +97,17 @@ namespace TypingSurvivor.Features.UI.Screens.InGameHUD
         #region Event Handlers
         private void OnPlayerDatasChanged(NetworkListEvent<TypingSurvivor.Features.Game.Gameplay.Data.PlayerData> changeEvent)
         {
-            // Find the specific data for this HUD's owner and update the name
+            // Find the specific data for this HUD's owner and update all relevant views
             foreach (var playerData in _gameStateReader.PlayerDatas)
             {
                 if (playerData.ClientId == PlayerOwnerId)
                 {
                     UpdatePlayerName(playerData.PlayerName.ToString());
+                    _oxygenView.UpdateView(playerData.Oxygen, playerData.MaxOxygen);
                     return; // Found our player, no need to loop further
                 }
             }
         }
-
-        private void OnOxygenChanged(ulong clientId, float newOxygenValue)
-        {
-            if (clientId != PlayerOwnerId) return;
-            if (_playerStatusReader == null) return;
-
-            _oxygenView.UpdateView(newOxygenValue, _playerStatusReader.GetStatValue(PlayerOwnerId, PlayerStat.MaxOxygen));
-        }
-
         #endregion
     }
 }

@@ -12,6 +12,4 @@ public interface IGameStateReader
     NetworkVariable<int> RematchRequesterCountNV { get; }
     NetworkList<PlayerData> PlayerDatas { get; }
     NetworkList<NetworkObjectReference> SpawnedPlayers { get; }
-    float CurrentOxygen { get; } // This might become obsolete or represent local player's oxygen
-    event System.Action<ulong, float> OnOxygenChanged;
 }
