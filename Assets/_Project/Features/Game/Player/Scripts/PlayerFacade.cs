@@ -8,7 +8,6 @@ using UnityEngine.Tilemaps;
 using TypingSurvivor.Features.Game.Player.Input;
 using TypingSurvivor.Features.Core.App;
 using TypingSurvivor.Features.Game.Typing;
-using TypingSurvivor.Features.Core.PlayerStatus;
 using TypingSurvivor.Features.Game.Level;
 
 
@@ -37,7 +36,6 @@ namespace TypingSurvivor.Features.Game.Player
         // --- サーバーサイドの依存関係 ---
         private ILevelService _levelService;
         private IItemService _itemService;
-        private IPlayerStatusSystemReader _statusReader;
         private IGameStateWriter _gameStateWriter;
         private IGameStateReader _gameStateReader;
         private Grid _grid;
@@ -103,12 +101,10 @@ namespace TypingSurvivor.Features.Game.Player
             {
                 _levelService = serviceLocator.GetService<ILevelService>();
                 _itemService = serviceLocator.GetService<IItemService>();
-                _statusReader = serviceLocator.StatusReader;
                 _gameStateWriter = serviceLocator.GetService<IGameStateWriter>();
 
                 if (_levelService == null) Debug.LogError("ILevelServiceの実装が見つかりません。");
                 if (_itemService == null) Debug.LogError("IItemServiceの実装が見つかりません。");
-                if (_statusReader == null) Debug.LogError("IPlayerStatusSystemReaderの実装が見つかりません。");
                 if (_gameStateWriter == null) Debug.LogError("IGameStateWriterの実装が見つかりません。");
 
                 _currentState.Value = PlayerState.Roaming;
@@ -391,20 +387,42 @@ namespace TypingSurvivor.Features.Game.Player
 
             while (_continuousMoveDirection_Server != Vector3Int.zero)
             {
+                // --- PlayerStatusSystem Refactor ---
+                // Get current player data from GameState
+                PlayerData playerData = default;
+                bool foundPlayerData = false;
+                foreach (var pData in _gameStateReader.PlayerDatas)
+                {
+                    if (pData.ClientId == OwnerClientId)
+                    {
+                        playerData = pData;
+                        foundPlayerData = true;
+                        break;
+                    }
+                }
+
+                if (!foundPlayerData)
+                {
+                    Debug.LogError($"[PlayerFacade] Could not find PlayerData for client {OwnerClientId}. Aborting move.");
+                    _isMoving_Server = false;
+                    yield break;
+                }
+
                 // Check for stun status at the beginning of each potential move.
-                float currentMoveSpeed = _statusReader.GetStatValue(OwnerClientId, PlayerStat.MoveSpeed);
-                if (currentMoveSpeed <= 0f)
+                if (playerData.MoveSpeed <= 0f)
                 {
                     // Player is stunned, wait a frame and re-evaluate.
                     yield return null;
                     continue;
                 }
 
-                if (_levelService == null || _grid == null || _statusReader == null || _itemService == null)
+                if (_levelService == null || _grid == null || _itemService == null)
                 {
                     _isMoving_Server = false;
                     yield break;
                 }
+                // --- PlayerStatusSystem Refactor ---
+
                 Vector3Int targetGridPos = NetworkGridPosition.Value + _continuousMoveDirection_Server;
 
                 // 移動先にアイテムがあれば取得する
@@ -417,7 +435,9 @@ namespace TypingSurvivor.Features.Game.Player
                 switch (interactionType)
                 {
                     case TileInteractionType.Walkable:
-                        float moveSpeed = _statusReader.GetStatValue(OwnerClientId, PlayerStat.MoveSpeed);
+                        // --- PlayerStatusSystem Refactor ---
+                        float moveSpeed = playerData.MoveSpeed;
+                        // --- PlayerStatusSystem Refactor ---
                         float duration = 1f / Mathf.Max(0.1f, moveSpeed);
 
                         NetworkMoveDuration.Value = duration;

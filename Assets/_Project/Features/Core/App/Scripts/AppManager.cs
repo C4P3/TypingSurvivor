@@ -207,16 +207,22 @@ namespace TypingSurvivor.Features.Core.App
 
         public void InitializeGameServices(PlayerDefaultStats playerStats)
         {
-            Debug.Assert(playerStats != null, "PlayerStats is not assigned in GameConfig.");
-            
-            _statusSystem = new PlayerStatusSystem(playerStats);
-            StatusReader = _statusSystem;
-            StatusWriter = _statusSystem;
+            // --- PlayerStatusSystem Refactor ---
+            // PlayerStatusSystemはサーバー専用のロジックとする
+            if (NetworkManager.Singleton.IsServer)
+            {
+                Debug.Assert(playerStats != null, "PlayerStats is not assigned in GameConfig.");
 
-            // Register the core services so they can be retrieved via GetService<T>
-            RegisterService<IPlayerStatusSystemReader>(_statusSystem);
-            RegisterService<IPlayerStatusSystemWriter>(_statusSystem);
-            
+                _statusSystem = new PlayerStatusSystem(playerStats);
+                StatusReader = _statusSystem;
+                StatusWriter = _statusSystem;
+
+                // Register the core services so they can be retrieved via GetService<T>
+                RegisterService<IPlayerStatusSystemReader>(_statusSystem);
+                RegisterService<IPlayerStatusSystemWriter>(_statusSystem);
+            }
+            // --- PlayerStatusSystem Refactor ---
+
             IsGameServicesInitialized = true;
         }
 

@@ -155,6 +155,10 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
                 NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnected;
                 NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnected;
+
+                // --- PlayerStatusSystem Refactor ---
+                _statusReader.OnStatChanged += HandlePlayerStatChanged;
+                // --- PlayerStatusSystem Refactor ---
                 
                 // Initialize players already connected
                 foreach (var clientId in NetworkManager.Singleton.ConnectedClientsIds)
@@ -176,6 +180,10 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnected;
                 NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnected;
+
+                // --- PlayerStatusSystem Refactor ---
+                if (_statusReader != null) _statusReader.OnStatChanged -= HandlePlayerStatChanged;
+                // --- PlayerStatusSystem Refactor ---
             }
         }
 
@@ -190,8 +198,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 var data = _gameState.PlayerDatas[i];
                 if (_oxygenDeltaThisFrame.TryGetValue(data.ClientId, out float delta))
                 {
-                    float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
-                    data.Oxygen = Mathf.Clamp(data.Oxygen + delta, 0, maxOxygen);
+                    // PlayerDataにMaxOxygenが追加されたので、そちらを参照する
+                    data.Oxygen = Mathf.Clamp(data.Oxygen + delta, 0, data.MaxOxygen);
                     _gameState.PlayerDatas[i] = data;
                 }
             }
@@ -203,7 +211,21 @@ namespace TypingSurvivor.Features.Game.Gameplay
         {
             if (!IsServer) return;
             // PlayerDatasリストを初期化。デフォルト名を設定。
-            _gameState.PlayerDatas.Add(new PlayerData { ClientId = clientId, PlayerName = $"Player {clientId}", Oxygen = 100f, IsGameOver = false });
+            var initialData = new PlayerData
+            {
+                ClientId = clientId,
+                PlayerName = $"Player {clientId}",
+                IsGameOver = false,
+                // --- PlayerStatusSystem Refactor ---
+                // 初期ステータスをPlayerStatusSystemから取得して設定
+                MoveSpeed = _statusReader.GetStatValue(clientId, PlayerStat.MoveSpeed),
+                MaxOxygen = _statusReader.GetStatValue(clientId, PlayerStat.MaxOxygen),
+                RadarRange = _statusReader.GetStatValue(clientId, PlayerStat.RadarRange),
+                DamageReduction = _statusReader.GetStatValue(clientId, PlayerStat.DamageReduction)
+            };
+            initialData.Oxygen = initialData.MaxOxygen; // 初期酸素は最大値
+            _gameState.PlayerDatas.Add(initialData);
+            // --- PlayerStatusSystem Refactor ---
         }
 
         private void HandleClientDisconnected(ulong clientId)
@@ -359,7 +381,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     if (data.IsGameOver) continue;
 
                     // --- Oxygen Decrease Logic ---
-                    float damageReduction = _statusReader.GetStatValue(data.ClientId, PlayerStat.DamageReduction);
+                    // PlayerDataにDamageReductionが追加されたので、そちらを参照する
+                    float damageReduction = data.DamageReduction;
                     damageReduction = Mathf.Clamp01(damageReduction);
                     float actualDecrease = currentRate * (1.0f - damageReduction);
                     
@@ -377,8 +400,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     // --- End Oxygen Decrease ---
 
                     // --- Low Oxygen State Change Check ---
-                    float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
-                    bool isCurrentlyLow = (data.Oxygen / maxOxygen) < LowOxygenThreshold;
+                    // PlayerDataにMaxOxygenが追加されたので、そちらを参照する
+                    bool isCurrentlyLow = (data.Oxygen / data.MaxOxygen) < LowOxygenThreshold;
                     bool wasPreviouslyLow = _playersInLowOxygen.Contains(data.ClientId);
 
                     if (isCurrentlyLow && !wasPreviouslyLow)
@@ -668,7 +691,8 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 _statusWriter.ClearSessionModifiers(data.ClientId);
                 
                 // Get the (potentially modified) max oxygen for this player
-                float maxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
+                // PlayerDataにMaxOxygenが追加されたので、そちらを参照する
+                float maxOxygen = data.MaxOxygen;
 
                 // Reset runtime stats, but keep the player name
                 data.IsGameOver = false;
@@ -698,7 +722,16 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
             else
             {
-                float damageReduction = _statusReader.GetStatValue(clientId, PlayerStat.DamageReduction);
+                // PlayerDataにDamageReductionが追加されたので、そちらを参照する
+                float damageReduction = 0f;
+                for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+                {
+                    if (_gameState.PlayerDatas[i].ClientId == clientId)
+                    {
+                        damageReduction = _gameState.PlayerDatas[i].DamageReduction;
+                        break;
+                    }
+                }
                 damageReduction = Mathf.Clamp01(damageReduction);
                 float actualDecrease = amount * (1.0f - damageReduction);
                 _oxygenDeltaThisFrame[clientId] += actualDecrease;
@@ -939,5 +972,35 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 Debug.LogError($"[GameManager] Failed to calculate and send ratings: {e.Message}");
             }
         }
+
+        // --- PlayerStatusSystem Refactor ---
+        private void HandlePlayerStatChanged(ulong clientId, PlayerStat stat, float newValue)
+        {
+            for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
+            {
+                if (_gameState.PlayerDatas[i].ClientId == clientId)
+                {
+                    var data = _gameState.PlayerDatas[i];
+                    switch (stat)
+                    {
+                        case PlayerStat.MoveSpeed:
+                            data.MoveSpeed = newValue;
+                            break;
+                        case PlayerStat.MaxOxygen:
+                            data.MaxOxygen = newValue;
+                            break;
+                        case PlayerStat.RadarRange:
+                            data.RadarRange = newValue;
+                            break;
+                        case PlayerStat.DamageReduction:
+                            data.DamageReduction = newValue;
+                            break;
+                    }
+                    _gameState.PlayerDatas[i] = data;
+                    return;
+                }
+            }
+        }
+        // --- PlayerStatusSystem Refactor ---
     }
 }
