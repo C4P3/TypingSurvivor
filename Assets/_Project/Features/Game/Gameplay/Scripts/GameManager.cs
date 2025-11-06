@@ -685,24 +685,29 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
             for (int i = 0; i < _gameState.PlayerDatas.Count; i++)
             {
+                // 1. PlayerDataの現在のコピーを取得（ClientIdの取得が主目的）
                 var data = _gameState.PlayerDatas[i];
                 
-                // Clear temporary buffs from the previous session
+                // 2. まずStatusSystemの内部状態をリセットする
                 _statusWriter.ClearSessionModifiers(data.ClientId);
                 
-                // Get the (potentially modified) max oxygen for this player
-                // PlayerDataにMaxOxygenが追加されたので、そちらを参照する
-                float maxOxygen = data.MaxOxygen;
+                // 3. イベントに頼らず、StatusSystem(Source of Truth)からリセット後の「ベース値」を"PULL"する
+                //    これにより、「値が変わらないからイベントが飛ばない」問題を回避する
+                data.MoveSpeed = _statusReader.GetStatValue(data.ClientId, PlayerStat.MoveSpeed);
+                data.MaxOxygen = _statusReader.GetStatValue(data.ClientId, PlayerStat.MaxOxygen);
+                data.RadarRange = _statusReader.GetStatValue(data.ClientId, PlayerStat.RadarRange);
+                data.DamageReduction = _statusReader.GetStatValue(data.ClientId, PlayerStat.DamageReduction);
 
-                // Reset runtime stats, but keep the player name
+                // 4. ランタイムのステータスをリセットする
                 data.IsGameOver = false;
-                data.Oxygen = maxOxygen;
+                data.Oxygen = data.MaxOxygen;
                 data.BlocksDestroyed = 0;
                 data.TypingMisses = 0;
                 data.TotalTimeTyping = 0f;
                 data.TotalCharsTyped = 0;
                 data.TotalKeyPresses = 0;
                 
+                // 5. 完全にリセットされた `data` をGameStateに書き戻す
                 _gameState.PlayerDatas[i] = data;
             }
         }
