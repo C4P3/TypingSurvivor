@@ -3,6 +3,9 @@
 [https://github.com/C4P3/ynu-pro2](https://github.com/C4P3/ynu-pro2/blob/main/README.md)
 の再設計を行っています。
 
+# 紹介動画
+[3分程度](https://drive.google.com/file/d/1EE8oI78KgGkFJrk67vgdHwAf-D--tKdj/view?usp=sharing)
+
 # 開発の詳細
 [Assets\_Project\README.md](.\Assets\_Project\README.md)を参照してください。
 
@@ -36,3 +39,4 @@
             - Game Server Hosting(Unity)
     - InputSystem
         - https://nekojara.city/unity-input-system-modifier#Button%20with%20one%20modifier%E3%81%AE%E4%BD%BF%E3%81%84%E6%96%B9
+
