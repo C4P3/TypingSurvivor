@@ -6,6 +6,7 @@ using TypingSurvivor.Features.Core.PlayerStatus;
 using System.Collections.Generic;
 using TypingSurvivor.Features.Game.Level;
 using TypingSurvivor.Features.Game.Camera;
+using TypingSurvivor.Features.DebugSystem;
 using TypingSurvivor.Features.UI;
 using TypingSurvivor.Features.Core.CloudSave;
 
@@ -14,6 +15,7 @@ using TypingSurvivor.Features.Core.VFX;
 using TypingSurvivor.Features.Game.Rating;
 using TypingSurvivor.Features.Core.Leaderboard;
 using System;
+using Unity.Netcode;
 
 namespace TypingSurvivor.Features.Game.Gameplay
 {
@@ -34,6 +36,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
         [SerializeField] private ItemService _itemService;
         [SerializeField] private CameraManager _cameraManager;
         [SerializeField] private GameUIManager _gameUIManager;
+        [SerializeField] private DebugGameSystem _debugSystem;
 
 
 
@@ -152,16 +155,29 @@ namespace TypingSurvivor.Features.Game.Gameplay
             {
                 strategy = new MultiPlayerStrategy();
             }
-            
-            _gameManager.Initialize(
-                _gameState,
-                strategy,
-                serviceLocator.GetService<ILevelService>(),
-                serviceLocator.GetService<IPlayerStatusSystemReader>(),
-                serviceLocator.GetService<IPlayerStatusSystemWriter>(),
-                _gameConfig,
-                _grid
+            if (NetworkManager.Singleton.IsServer)
+            {
+                _gameManager.Initialize(
+                    _gameState,
+                    strategy,
+                    serviceLocator.GetService<ILevelService>(),
+                    _gameConfig,
+                    _grid,
+                    serviceLocator.GetService<IPlayerStatusSystemReader>(),
+                    serviceLocator.GetService<IPlayerStatusSystemWriter>()
                 );
+            }
+            else
+            {
+                _gameManager.Initialize(
+                    _gameState,
+                    strategy,
+                    serviceLocator.GetService<ILevelService>(),
+                    _gameConfig,
+                    _grid
+                );
+            }
+            
 
             // --- Initialize Rating Service for Ranked Matches ---
             if (gameMode == GameModeType.RankedMatch)
@@ -187,11 +203,21 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
 
             // --- Inject dependencies into ItemService ---
+            IPlayerStatusSystemWriter statusSystemWriter;
+
+            if (NetworkManager.Singleton.IsServer)
+            {
+                statusSystemWriter = serviceLocator.GetService<IPlayerStatusSystemWriter>();
+            }
+            else
+            {
+                statusSystemWriter = null;
+            }
             _itemService.Initialize(
                 serviceLocator.GetService<ILevelService>(),
                 serviceLocator.GetService<IGameStateReader>(),
                 serviceLocator.GetService<IGameStateWriter>(),
-                serviceLocator.GetService<IPlayerStatusSystemWriter>(),
+                statusSystemWriter,
                 _gameConfig.ItemRegistry,
                 SfxManager.Instance,
                 EffectManager.Instance,
@@ -210,6 +236,23 @@ namespace TypingSurvivor.Features.Game.Gameplay
                     serviceLocator.GetService<ISurvivalLeaderboardService>()
                 );
             }
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            if (_debugSystem != null)
+            {
+                _debugSystem.Initialize(
+                    _gameManager,
+                    _levelManager,
+                    _grid,
+                    _gameConfig.ItemRegistry,
+                    _cameraManager
+                );
+            }
+#else
+            if (_debugSystem != null)
+            {
+                Destroy(_debugSystem.gameObject);
+            }
+#endif
         }
     }
 }

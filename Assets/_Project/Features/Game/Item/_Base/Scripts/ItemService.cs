@@ -19,16 +19,25 @@ public class ItemService : MonoBehaviour, IItemService
     private EffectManager _effectManager;
     private Grid _grid;
 
-    public void Initialize(ILevelService levelService, IGameStateReader gameStateReader, IGameStateWriter gameStateWriter, IPlayerStatusSystemWriter playerStatusSystemWriter, ItemRegistry itemRegistry, SfxManager sfxManager, EffectManager effectManager, Grid grid)
+    public void Initialize(
+        ILevelService levelService, IGameStateReader gameStateReader, IGameStateWriter gameStateWriter, 
+        #nullable enable
+        IPlayerStatusSystemWriter playerStatusSystemWriter, 
+        #nullable disable
+        ItemRegistry itemRegistry, SfxManager sfxManager, EffectManager effectManager, Grid grid
+    )
     {
         _levelService = levelService;
         _gameStateReader = gameStateReader;
         _gameStateWriter = gameStateWriter;
-        _playerStatusSystemWriter = playerStatusSystemWriter;
         _itemRegistry = itemRegistry;
         _effectManager = effectManager;
         _sfxManager = sfxManager;
         _grid = grid;
+        if(playerStatusSystemWriter != null)
+        {
+            _playerStatusSystemWriter = playerStatusSystemWriter;
+        }
     }
 
     public void AcquireItem(ulong clientId, Vector3Int itemGridPosition, Vector3Int lastMoveDirection)

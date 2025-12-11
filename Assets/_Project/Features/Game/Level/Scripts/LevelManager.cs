@@ -341,6 +341,47 @@ public class LevelManager : NetworkBehaviour, ILevelService
         _activeBlockTiles.Add(tileData);
     }
 
+    public void PlaceItem(Vector3Int gridPosition, TileBase itemTile)
+    {
+        if (!IsServer) return;
+        if (itemTile == null) return;
+
+        // タイルIDの解決
+        if (!_tileToBaseIdMap.TryGetValue(itemTile, out int tileId))
+        {
+            // 未登録のタイルなら動的に追加（デバッグ用などで有用）
+            tileId = _tileIdMap.Count;
+            _tileIdMap.Add(itemTile);
+            _tileToBaseIdMap.Add(itemTile, tileId);
+        }
+
+        var tileData = new TileData { Position = gridPosition, TileId = tileId };
+        Vector2Int chunkPos = WorldToChunkPos(gridPosition);
+
+        // サーバーデータの更新
+        if (!_entireItemMapData_Server.ContainsKey(chunkPos))
+        {
+            _entireItemMapData_Server[chunkPos] = new List<TileData>();
+        }
+        
+        // 既存のアイテムがあれば上書きするために削除
+        _entireItemMapData_Server[chunkPos].RemoveAll(t => t.Position == gridPosition);
+        _entireItemMapData_Server[chunkPos].Add(tileData);
+
+        // 既存の同期リストにあれば削除（重複防止）
+        for (int i = _activeItemTiles.Count - 1; i >= 0; i--)
+        {
+            if (_activeItemTiles[i].Position == gridPosition)
+            {
+                _activeItemTiles.RemoveAt(i);
+                break;
+            }
+        }
+        
+        // 新しいアイテムを追加してクライアントに同期
+        _activeItemTiles.Add(tileData);
+    }
+
     public void RemoveItem(Vector3Int gridPosition)
     {
         if (!IsServer) return;

@@ -41,8 +41,10 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
         // --- Oxygen Decrease Settings ---
         // Phase 1 (Linear)
-        private const float OXYGEN_DECREASE_START_RATE = 2.5f;
-        private const float OXYGEN_DECREASE_MID_RATE = 5.0f;
+        [Header("Debug Settings")]
+        [SerializeField] private float _oxygenDecreaseStartRate = 2.5f;
+        [SerializeField] private float _oxygenDecreaseMidRate = 5.0f;
+        private float _debugOxygenMultiplier = 1.0f; // デバッグ用倍率
         private const float TIME_TO_SWITCH_TO_LOG = 300.0f; // 10 minutes
         private float _linearRateOfChange;
 
@@ -124,15 +126,23 @@ namespace TypingSurvivor.Features.Game.Gameplay
             }
         }
 
-        public void Initialize(GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, IPlayerStatusSystemReader statusReader, IPlayerStatusSystemWriter statusWriter, GameConfig gameConfig, Grid grid)
+        public void Initialize(
+            GameState gameState, IGameModeStrategy gameModeStrategy, ILevelService levelService, GameConfig gameConfig, Grid grid, 
+#nullable enable
+            IPlayerStatusSystemReader? statusReader = null, IPlayerStatusSystemWriter? statusWriter = null
+#nullable disable
+        )
         {
             _gameState = gameState;
             _gameModeStrategy = gameModeStrategy;
             _levelService = levelService;
-            _statusReader = statusReader;
-            _statusWriter = statusWriter;
             _gameConfig = gameConfig;
             _grid = grid;
+            if (statusReader != null && statusWriter != null)
+            {
+                _statusReader = statusReader;
+                _statusWriter = statusWriter;
+            }
         }
 
         public override void OnNetworkSpawn()
@@ -149,7 +159,7 @@ namespace TypingSurvivor.Features.Game.Gameplay
             if (IsServer)
             {
                 // --- Calculate oxygen decrease rates ---
-                _linearRateOfChange = (OXYGEN_DECREASE_MID_RATE - OXYGEN_DECREASE_START_RATE) / TIME_TO_SWITCH_TO_LOG;
+                _linearRateOfChange = (_oxygenDecreaseMidRate - _oxygenDecreaseStartRate) / TIME_TO_SWITCH_TO_LOG;
                 _logCoefficient = _linearRateOfChange * LOG_TIME_SCALE;
                 // ---
 
@@ -168,6 +178,14 @@ namespace TypingSurvivor.Features.Game.Gameplay
 
                 _serverGameLoop = StartCoroutine(ServerGameLoop());
             }
+        }
+
+        // 外部から酸素減少量を変更するためのメソッド
+        public void SetOxygenDepletionMultiplier(float multiplier)
+        {
+            if (!IsServer) return;
+            _debugOxygenMultiplier = multiplier;
+            Debug.Log($"[GameManager] Oxygen depletion multiplier set to: {_debugOxygenMultiplier}");
         }
 
         public override void OnNetworkDespawn()
@@ -364,14 +382,17 @@ namespace TypingSurvivor.Features.Game.Gameplay
                 if (gameTime <= TIME_TO_SWITCH_TO_LOG)
                 {
                     // Phase 1: Linear increase
-                    currentRate = OXYGEN_DECREASE_START_RATE + (gameTime * _linearRateOfChange);
+                    currentRate = _oxygenDecreaseStartRate + (gameTime * _linearRateOfChange);
                 }
                 else
                 {
                     // Phase 2: Logarithmic increase
                     float timeSinceSwitch = gameTime - TIME_TO_SWITCH_TO_LOG;
-                    currentRate = OXYGEN_DECREASE_MID_RATE + _logCoefficient * Mathf.Log(timeSinceSwitch / LOG_TIME_SCALE + 1);
+                    currentRate = _oxygenDecreaseMidRate + _logCoefficient * Mathf.Log(timeSinceSwitch / LOG_TIME_SCALE + 1);
                 }
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+                currentRate *= _debugOxygenMultiplier;
+#endif
                 // ---
 
                 // Decrease oxygen and check for low oxygen state changes
